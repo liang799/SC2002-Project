@@ -1,6 +1,6 @@
 # SC2002 Turn-Based Combat Arena
 
-This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is being built in layers so that the domain model, battle actions, engine, reporting, and CLI can evolve cleanly and remain understandable.
+This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is being organized into clear layers so that battle entities, actions, reporting, engine logic, and CLI presentation remain separated and easier to maintain.
 
 ## Current Features
 
@@ -8,9 +8,8 @@ At the current project stage, the repository includes:
 
 - combatant and player domain modeling
 - status-effect and inventory abstractions
-- the first battle action abstraction
-- support for `BasicAttack`
-- support for `Shield Bash`
+- reusable action abstractions for `BasicAttack` and `Shield Bash`
+- structured reporting models for round flow and battle output
 
 ## Current Code Structure
 
@@ -31,13 +30,24 @@ The domain package currently contains the base battle model:
 
 ### `src/main/java/sc2002/turnbased/actions`
 
-The project now also includes the first action layer:
+The actions package currently contains:
 
 - `BattleAction`: common action abstraction
 - `BasicAttackAction`: single-target attack using the assignment damage formula
 - `ShieldBashAction`: Warrior special skill that applies damage and stun
 
-These classes establish how battle behavior can be modeled separately from the combatant objects themselves.
+### `src/main/java/sc2002/turnbased/report`
+
+The report package now provides structured output models:
+
+- `BattleEvent`: common event marker
+- `ActionEvent`: action execution details
+- `RoundStartEvent`: signals the beginning of a round
+- `SkippedTurnEvent`: represents skipped turns caused by stun or elimination
+- `CombatantSummary`: round-end snapshot of one combatant
+- `RoundSummaryEvent`: full round-end battle summary
+
+These reporting classes are intended to let later layers format output cleanly without mixing presentation logic into the domain model.
 
 ## Current Scope
 
@@ -47,9 +57,10 @@ The repository currently covers:
 - player and enemy inheritance structure
 - status-effect modeling
 - inventory modeling
-- reusable action abstractions for attacking and special-skill behavior
+- reusable action abstractions
+- structured battle-reporting models
 
-The battle engine, event reporting, and CLI execution flow are intended to be added in later phases.
+The battle engine, turn processing flow, and CLI execution are intended to be added in later phases.
 
 ## Project Direction
 
