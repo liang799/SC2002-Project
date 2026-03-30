@@ -1,6 +1,6 @@
 # SC2002 Turn-Based Combat Arena
 
-This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is being organized into clear layers so that battle entities, actions, reporting, engine logic, and CLI presentation remain separated and easier to maintain.
+This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is structured in layers so that the domain model, actions, reporting, battle engine, and UI can evolve independently and remain easier to understand.
 
 ## Current Features
 
@@ -9,13 +9,17 @@ At the current project stage, the repository includes:
 - combatant and player domain modeling
 - status-effect and inventory abstractions
 - reusable action abstractions for `BasicAttack` and `Shield Bash`
-- structured reporting models for round flow and battle output
+- structured reporting models for rounds and turn results
+- a battle engine for turn processing
+- speed-based turn order
+- scripted player decision support
+- Easy-level battle setup
 
 ## Current Code Structure
 
 ### `src/main/java/sc2002/turnbased/domain`
 
-The domain package currently contains the base battle model:
+The domain package contains the base battle model:
 
 - `Combatant`: shared base type for battle entities
 - `PlayerCharacter`: base type for player-controlled combatants
@@ -30,7 +34,7 @@ The domain package currently contains the base battle model:
 
 ### `src/main/java/sc2002/turnbased/actions`
 
-The actions package currently contains:
+The actions package contains:
 
 - `BattleAction`: common action abstraction
 - `BasicAttackAction`: single-target attack using the assignment damage formula
@@ -38,7 +42,7 @@ The actions package currently contains:
 
 ### `src/main/java/sc2002/turnbased/report`
 
-The report package now provides structured output models:
+The report package provides structured output models:
 
 - `BattleEvent`: common event marker
 - `ActionEvent`: action execution details
@@ -47,20 +51,33 @@ The report package now provides structured output models:
 - `CombatantSummary`: round-end snapshot of one combatant
 - `RoundSummaryEvent`: full round-end battle summary
 
-These reporting classes are intended to let later layers format output cleanly without mixing presentation logic into the domain model.
+### `src/main/java/sc2002/turnbased/engine`
+
+The engine package now drives battle flow:
+
+- `TurnOrderStrategy`: abstraction for turn ordering
+- `SpeedTurnOrderStrategy`: speed-based turn ordering implementation
+- `PlayerDecision`: one player choice for a turn
+- `PlayerDecisionProvider`: abstraction for supplying player decisions
+- `ScriptedDecisionProvider`: scripted player input provider
+- `BattleSetup`: stores the player, enemies, and inventory for a battle
+- `EasyLevelSetup`: creates the Easy-level initial battle state
+- `BattleEngine`: processes rounds, turns, actions, cooldowns, and summaries
+
+These engine classes connect the domain model, actions, and report models into a runnable battle flow.
 
 ## Current Scope
 
 The repository currently covers:
 
 - combatant representation
-- player and enemy inheritance structure
 - status-effect modeling
 - inventory modeling
-- reusable action abstractions
+- action abstractions
 - structured battle-reporting models
+- turn-order and battle-engine flow for the Easy setup
 
-The battle engine, turn processing flow, and CLI execution are intended to be added in later phases.
+The CLI demo, formatter, and verification layer are intended to be added in later phases.
 
 ## Project Direction
 
