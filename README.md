@@ -1,25 +1,22 @@
 # SC2002 Turn-Based Combat Arena
 
-This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is being built around a modular battle model so that combatants, status effects, inventory, actions, and battle flow can be added in separate layers.
+This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is being built in layers so that the domain model, battle actions, engine, reporting, and CLI can evolve cleanly and remain understandable.
 
 ## Current Features
 
-At the current project stage, the repository includes the core domain model together with the first status-effect and inventory abstractions:
+At the current project stage, the repository includes:
 
-- shared combatant state for HP and combat statistics
-- a player-side abstraction for playable characters
-- a concrete `Warrior` class
-- a concrete `Goblin` enemy class
-- a status-effect abstraction for turn-based effects
-- a concrete stun effect model
-- helper types for resolving status effects during a turn
-- inventory and item-type tracking
+- combatant and player domain modeling
+- status-effect and inventory abstractions
+- the first battle action abstraction
+- support for `BasicAttack`
+- support for `Shield Bash`
 
 ## Current Code Structure
 
 ### `src/main/java/sc2002/turnbased/domain`
 
-The project currently focuses on the domain layer:
+The domain package currently contains the base battle model:
 
 - `Combatant`: shared base type for battle entities
 - `PlayerCharacter`: base type for player-controlled combatants
@@ -27,12 +24,20 @@ The project currently focuses on the domain layer:
 - `Goblin`: initial enemy class
 - `StatusEffect`: abstraction for battle status effects
 - `StunStatusEffect`: stun effect model
-- `TurnEffectResolution`: stores the result of resolving one status effect
-- `TurnWindow`: stores the combined turn state for a combatant
+- `TurnEffectResolution`: result of resolving one status effect
+- `TurnWindow`: combined turn state for a combatant
 - `Inventory`: stores item counts
 - `ItemType`: item enumeration
 
-These classes prepare the project for later action handling and battle-engine logic while keeping the domain model separate and extensible.
+### `src/main/java/sc2002/turnbased/actions`
+
+The project now also includes the first action layer:
+
+- `BattleAction`: common action abstraction
+- `BasicAttackAction`: single-target attack using the assignment damage formula
+- `ShieldBashAction`: Warrior special skill that applies damage and stun
+
+These classes establish how battle behavior can be modeled separately from the combatant objects themselves.
 
 ## Current Scope
 
@@ -42,8 +47,9 @@ The repository currently covers:
 - player and enemy inheritance structure
 - status-effect modeling
 - inventory modeling
+- reusable action abstractions for attacking and special-skill behavior
 
-The battle engine, action execution, reporting, and CLI flow are intended to be added in later phases.
+The battle engine, event reporting, and CLI execution flow are intended to be added in later phases.
 
 ## Project Direction
 
