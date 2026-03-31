@@ -7,6 +7,8 @@ This repository contains a Java implementation of the SC2002 turn-based combat a
 At the current project stage, the repository includes:
 
 - combatant and player domain modeling
+- support for both `Warrior` and `Wizard`
+- support for both `Goblin` and `Wolf`
 - status-effect and inventory abstractions
 - reusable action abstractions for `BasicAttack` and `Shield Bash`
 - structured reporting models for rounds and turn results
@@ -14,6 +16,7 @@ At the current project stage, the repository includes:
 - speed-based turn order
 - scripted player decision support
 - Easy-level battle setup
+- Medium-level setup preparation
 - console formatting for battle events
 - a runnable demo entry point for the Easy scenario
 - a verification class for the Easy rounds 1-3 checkpoints
@@ -22,12 +25,14 @@ At the current project stage, the repository includes:
 
 ### `src/main/java/sc2002/turnbased/domain`
 
-The domain package contains the base battle model:
+The domain package now contains the expanded battle model:
 
-- `Combatant`: shared base type for battle entities
+- `Combatant`: shared base type for battle entities and combat state
 - `PlayerCharacter`: base type for player-controlled combatants
-- `Warrior`: initial player class
-- `Goblin`: initial enemy class
+- `Warrior`: player class with the assignment Warrior stats
+- `Wizard`: player class with the assignment Wizard stats
+- `Goblin`: enemy class with Goblin stats
+- `Wolf`: enemy class with Wolf stats
 - `StatusEffect`: abstraction for battle status effects
 - `StunStatusEffect`: stun effect model
 - `TurnEffectResolution`: result of resolving one status effect
@@ -63,8 +68,9 @@ The engine package drives battle flow:
 - `PlayerDecision`: one player choice for a turn
 - `PlayerDecisionProvider`: abstraction for supplying player decisions
 - `ScriptedDecisionProvider`: scripted player input provider
-- `BattleSetup`: stores the player, enemies, and inventory for a battle
+- `BattleSetup`: stores the player, enemies, backup enemies, and inventory
 - `EasyLevelSetup`: creates the Easy-level initial battle state
+- `MediumLevelSetup`: prepares the Medium-level battle state
 - `BattleEngine`: processes rounds, turns, actions, cooldowns, and summaries
 
 ### `src/main/java/sc2002/turnbased/ui`
@@ -76,7 +82,7 @@ The UI package provides the CLI-facing layer:
 
 ### `src/test/java/sc2002/turnbased`
 
-The test package now includes:
+The test package currently includes:
 
 - `EasyLevelRoundsVerifier`: checks the Easy rounds 1-3 state progression against the expected values
 
@@ -84,16 +90,17 @@ The test package now includes:
 
 The repository currently covers:
 
-- combatant representation
+- combatant representation for Warrior, Wizard, Goblin, and Wolf
 - status-effect modeling
 - inventory modeling
 - action abstractions
 - structured battle-reporting models
-- turn-order and battle-engine flow for the Easy setup
+- turn-order and battle-engine flow
+- Easy setup support and Medium-ready setup support
 - console formatting and a runnable demo entry point
-- verification of the original Easy rounds 1-3 milestone
+- verification of the Easy rounds 1-3 milestone
 
-The Medium/Wizard expansion is intended to be added in later phases.
+Item actions, Arcane Blast, full Medium scenario flow, and expanded scenario verification are intended to be added in later phases.
 
 ## Build Output
 
