@@ -1,6 +1,6 @@
 # SC2002 Turn-Based Combat Arena
 
-This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is structured in layers so that the domain model, actions, reporting, battle engine, and console UI can stay separated and easier to understand.
+This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is structured in layers so that the domain model, actions, reporting, battle engine, console UI, and testing can remain separate and easier to evolve.
 
 ## Current Features
 
@@ -16,6 +16,7 @@ At the current project stage, the repository includes:
 - Easy-level battle setup
 - console formatting for battle events
 - a runnable demo entry point for the Easy scenario
+- a verification class for the Easy rounds 1-3 checkpoints
 
 ## Current Code Structure
 
@@ -68,10 +69,16 @@ The engine package drives battle flow:
 
 ### `src/main/java/sc2002/turnbased/ui`
 
-The UI package now provides the CLI-facing layer:
+The UI package provides the CLI-facing layer:
 
 - `BattleConsoleFormatter`: converts structured battle events into readable console lines
 - `EasyRoundsDemo`: runs the current Easy scenario flow and prints the result
+
+### `src/test/java/sc2002/turnbased`
+
+The test package now includes:
+
+- `EasyLevelRoundsVerifier`: checks the Easy rounds 1-3 state progression against the expected values
 
 ## Current Scope
 
@@ -84,8 +91,9 @@ The repository currently covers:
 - structured battle-reporting models
 - turn-order and battle-engine flow for the Easy setup
 - console formatting and a runnable demo entry point
+- verification of the original Easy rounds 1-3 milestone
 
-The verification layer is intended to be added in the next phase.
+The Medium/Wizard expansion is intended to be added in later phases.
 
 ## Build Output
 
