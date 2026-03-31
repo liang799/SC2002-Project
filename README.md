@@ -10,8 +10,9 @@ At the current project stage, the repository includes:
 - support for both `Warrior` and `Wizard`
 - support for both `Goblin` and `Wolf`
 - status-effect and inventory abstractions
-- reusable action abstractions for `BasicAttack` and `Shield Bash`
-- structured reporting models for rounds and turn results
+- reusable action abstractions for `BasicAttack`, `Shield Bash`, and `Arcane Blast`
+- item-driven action support for `Potion`, `Smoke Bomb`, and `Power Stone`
+- structured reporting models for rounds, narration, and turn results
 - a battle engine for turn processing
 - speed-based turn order
 - scripted player decision support
@@ -25,7 +26,7 @@ At the current project stage, the repository includes:
 
 ### `src/main/java/sc2002/turnbased/domain`
 
-The domain package now contains the expanded battle model:
+The domain package contains the expanded battle model:
 
 - `Combatant`: shared base type for battle entities and combat state
 - `PlayerCharacter`: base type for player-controlled combatants
@@ -42,11 +43,16 @@ The domain package now contains the expanded battle model:
 
 ### `src/main/java/sc2002/turnbased/actions`
 
-The actions package contains:
+The actions package now contains:
 
 - `BattleAction`: common action abstraction
+- `ActionExecutionContext`: action-facing view of engine state
 - `BasicAttackAction`: single-target attack using the assignment damage formula
 - `ShieldBashAction`: Warrior special skill that applies damage and stun
+- `ArcaneBlastAction`: Wizard special skill affecting all current enemies
+- `UsePotionAction`: item action for healing
+- `UseSmokeBombAction`: item action for suppressing enemy damage
+- `UsePowerStoneSkillAction`: item action for triggering a special skill without normal cooldown handling
 
 ### `src/main/java/sc2002/turnbased/report`
 
@@ -58,6 +64,7 @@ The report package provides structured output models:
 - `SkippedTurnEvent`: represents skipped turns caused by stun or elimination
 - `CombatantSummary`: round-end snapshot of one combatant
 - `RoundSummaryEvent`: full round-end battle summary
+- `NarrationEvent`: free-form battle narration line
 
 ### `src/main/java/sc2002/turnbased/engine`
 
@@ -93,14 +100,14 @@ The repository currently covers:
 - combatant representation for Warrior, Wizard, Goblin, and Wolf
 - status-effect modeling
 - inventory modeling
-- action abstractions
+- action abstractions, including special skills and item actions
 - structured battle-reporting models
 - turn-order and battle-engine flow
 - Easy setup support and Medium-ready setup support
 - console formatting and a runnable demo entry point
 - verification of the Easy rounds 1-3 milestone
 
-Item actions, Arcane Blast, full Medium scenario flow, and expanded scenario verification are intended to be added in later phases.
+Full Appendix A scenario scripting and expanded scenario verification are intended to be added in later phases.
 
 ## Build Output
 
