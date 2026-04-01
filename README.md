@@ -17,9 +17,11 @@ At the current project stage, the repository includes:
 - speed-based turn order
 - scripted player decision support
 - Easy-level battle setup
-- Medium-level setup preparation
+- Medium-level battle setup
+- backup enemy spawn support
+- scripted Appendix A scenario definitions
 - console formatting for battle events
-- a runnable demo entry point for the Easy scenario
+- a runnable demo entry point for the implemented Appendix A scenarios
 - a verification class for the Easy rounds 1-3 checkpoints
 
 ## Current Code Structure
@@ -43,7 +45,7 @@ The domain package contains the expanded battle model:
 
 ### `src/main/java/sc2002/turnbased/actions`
 
-The actions package now contains:
+The actions package contains:
 
 - `BattleAction`: common action abstraction
 - `ActionExecutionContext`: action-facing view of engine state
@@ -77,21 +79,33 @@ The engine package drives battle flow:
 - `ScriptedDecisionProvider`: scripted player input provider
 - `BattleSetup`: stores the player, enemies, backup enemies, and inventory
 - `EasyLevelSetup`: creates the Easy-level initial battle state
-- `MediumLevelSetup`: prepares the Medium-level battle state
-- `BattleEngine`: processes rounds, turns, actions, cooldowns, and summaries
+- `MediumLevelSetup`: creates the Medium-level initial battle state
+- `BattleEngine`: processes rounds, turns, actions, cooldowns, backup spawns, and summaries
+- `ScenarioScript`: groups a setup, decision provider, and round count into one runnable scenario
+- `AppendixAScenarios`: provides the implemented Appendix A scenario scripts
 
 ### `src/main/java/sc2002/turnbased/ui`
 
 The UI package provides the CLI-facing layer:
 
 - `BattleConsoleFormatter`: converts structured battle events into readable console lines
-- `EasyRoundsDemo`: runs the current Easy scenario flow and prints the result
+- `EasyRoundsDemo`: runs the currently implemented Appendix A scenarios and prints the result
 
 ### `src/test/java/sc2002/turnbased`
 
 The test package currently includes:
 
 - `EasyLevelRoundsVerifier`: checks the Easy rounds 1-3 state progression against the expected values
+
+## Current Supported Scenarios
+
+The repository currently supports scripted runs for:
+
+- Easy difficulty, Warrior
+- Medium difficulty, Warrior
+- Medium difficulty, Wizard
+
+These scenarios are executed through the engine and action system rather than being printed as hardcoded transcripts.
 
 ## Current Scope
 
@@ -103,11 +117,13 @@ The repository currently covers:
 - action abstractions, including special skills and item actions
 - structured battle-reporting models
 - turn-order and battle-engine flow
-- Easy setup support and Medium-ready setup support
+- Easy and Medium setup support
+- backup spawns
+- scripted Appendix A scenario execution
 - console formatting and a runnable demo entry point
 - verification of the Easy rounds 1-3 milestone
 
-Full Appendix A scenario scripting and expanded scenario verification are intended to be added in later phases.
+Full-scenario verification for all implemented Appendix A runs is intended to be added in the final phase.
 
 ## Build Output
 
