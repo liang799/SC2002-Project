@@ -1,21 +1,20 @@
 package sc2002.turnbased.engine;
 
+import java.util.Objects;
+
 import sc2002.turnbased.actions.BattleAction;
 
-public class PlayerDecision {
-    private final BattleAction action;
-    private final String targetName;
-
-    public PlayerDecision(BattleAction action, String targetName) {
-        this.action = action;
-        this.targetName = targetName;
+public record PlayerDecision(BattleAction action, TargetReference targetReference) {
+    public PlayerDecision {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(targetReference, "targetReference");
     }
 
-    public BattleAction getAction() {
-        return action;
+    public static PlayerDecision targeted(BattleAction action, String targetName) {
+        return new PlayerDecision(action, TargetReference.enemy(targetName));
     }
 
-    public String getTargetName() {
-        return targetName;
+    public static PlayerDecision untargeted(BattleAction action) {
+        return new PlayerDecision(action, TargetReference.none());
     }
 }

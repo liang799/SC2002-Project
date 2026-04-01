@@ -3,26 +3,21 @@ package sc2002.turnbased.domain;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class Combatant {
     private final String name;
-    private final int maxHp;
-    private final int baseAttack;
-    private final int defense;
-    private final int speed;
+    private final CombatStats baseStats;
     private int attack;
     private int currentHp;
     private int specialSkillCooldown;
     private final List<StatusEffect> statusEffects = new ArrayList<>();
 
-    protected Combatant(String name, int maxHp, int attack, int defense, int speed) {
-        this.name = name;
-        this.maxHp = maxHp;
-        this.baseAttack = attack;
-        this.attack = attack;
-        this.defense = defense;
-        this.speed = speed;
-        this.currentHp = maxHp;
+    protected Combatant(String name, CombatStats baseStats) {
+        this.name = Objects.requireNonNull(name, "name");
+        this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
+        this.attack = baseStats.attack();
+        this.currentHp = baseStats.maxHp();
         this.specialSkillCooldown = 0;
     }
 
@@ -31,7 +26,7 @@ public abstract class Combatant {
     }
 
     public int getMaxHp() {
-        return maxHp;
+        return baseStats.maxHp();
     }
 
     public int getCurrentHp() {
@@ -43,15 +38,15 @@ public abstract class Combatant {
     }
 
     public int getBaseAttack() {
-        return baseAttack;
+        return baseStats.attack();
     }
 
     public int getDefense() {
-        return defense;
+        return baseStats.defense() + activeDefenseModifier();
     }
 
     public int getSpeed() {
-        return speed;
+        return baseStats.speed();
     }
 
     public int getSpecialSkillCooldown() {
@@ -76,8 +71,20 @@ public abstract class Combatant {
         currentHp = Math.max(0, currentHp - damage);
     }
 
+    public int adjustIncomingDamage(Combatant attacker, int damage, List<String> notes) {
+        Iterator<StatusEffect> iterator = statusEffects.iterator();
+        while (iterator.hasNext()) {
+            StatusEffect statusEffect = iterator.next();
+            damage = statusEffect.adjustIncomingDamage(this, attacker, damage, notes);
+            if (statusEffect.isExpired()) {
+                iterator.remove();
+            }
+        }
+        return damage;
+    }
+
     public void heal(int amount) {
-        currentHp = Math.min(maxHp, currentHp + amount);
+        currentHp = Math.min(getMaxHp(), currentHp + amount);
     }
 
     public void adjustAttack(int amount) {
@@ -121,5 +128,26 @@ public abstract class Combatant {
         }
 
         return new TurnWindow(blocked, blockerLabel, notes);
+    }
+
+    public void completeRound() {
+        Iterator<StatusEffect> iterator = statusEffects.iterator();
+        while (iterator.hasNext()) {
+            StatusEffect statusEffect = iterator.next();
+            statusEffect.onRoundCompleted();
+            if (statusEffect.isExpired()) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private int activeDefenseModifier() {
+        int defenseModifier = 0;
+        for (StatusEffect statusEffect : statusEffects) {
+            if (!statusEffect.isExpired()) {
+                defenseModifier += statusEffect.getDefenseModifier();
+            }
+        }
+        return defenseModifier;
     }
 }
