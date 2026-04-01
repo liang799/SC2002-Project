@@ -2,9 +2,9 @@
 
 This repository contains a Java implementation of the SC2002 turn-based combat assignment. The project is structured in layers so that the domain model, actions, reporting, battle engine, console UI, and testing can remain separate and easier to evolve.
 
-## Current Features
+## Features
 
-At the current project stage, the repository includes:
+The repository currently includes:
 
 - combatant and player domain modeling
 - support for both `Warrior` and `Wizard`
@@ -16,19 +16,19 @@ At the current project stage, the repository includes:
 - a battle engine for turn processing
 - speed-based turn order
 - scripted player decision support
-- Easy-level battle setup
-- Medium-level battle setup
+- Easy-level and Medium-level battle setup
 - backup enemy spawn support
 - scripted Appendix A scenario definitions
 - console formatting for battle events
 - a runnable demo entry point for the implemented Appendix A scenarios
-- a verification class for the Easy rounds 1-3 checkpoints
+- verification for the Easy rounds 1-3 milestone
+- verification for the full implemented Appendix A Easy and Medium scenarios
 
-## Current Code Structure
+## Project Structure
 
 ### `src/main/java/sc2002/turnbased/domain`
 
-The domain package contains the expanded battle model:
+Core battle entities and shared game state.
 
 - `Combatant`: shared base type for battle entities and combat state
 - `PlayerCharacter`: base type for player-controlled combatants
@@ -45,7 +45,7 @@ The domain package contains the expanded battle model:
 
 ### `src/main/java/sc2002/turnbased/actions`
 
-The actions package contains:
+Battle behavior and item-triggered actions.
 
 - `BattleAction`: common action abstraction
 - `ActionExecutionContext`: action-facing view of engine state
@@ -58,7 +58,7 @@ The actions package contains:
 
 ### `src/main/java/sc2002/turnbased/report`
 
-The report package provides structured output models:
+Structured battle output models.
 
 - `BattleEvent`: common event marker
 - `ActionEvent`: action execution details
@@ -70,7 +70,7 @@ The report package provides structured output models:
 
 ### `src/main/java/sc2002/turnbased/engine`
 
-The engine package drives battle flow:
+Battle orchestration and scenario setup.
 
 - `TurnOrderStrategy`: abstraction for turn ordering
 - `SpeedTurnOrderStrategy`: speed-based turn ordering implementation
@@ -86,18 +86,19 @@ The engine package drives battle flow:
 
 ### `src/main/java/sc2002/turnbased/ui`
 
-The UI package provides the CLI-facing layer:
+Console-facing classes.
 
 - `BattleConsoleFormatter`: converts structured battle events into readable console lines
 - `EasyRoundsDemo`: runs the currently implemented Appendix A scenarios and prints the result
 
 ### `src/test/java/sc2002/turnbased`
 
-The test package currently includes:
+Verification helpers.
 
 - `EasyLevelRoundsVerifier`: checks the Easy rounds 1-3 state progression against the expected values
+- `AppendixAScenariosVerifier`: checks the implemented Easy and Medium Appendix A scenarios
 
-## Current Supported Scenarios
+## Supported Scenarios
 
 The repository currently supports scripted runs for:
 
@@ -107,23 +108,26 @@ The repository currently supports scripted runs for:
 
 These scenarios are executed through the engine and action system rather than being printed as hardcoded transcripts.
 
-## Current Scope
+## Running the Project
 
-The repository currently covers:
+Compile:
 
-- combatant representation for Warrior, Wizard, Goblin, and Wolf
-- status-effect modeling
-- inventory modeling
-- action abstractions, including special skills and item actions
-- structured battle-reporting models
-- turn-order and battle-engine flow
-- Easy and Medium setup support
-- backup spawns
-- scripted Appendix A scenario execution
-- console formatting and a runnable demo entry point
-- verification of the Easy rounds 1-3 milestone
+```powershell
+javac -d out (Get-ChildItem -Recurse -File src/main/java,src/test/java | ForEach-Object { $_.FullName })
+```
 
-Full-scenario verification for all implemented Appendix A runs is intended to be added in the final phase.
+Run the scenario demo:
+
+```powershell
+java -cp out sc2002.turnbased.ui.EasyRoundsDemo
+```
+
+Run the verifiers:
+
+```powershell
+java -cp out sc2002.turnbased.EasyLevelRoundsVerifier
+java -cp out sc2002.turnbased.AppendixAScenariosVerifier
+```
 
 ## Build Output
 
