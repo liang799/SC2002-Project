@@ -1,7 +1,5 @@
 # Mermaid Class Diagram
 
-This Mermaid class diagram focuses on the production code structure so it can be translated into a UML class diagram more easily.
-
 ```mermaid
 classDiagram
 
@@ -289,8 +287,3 @@ EasyRoundsDemo ..> AppendixAScenarios : runs
 EasyRoundsDemo ..> BattleEngine : creates
 EasyRoundsDemo ..> BattleConsoleFormatter : uses
 ```
-
-## Notes
-
-- This version focuses on production classes, not test classes, to keep the UML translation cleaner.
-- If you want, a second Mermaid sequence diagram can be generated for one Appendix A battle flow as well.
