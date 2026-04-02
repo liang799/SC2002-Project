@@ -1,5 +1,7 @@
 package sc2002.turnbased.engine;
 
+import java.util.Objects;
+
 public class ScenarioScript {
     private final String name;
     private final BattleSetup battleSetup;
@@ -7,9 +9,9 @@ public class ScenarioScript {
     private final int roundCount;
 
     public ScenarioScript(String name, BattleSetup battleSetup, PlayerDecisionProvider decisionProvider, int roundCount) {
-        this.name = name;
-        this.battleSetup = battleSetup;
-        this.decisionProvider = decisionProvider;
+        this.name = Objects.requireNonNull(name, "name");
+        this.battleSetup = Objects.requireNonNull(battleSetup, "battleSetup");
+        this.decisionProvider = Objects.requireNonNull(decisionProvider, "decisionProvider");
         this.roundCount = roundCount;
     }
 
