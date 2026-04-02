@@ -11,8 +11,4 @@ public interface ActionExecutionContext {
     List<Combatant> getLivingEnemiesInTurnOrder();
 
     Inventory getInventory();
-
-    void activateSmokeBomb();
-
-    int adjustDamage(Combatant actor, Combatant target, int baseDamage, List<String> notes);
 }

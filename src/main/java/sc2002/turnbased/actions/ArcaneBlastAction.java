@@ -25,6 +25,11 @@ public class ArcaneBlastAction implements BattleAction {
     }
 
     @Override
+    public TargetingMode targetingMode(Combatant actor) {
+        return TargetingMode.NONE;
+    }
+
+    @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         List<BattleEvent> events = new ArrayList<>();
         List<Combatant> targets = context.getLivingEnemiesInTurnOrder();

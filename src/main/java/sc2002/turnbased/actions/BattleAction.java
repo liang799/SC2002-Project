@@ -12,5 +12,9 @@ public interface BattleAction {
         return true;
     }
 
+    default TargetingMode targetingMode(Combatant actor) {
+        return TargetingMode.SINGLE_ENEMY;
+    }
+
     List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target);
 }
