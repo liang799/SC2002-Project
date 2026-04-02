@@ -3,6 +3,7 @@ package sc2002.turnbased.engine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Inventory;
@@ -15,10 +16,10 @@ public class BattleSetup {
     private final Inventory inventory;
 
     public BattleSetup(PlayerCharacter player, List<Combatant> initialEnemies, List<Combatant> backupEnemies, Inventory inventory) {
-        this.player = player;
-        this.initialEnemies = new ArrayList<>(initialEnemies);
-        this.backupEnemies = new ArrayList<>(backupEnemies);
-        this.inventory = inventory;
+        this.player = Objects.requireNonNull(player, "player");
+        this.initialEnemies = new ArrayList<>(Objects.requireNonNull(initialEnemies, "initialEnemies"));
+        this.backupEnemies = new ArrayList<>(Objects.requireNonNull(backupEnemies, "backupEnemies"));
+        this.inventory = Objects.requireNonNull(inventory, "inventory");
     }
 
     public PlayerCharacter getPlayer() {
