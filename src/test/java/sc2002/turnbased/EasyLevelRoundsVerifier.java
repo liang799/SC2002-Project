@@ -3,7 +3,7 @@ package sc2002.turnbased;
 import java.util.List;
 
 import sc2002.turnbased.actions.BasicAttackAction;
-import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.actions.UseSpecialSkillAction;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
@@ -20,9 +20,9 @@ public class EasyLevelRoundsVerifier {
         BattleEngine battleEngine = new BattleEngine(battleSetup, new SpeedTurnOrderStrategy());
 
         ScriptedDecisionProvider decisions = new ScriptedDecisionProvider()
-            .addDecision(1, new PlayerDecision(new BasicAttackAction(), "Goblin A"))
-            .addDecision(2, new PlayerDecision(new ShieldBashAction(), "Goblin A"))
-            .addDecision(3, new PlayerDecision(new BasicAttackAction(), "Goblin A"));
+            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), "Goblin A"))
+            .addDecision(2, PlayerDecision.targeted(new UseSpecialSkillAction(), "Goblin A"))
+            .addDecision(3, PlayerDecision.targeted(new BasicAttackAction(), "Goblin A"));
 
         List<BattleEvent> events = battleEngine.runRounds(3, decisions);
         List<RoundSummaryEvent> summaries = events.stream()

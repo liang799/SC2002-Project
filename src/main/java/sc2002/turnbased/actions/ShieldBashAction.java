@@ -28,7 +28,7 @@ public class ShieldBashAction implements BattleAction {
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         int baseDamage = Math.max(0, actor.getAttack() - target.getDefense());
         List<String> notes = new ArrayList<>();
-        int damage = context.adjustDamage(actor, target, baseDamage, notes);
+        int damage = target.adjustIncomingDamage(actor, baseDamage, notes);
         int hpBefore = target.getCurrentHp();
         target.receiveDamage(damage);
 
