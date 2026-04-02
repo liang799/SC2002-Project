@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sc2002.turnbased.actions.ActionExecutionContext;
-import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.BattleAction;
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
@@ -25,9 +25,7 @@ public class BattleEngine implements ActionExecutionContext {
     private final List<Combatant> spawnedEnemies;
     private final Inventory inventory;
     private final TurnOrderStrategy turnOrderStrategy;
-    private final BattleAction enemyBasicAttack;
     private final List<BattleEvent> events = new ArrayList<>();
-    private int smokeBombEnemyAttackCharges;
 
     public BattleEngine(BattleSetup battleSetup, TurnOrderStrategy turnOrderStrategy) {
         this.player = battleSetup.getPlayer();
@@ -36,14 +34,20 @@ public class BattleEngine implements ActionExecutionContext {
         this.spawnedEnemies = new ArrayList<>(battleSetup.getInitialEnemies());
         this.inventory = battleSetup.getInventory();
         this.turnOrderStrategy = turnOrderStrategy;
-        this.enemyBasicAttack = new BasicAttackAction();
-        this.smokeBombEnemyAttackCharges = 0;
     }
 
     public List<BattleEvent> runRounds(int roundCount, PlayerDecisionProvider playerDecisionProvider) {
+        return runRounds(roundCount, playerDecisionProvider, BattleEventListener.NO_OP);
+    }
+
+    public List<BattleEvent> runRounds(
+        int roundCount,
+        PlayerDecisionProvider playerDecisionProvider,
+        BattleEventListener battleEventListener
+    ) {
         int roundsPlayed = 0;
         for (int roundNumber = 1; roundNumber <= roundCount; roundNumber++) {
-            events.add(new RoundStartEvent(roundNumber));
+            emit(new RoundStartEvent(roundNumber), battleEventListener);
             roundsPlayed = roundNumber;
 
             List<Combatant> turnOrder = turnOrderStrategy.determineOrder(combatantsAliveAtRoundStart());
@@ -51,23 +55,42 @@ public class BattleEngine implements ActionExecutionContext {
                 if (isBattleOver()) {
                     break;
                 }
-                processTurn(roundNumber, actor, playerDecisionProvider);
+                processTurn(roundNumber, actor, playerDecisionProvider, battleEventListener);
             }
 
-            spawnBackupIfNeeded();
-            events.add(createRoundSummary(roundNumber));
+            spawnBackupIfNeeded(battleEventListener);
+            emit(createRoundSummary(roundNumber), battleEventListener);
+            completeRound();
             if (isBattleOver()) {
                 break;
             }
         }
 
         if (player.isAlive() && livingEnemies().isEmpty() && reserveEnemies.isEmpty()) {
-            addVictoryNarration(roundsPlayed);
+            addVictoryNarration(roundsPlayed, battleEventListener);
+        } else if (!player.isAlive()) {
+            addDefeatNarration(roundsPlayed, battleEventListener);
         }
         return List.copyOf(events);
     }
 
-    private void processTurn(int roundNumber, Combatant actor, PlayerDecisionProvider playerDecisionProvider) {
+    public List<BattleEvent> runUntilBattleEnds(PlayerDecisionProvider playerDecisionProvider) {
+        return runUntilBattleEnds(playerDecisionProvider, BattleEventListener.NO_OP);
+    }
+
+    public List<BattleEvent> runUntilBattleEnds(
+        PlayerDecisionProvider playerDecisionProvider,
+        BattleEventListener battleEventListener
+    ) {
+        return runRounds(1000, playerDecisionProvider, battleEventListener);
+    }
+
+    private void processTurn(
+        int roundNumber,
+        Combatant actor,
+        PlayerDecisionProvider playerDecisionProvider,
+        BattleEventListener battleEventListener
+    ) {
         PlayerDecision decision = null;
         if (actor == player && actor.isAlive()) {
             decision = playerDecisionProvider.decide(roundNumber, player, livingEnemies());
@@ -78,24 +101,25 @@ public class BattleEngine implements ActionExecutionContext {
 
         if (!actor.isAlive()) {
             TurnWindow turnWindow = actor.openTurnWindow();
-            events.add(new SkippedTurnEvent(actor.getName(), "ELIMINATED", turnWindow.getNotes()));
+            emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", turnWindow.getNotes()), battleEventListener);
             return;
         }
 
         TurnWindow turnWindow = actor.openTurnWindow();
         if (turnWindow.isBlocked()) {
-            events.add(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), turnWindow.getNotes()));
+            emit(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), turnWindow.getNotes()), battleEventListener);
             return;
         }
 
         if (actor == player) {
-            Combatant target = findEnemy(decision.getTargetName());
-            events.addAll(decision.getAction().execute(this, player, target));
+            Combatant target = decision.targetReference().resolveFrom(livingEnemies());
+            emitAll(decision.action().execute(this, player, target), battleEventListener);
             return;
         }
 
-        if (player.isAlive()) {
-            events.addAll(enemyBasicAttack.execute(this, actor, player));
+        if (actor instanceof EnemyCombatant enemy && player.isAlive()) {
+            BattleAction action = enemy.selectAction(this);
+            emitAll(action.execute(this, enemy, player), battleEventListener);
         }
     }
 
@@ -103,7 +127,7 @@ public class BattleEngine implements ActionExecutionContext {
         if (actor != player || decision == null) {
             return true;
         }
-        return decision.getAction().advancesCooldown();
+        return decision.action().advancesCooldown();
     }
 
     private List<Combatant> combatantsAliveAtRoundStart() {
@@ -134,24 +158,6 @@ public class BattleEngine implements ActionExecutionContext {
         return inventory;
     }
 
-    @Override
-    public void activateSmokeBomb() {
-        smokeBombEnemyAttackCharges = 2;
-    }
-
-    @Override
-    public int adjustDamage(Combatant actor, Combatant target, int baseDamage, List<String> notes) {
-        if (actor != player && target == player && smokeBombEnemyAttackCharges > 0) {
-            smokeBombEnemyAttackCharges--;
-            notes.add("Smoke Bomb active");
-            if (smokeBombEnemyAttackCharges == 0) {
-                notes.add("Smoke Bomb effect expires");
-            }
-            return 0;
-        }
-        return baseDamage;
-    }
-
     private List<Combatant> livingEnemies() {
         List<Combatant> livingEnemies = new ArrayList<>();
         for (Combatant enemy : spawnedEnemies) {
@@ -162,27 +168,15 @@ public class BattleEngine implements ActionExecutionContext {
         return livingEnemies;
     }
 
-    private Combatant findEnemy(String targetName) {
-        if (targetName == null) {
-            return null;
-        }
-        for (Combatant enemy : spawnedEnemies) {
-            if (enemy.getName().equals(targetName)) {
-                return enemy;
-            }
-        }
-        throw new IllegalArgumentException("Unknown enemy target: " + targetName);
-    }
-
     private boolean isBattleOver() {
         return !player.isAlive() || (livingEnemies().isEmpty() && reserveEnemies.isEmpty());
     }
 
-    private void spawnBackupIfNeeded() {
+    private void spawnBackupIfNeeded(BattleEventListener battleEventListener) {
         if (!reserveEnemies.isEmpty() && initialWaveDefeated()) {
             spawnedEnemies.addAll(reserveEnemies);
             reserveEnemies.clear();
-            events.add(new NarrationEvent("Backup Spawn triggered: " + spawnedEnemiesAfterInitialWave()));
+            emit(new NarrationEvent("Backup Spawn triggered: " + spawnedEnemiesAfterInitialWave()), battleEventListener);
         }
     }
 
@@ -219,6 +213,13 @@ public class BattleEngine implements ActionExecutionContext {
         );
     }
 
+    private void completeRound() {
+        player.completeRound();
+        for (Combatant enemy : spawnedEnemies) {
+            enemy.completeRound();
+        }
+    }
+
     private CombatantSummary toSummary(Combatant combatant) {
         return new CombatantSummary(
             combatant.getName(),
@@ -231,15 +232,32 @@ public class BattleEngine implements ActionExecutionContext {
         );
     }
 
-    private void addVictoryNarration(int roundsPlayed) {
-        events.add(new NarrationEvent("Victory:"));
-        events.add(new NarrationEvent("Remaining HP: " + player.getCurrentHp() + " / " + player.getMaxHp()));
-        events.add(new NarrationEvent("Total Rounds: " + roundsPlayed));
+    private void addVictoryNarration(int roundsPlayed, BattleEventListener battleEventListener) {
+        emit(new NarrationEvent("Victory:"), battleEventListener);
+        emit(new NarrationEvent("Remaining HP: " + player.getCurrentHp() + " / " + player.getMaxHp()), battleEventListener);
+        emit(new NarrationEvent("Total Rounds: " + roundsPlayed), battleEventListener);
         for (ItemType itemType : inventory.snapshot().keySet()) {
-            events.add(new NarrationEvent("Remaining " + itemType.getDisplayName() + ": " + inventory.countOf(itemType)));
+            emit(new NarrationEvent("Remaining " + itemType.getDisplayName() + ": " + inventory.countOf(itemType)), battleEventListener);
         }
         if (player.getAttack() != player.getBaseAttack()) {
-            events.add(new NarrationEvent("Final " + player.getName() + " ATK: " + player.getAttack()));
+            emit(new NarrationEvent("Final " + player.getName() + " ATK: " + player.getAttack()), battleEventListener);
+        }
+    }
+
+    private void addDefeatNarration(int roundsPlayed, BattleEventListener battleEventListener) {
+        emit(new NarrationEvent("Defeat:"), battleEventListener);
+        emit(new NarrationEvent("Enemies remaining: " + livingEnemies().size()), battleEventListener);
+        emit(new NarrationEvent("Total Rounds Survived: " + roundsPlayed), battleEventListener);
+    }
+
+    private void emit(BattleEvent event, BattleEventListener battleEventListener) {
+        events.add(event);
+        battleEventListener.onEvent(event);
+    }
+
+    private void emitAll(List<BattleEvent> emittedEvents, BattleEventListener battleEventListener) {
+        for (BattleEvent emittedEvent : emittedEvents) {
+            emit(emittedEvent, battleEventListener);
         }
     }
 }
