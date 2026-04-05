@@ -95,17 +95,16 @@ public class BattleEngine implements ActionExecutionContext {
         if (actor == player && actor.isAlive()) {
             decision = playerDecisionProvider.decide(roundNumber, player, livingEnemies());
         }
-        if (actor.isAlive() && shouldAdvanceCooldown(actor, decision)) {
-            actor.beginTurn();
+        if (shouldAdvanceCooldown(actor, decision)) {
+            player.getSpecialSkill().advanceCooldown();
         }
 
+        TurnWindow turnWindow = actor.statusEffects().resolveTurnWindow();
         if (!actor.isAlive()) {
-            TurnWindow turnWindow = actor.openTurnWindow();
             emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", turnWindow.getNotes()), battleEventListener);
             return;
         }
 
-        TurnWindow turnWindow = actor.openTurnWindow();
         if (turnWindow.isBlocked()) {
             emit(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), turnWindow.getNotes()), battleEventListener);
             return;
@@ -124,10 +123,7 @@ public class BattleEngine implements ActionExecutionContext {
     }
 
     private boolean shouldAdvanceCooldown(Combatant actor, PlayerDecision decision) {
-        if (actor != player || decision == null) {
-            return true;
-        }
-        return decision.action().advancesCooldown();
+        return actor == player && decision != null && decision.action().advancesCooldown();
     }
 
     private List<Combatant> combatantsAliveAtRoundStart() {
@@ -214,9 +210,9 @@ public class BattleEngine implements ActionExecutionContext {
     }
 
     private void completeRound() {
-        player.completeRound();
+        player.statusEffects().onRoundCompleted();
         for (Combatant enemy : spawnedEnemies) {
-            enemy.completeRound();
+            enemy.statusEffects().onRoundCompleted();
         }
     }
 
