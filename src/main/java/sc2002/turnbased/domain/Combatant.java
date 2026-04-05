@@ -8,16 +8,14 @@ import java.util.Objects;
 public abstract class Combatant {
     private final String name;
     private final CombatStats baseStats;
-    private int attack;
-    private int currentHp;
+    private CombatStats currentStats;
     private int specialSkillCooldown;
     private final List<StatusEffect> statusEffects = new ArrayList<>();
 
     protected Combatant(String name, CombatStats baseStats) {
         this.name = Objects.requireNonNull(name, "name");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
-        this.attack = baseStats.attack();
-        this.currentHp = baseStats.maxHp();
+        this.currentStats = baseStats;
         this.specialSkillCooldown = 0;
     }
 
@@ -26,27 +24,31 @@ public abstract class Combatant {
     }
 
     public int getMaxHp() {
-        return baseStats.maxHp();
+        return currentStats.hitPoints().max();
     }
 
     public int getCurrentHp() {
-        return currentHp;
+        return currentStats.hitPoints().current();
+    }
+
+    public HitPoints getHitPoints() {
+        return currentStats.hitPoints();
     }
 
     public int getAttack() {
-        return attack;
+        return currentStats.attack().value();
     }
 
     public int getBaseAttack() {
-        return baseStats.attack();
+        return baseStats.attack().value();
     }
 
     public int getDefense() {
-        return baseStats.defense() + activeDefenseModifier();
+        return currentStats.defense().value() + activeDefenseModifier();
     }
 
     public int getSpeed() {
-        return baseStats.speed();
+        return currentStats.speed().value();
     }
 
     public int getSpecialSkillCooldown() {
@@ -54,7 +56,7 @@ public abstract class Combatant {
     }
 
     public boolean isAlive() {
-        return currentHp > 0;
+        return !getHitPoints().isDead();
     }
 
     public void beginTurn() {
@@ -68,7 +70,7 @@ public abstract class Combatant {
     }
 
     public void receiveDamage(int damage) {
-        currentHp = Math.max(0, currentHp - damage);
+        currentStats = currentStats.withHitPoints(currentStats.hitPoints().takeDamage(damage));
     }
 
     public int adjustIncomingDamage(Combatant attacker, int damage, List<String> notes) {
@@ -84,11 +86,11 @@ public abstract class Combatant {
     }
 
     public void heal(int amount) {
-        currentHp = Math.min(getMaxHp(), currentHp + amount);
+        currentStats = currentStats.withHitPoints(currentStats.hitPoints().heal(amount));
     }
 
     public void adjustAttack(int amount) {
-        attack += amount;
+        currentStats = currentStats.withAttack(currentStats.attack().adjustBy(amount));
     }
 
     public void addStatusEffect(StatusEffect statusEffect) {
