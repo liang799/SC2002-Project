@@ -67,6 +67,12 @@ java -cp out sc2002.turnbased.AppendixAScenariosVerifier
 java -cp out sc2002.turnbased.CustomBattleFlowVerifier
 ```
 
+Run the JUnit unit tests with Maven:
+
+```bash
+mvn test
+```
+
 ## Documentation
 
 The repository includes Mermaid source for the current UML artifacts:
