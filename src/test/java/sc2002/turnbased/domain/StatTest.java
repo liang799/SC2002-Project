@@ -9,13 +9,23 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class StatTest {
     @Test
-    void adjustByReturnsUpdatedStat() {
-        assertEquals(new Stat(50), new Stat(40).adjustBy(10));
+    void adjustBy_whenAmountIsPositive_returnsUpdatedStat() {
+        Stat stat = new Stat(40);
+
+        Stat updatedStat = stat.adjustBy(10);
+
+        assertEquals(new Stat(50), updatedStat);
     }
 
     @Test
-    void statCannotBecomeNegative() {
+    void constructor_whenValueIsNegative_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new Stat(-1));
-        assertThrows(IllegalArgumentException.class, () -> new Stat(5).adjustBy(-6));
+    }
+
+    @Test
+    void adjustBy_whenResultWouldBeNegative_throwsIllegalArgumentException() {
+        Stat stat = new Stat(5);
+
+        assertThrows(IllegalArgumentException.class, () -> stat.adjustBy(-6));
     }
 }

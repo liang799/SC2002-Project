@@ -8,45 +8,84 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class CombatantTest {
     @Test
-    void combatantHpMutationsFlowThroughHitPointsValueObject() {
-        Warrior warrior = new Warrior();
+    void receiveDamage_whenDamageIsApplied_updatesHitPointsByDamageAmount() {
+        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        HitPoints initialHitPoints = combatant.getHitPoints();
 
-        warrior.receiveDamage(90);
-        assertEquals(new HitPoints(170, 260), warrior.getHitPoints());
+        combatant.receiveDamage(35);
 
-        warrior.heal(500);
-        assertEquals(new HitPoints(260, 260), warrior.getHitPoints());
+        assertEquals(
+            new HitPoints(initialHitPoints.current() - 35, initialHitPoints.max()),
+            combatant.getHitPoints()
+        );
     }
 
     @Test
-    void attackBuffChangesCurrentAttackWithoutMutatingBaseAttack() {
-        Wizard wizard = new Wizard();
+    void heal_whenHealingWouldExceedMaxHp_capsCurrentHpAtMax() {
+        Combatant combatant = testCombatant(80, 100, 40, 20, 30);
 
-        wizard.adjustStat(StatType.ATTACK, 10);
+        combatant.heal(50);
 
-        assertEquals(60, wizard.getAttack());
-        assertEquals(50, wizard.getBaseAttack());
+        assertEquals(new HitPoints(100, 100), combatant.getHitPoints());
     }
 
     @Test
-    void genericStatResolutionSupportsFutureStatModifiers() {
-        Warrior warrior = new Warrior();
+    void adjustStat_whenAttackBuffIsApplied_increasesResolvedAttackWithoutChangingBaseAttack() {
+        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        int baseAttack = combatant.getBaseAttack();
 
-        warrior.adjustStat(StatType.SPEED, 5);
+        combatant.adjustStat(StatType.ATTACK, 10);
 
-        assertEquals(35, warrior.getSpeed());
+        assertEquals(baseAttack + 10, combatant.getAttack());
+        assertEquals(baseAttack, combatant.getBaseAttack());
     }
 
     @Test
-    void defendEffectTemporarilyRaisesDefense() {
-        Warrior warrior = new Warrior();
+    void getSpeed_whenPersistentModifierIsApplied_returnsModifiedSpeed() {
+        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        int baseSpeed = combatant.getSpeed();
 
-        assertEquals(20, warrior.getDefense());
-        warrior.addStatusEffect(new DefendStatusEffect(1));
-        assertEquals(30, warrior.getDefense());
+        combatant.adjustStat(StatType.SPEED, 5);
 
-        warrior.statusEffects().onRoundCompleted();
+        assertEquals(baseSpeed + 5, combatant.getSpeed());
+    }
 
-        assertEquals(20, warrior.getDefense());
+    @Test
+    void getDefense_whenDefendStatusEffectIsActive_includesTemporaryDefenseBonus() {
+        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        int baseDefense = combatant.getDefense();
+
+        combatant.addStatusEffect(new DefendStatusEffect(1));
+
+        assertEquals(baseDefense + 10, combatant.getDefense());
+    }
+
+    @Test
+    void getDefense_whenDefendStatusEffectExpires_returnsToBaseDefense() {
+        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        int baseDefense = combatant.getDefense();
+
+        combatant.addStatusEffect(new DefendStatusEffect(1));
+        combatant.statusEffects().onRoundCompleted();
+
+        assertEquals(baseDefense, combatant.getDefense());
+    }
+
+    private static Combatant testCombatant(int currentHp, int maxHp, int attack, int defense, int speed) {
+        return new TestCombatant(
+            "Test Combatant",
+            CombatStats.of(
+                new HitPoints(currentHp, maxHp),
+                new Stat(attack),
+                new Stat(defense),
+                new Stat(speed)
+            )
+        );
+    }
+
+    private static final class TestCombatant extends Combatant {
+        private TestCombatant(String name, CombatStats baseStats) {
+            super(name, baseStats);
+        }
     }
 }
