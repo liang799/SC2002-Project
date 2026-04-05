@@ -16,6 +16,7 @@ import sc2002.turnbased.domain.Wolf;
 import sc2002.turnbased.engine.DifficultyLevel;
 import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerType;
+import sc2002.turnbased.engine.WaveSpec;
 
 public class ConsoleBattleUi {
     private final Scanner scanner;
@@ -65,12 +66,62 @@ public class ConsoleBattleUi {
         return PlayerType.values()[promptForSelection("Choose a player class", options)];
     }
 
+    public DifficultyLevel promptForDifficultyOrCustom() {
+        List<String> options = new ArrayList<>();
+        for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
+            options.add(difficultyLevel.getDisplayName());
+        }
+        options.add("Custom Mode (build your own waves)");
+        int choice = promptForSelection("Choose a difficulty level", options);
+        if (choice == DifficultyLevel.values().length) {
+            return null; // signals custom mode
+        }
+        return DifficultyLevel.values()[choice];
+    }
+
+    @Deprecated
     public DifficultyLevel promptForDifficultyLevel() {
         List<String> options = new ArrayList<>();
         for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
             options.add(difficultyLevel.getDisplayName());
         }
         return DifficultyLevel.values()[promptForSelection("Choose a difficulty level", options)];
+    }
+
+    public int promptForWaveCount() {
+        return promptForSelection("How many waves?", List.of("1 wave", "2 waves")) + 1;
+    }
+
+    public WaveSpec promptForWaveSpec(int waveNumber) {
+        out.println("Configure Wave " + waveNumber + " (max 4 enemies total, max 3 of each type):");
+        while (true) {
+            int goblinCount = promptForCount("  Goblins (HP:55 ATK:35 DEF:15 SPD:25)", 0, 3);
+            int wolfCount   = promptForCount("  Wolves  (HP:40 ATK:45 DEF:5  SPD:35)", 0, 3);
+            if (goblinCount + wolfCount == 0) {
+                out.println("  A wave needs at least 1 enemy. Please try again.");
+                continue;
+            }
+            if (goblinCount + wolfCount > 4) {
+                out.println("  That's " + (goblinCount + wolfCount) + " enemies - maximum is 4. Please try again.");
+                continue;
+            }
+            return new WaveSpec(goblinCount, wolfCount);
+        }
+    }
+
+    private int promptForCount(String label, int min, int max) {
+        while (true) {
+            out.print(label + " [" + min + "-" + max + "]: ");
+            String input = scanner.nextLine().trim();
+            try {
+                int value = Integer.parseInt(input);
+                if (value >= min && value <= max) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            out.println("  Please enter a number between " + min + " and " + max + ".");
+        }
     }
 
     public List<ItemType> promptForItems(int itemCount) {
