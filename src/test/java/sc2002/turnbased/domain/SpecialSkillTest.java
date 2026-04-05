@@ -12,21 +12,47 @@ import sc2002.turnbased.actions.ShieldBashAction;
 @Tag("unit")
 class SpecialSkillTest {
     @Test
-    void specialSkillTracksCooldownOutsideCombatant() {
-        SpecialSkill specialSkill = new SpecialSkill(new ShieldBashAction(), 3);
+    void isAvailable_whenCooldownHasNotBeenTriggered_returnsTrue() {
+        SpecialSkill specialSkill = specialSkillWithCooldown(3);
 
-        assertTrue(specialSkill.isAvailable());
+        boolean available = specialSkill.isAvailable();
+
+        assertTrue(available);
+    }
+
+    @Test
+    void triggerCooldown_whenCalled_setsCooldownRemainingToConfiguredTurns() {
+        SpecialSkill specialSkill = specialSkillWithCooldown(3);
 
         specialSkill.triggerCooldown();
 
         assertFalse(specialSkill.isAvailable());
         assertEquals(3, specialSkill.cooldownRemaining());
+    }
+
+    @Test
+    void advanceCooldown_whenCooldownIsActive_decrementsRemainingTurns() {
+        SpecialSkill specialSkill = specialSkillWithCooldown(3);
+        specialSkill.triggerCooldown();
 
         specialSkill.advanceCooldown();
-        specialSkill.advanceCooldown();
+
+        assertFalse(specialSkill.isAvailable());
+        assertEquals(2, specialSkill.cooldownRemaining());
+    }
+
+    @Test
+    void advanceCooldown_whenFinalTurnElapses_makesSkillAvailableAgain() {
+        SpecialSkill specialSkill = specialSkillWithCooldown(1);
+        specialSkill.triggerCooldown();
+
         specialSkill.advanceCooldown();
 
         assertTrue(specialSkill.isAvailable());
         assertEquals(0, specialSkill.cooldownRemaining());
+    }
+
+    private static SpecialSkill specialSkillWithCooldown(int cooldownTurns) {
+        return new SpecialSkill(new ShieldBashAction(), cooldownTurns);
     }
 }
