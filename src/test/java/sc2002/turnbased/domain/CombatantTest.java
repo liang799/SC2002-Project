@@ -20,10 +20,19 @@ class CombatantTest {
     void attackBuffChangesCurrentAttackWithoutMutatingBaseAttack() {
         Wizard wizard = new Wizard();
 
-        wizard.adjustAttack(10);
+        wizard.adjustStat(StatType.ATTACK, 10);
 
         assertEquals(60, wizard.getAttack());
         assertEquals(50, wizard.getBaseAttack());
+    }
+
+    @Test
+    void genericStatResolutionSupportsFutureStatModifiers() {
+        Warrior warrior = new Warrior();
+
+        warrior.adjustStat(StatType.SPEED, 5);
+
+        assertEquals(35, warrior.getSpeed());
     }
 
     @Test
@@ -34,7 +43,7 @@ class CombatantTest {
         warrior.addStatusEffect(new DefendStatusEffect(1));
         assertEquals(30, warrior.getDefense());
 
-        warrior.completeRound();
+        warrior.statusEffects().onRoundCompleted();
 
         assertEquals(20, warrior.getDefense());
     }

@@ -5,7 +5,7 @@ public interface StatusEffect {
 
     TurnEffectResolution onTurnOpportunity();
 
-    default int getDefenseModifier() {
+    default int statModifier(StatType statType) {
         return 0;
     }
 
