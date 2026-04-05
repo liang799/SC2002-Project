@@ -59,19 +59,20 @@ java -cp out sc2002.turnbased.ui.EasyRoundsDemo
 
 ## Validation
 
-Run the existing verifiers with:
-
-```powershell
-java -cp out sc2002.turnbased.EasyLevelRoundsVerifier
-java -cp out sc2002.turnbased.AppendixAScenariosVerifier
-java -cp out sc2002.turnbased.CustomBattleFlowVerifier
-```
-
-Run the JUnit unit tests with Maven:
+Run the automated test suite with:
 
 ```bash
 mvn test
 ```
+
+The test pyramid is organized as:
+
+- `unit`
+  - focused domain and value-object tests
+- `integration`
+  - deterministic engine and scenario-script coverage
+- `e2e`
+  - full battle-flow validation across setup, engine, decisions, and reporting
 
 ## Documentation
 
