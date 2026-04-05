@@ -1,6 +1,7 @@
 package sc2002.turnbased.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static sc2002.turnbased.support.TestCombatantBuilder.aCombatant;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class CombatantTest {
     @Test
     void receiveDamage_whenDamageIsApplied_updatesHitPointsByDamageAmount() {
-        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        Combatant combatant = aCombatant().build();
         HitPoints initialHitPoints = combatant.getHitPoints();
 
         combatant.receiveDamage(35);
@@ -22,7 +23,9 @@ class CombatantTest {
 
     @Test
     void heal_whenHealingWouldExceedMaxHp_capsCurrentHpAtMax() {
-        Combatant combatant = testCombatant(80, 100, 40, 20, 30);
+        Combatant combatant = aCombatant()
+            .withCurrentHp(80)
+            .build();
 
         combatant.heal(50);
 
@@ -31,7 +34,7 @@ class CombatantTest {
 
     @Test
     void adjustStat_whenAttackBuffIsApplied_increasesResolvedAttackWithoutChangingBaseAttack() {
-        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        Combatant combatant = aCombatant().build();
         int baseAttack = combatant.getBaseAttack();
 
         combatant.adjustStat(StatType.ATTACK, 10);
@@ -42,7 +45,7 @@ class CombatantTest {
 
     @Test
     void getSpeed_whenPersistentModifierIsApplied_returnsModifiedSpeed() {
-        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        Combatant combatant = aCombatant().build();
         int baseSpeed = combatant.getSpeed();
 
         combatant.adjustStat(StatType.SPEED, 5);
@@ -52,7 +55,7 @@ class CombatantTest {
 
     @Test
     void getDefense_whenDefendStatusEffectIsActive_includesTemporaryDefenseBonus() {
-        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        Combatant combatant = aCombatant().build();
         int baseDefense = combatant.getDefense();
 
         combatant.addStatusEffect(new DefendStatusEffect(1));
@@ -62,30 +65,12 @@ class CombatantTest {
 
     @Test
     void getDefense_whenDefendStatusEffectExpires_returnsToBaseDefense() {
-        Combatant combatant = testCombatant(100, 100, 40, 20, 30);
+        Combatant combatant = aCombatant().build();
         int baseDefense = combatant.getDefense();
 
         combatant.addStatusEffect(new DefendStatusEffect(1));
         combatant.statusEffects().onRoundCompleted();
 
         assertEquals(baseDefense, combatant.getDefense());
-    }
-
-    private static Combatant testCombatant(int currentHp, int maxHp, int attack, int defense, int speed) {
-        return new TestCombatant(
-            "Test Combatant",
-            CombatStats.of(
-                new HitPoints(currentHp, maxHp),
-                new Stat(attack),
-                new Stat(defense),
-                new Stat(speed)
-            )
-        );
-    }
-
-    private static final class TestCombatant extends Combatant {
-        private TestCombatant(String name, CombatStats baseStats) {
-            super(name, baseStats);
-        }
     }
 }
