@@ -1,7 +1,7 @@
 package sc2002.turnbased.domain;
 
 public class Goblin extends EnemyCombatant {
-    private static final CombatStats GOBLIN_STATS = new CombatStats(
+    private static final CombatStats GOBLIN_STATS = CombatStats.of(
         HitPoints.full(55),
         new Stat(35),
         new Stat(15),
