@@ -1,6 +1,5 @@
 package sc2002.turnbased.domain;
 
-import sc2002.turnbased.actions.BattleAction;
 import sc2002.turnbased.actions.ShieldBashAction;
 
 public class Warrior extends PlayerCharacter {
@@ -12,11 +11,6 @@ public class Warrior extends PlayerCharacter {
     );
 
     public Warrior() {
-        super("Warrior", WARRIOR_STATS);
-    }
-
-    @Override
-    public BattleAction createSpecialSkillAction(boolean startsCooldown) {
-        return new ShieldBashAction(startsCooldown);
+        super("Warrior", WARRIOR_STATS, new SpecialSkill(new ShieldBashAction(), 3));
     }
 }

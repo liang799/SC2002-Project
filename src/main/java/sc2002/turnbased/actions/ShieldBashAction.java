@@ -9,16 +9,6 @@ import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 
 public class ShieldBashAction implements BattleAction {
-    private final boolean startsCooldown;
-
-    public ShieldBashAction() {
-        this(true);
-    }
-
-    public ShieldBashAction(boolean startsCooldown) {
-        this.startsCooldown = startsCooldown;
-    }
-
     @Override
     public String getName() {
         return "Shield Bash";
@@ -28,7 +18,7 @@ public class ShieldBashAction implements BattleAction {
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         int baseDamage = Math.max(0, actor.getAttack() - target.getDefense());
         List<String> notes = new ArrayList<>();
-        int damage = target.adjustIncomingDamage(actor, baseDamage, notes);
+        int damage = target.statusEffects().adjustIncomingDamage(target, actor, baseDamage, notes);
         int hpBefore = target.getCurrentHp();
         target.receiveDamage(damage);
 
@@ -37,9 +27,6 @@ public class ShieldBashAction implements BattleAction {
             notes.add(target.getName() + " STUNNED (2 turns)");
         } else {
             notes.add("ELIMINATED");
-        }
-        if (startsCooldown) {
-            actor.setSpecialSkillCooldown(3);
         }
 
         return List.of(new ActionEvent(
