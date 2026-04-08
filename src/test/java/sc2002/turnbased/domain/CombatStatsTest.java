@@ -11,41 +11,35 @@ class CombatStatsTest {
     void of_validStats_returnsFixedValueObjects() {
         // arrange
         CombatStats combatStats = CombatStats.of(
-            new HitPoints(120, 120),
             new Stat(45),
             new Stat(15),
             new Stat(25)
         );
 
         // act
-        HitPoints hitPoints = combatStats.hitPoints();
         Stat attack = combatStats.attack();
         Stat defense = combatStats.defense();
         Stat speed = combatStats.speed();
 
         // assert
-        assertEquals(new HitPoints(120, 120), hitPoints);
         assertEquals(new Stat(45), attack);
         assertEquals(new Stat(15), defense);
         assertEquals(new Stat(25), speed);
     }
 
     @Test
-    void withHitPointsAndWithStat_requestedUpdates_returnsUpdatedCopy() {
+    void withStat_requestedUpdate_returnsUpdatedCopy() {
         // arrange
         CombatStats combatStats = CombatStats.of(
-            new HitPoints(120, 120),
             new Stat(45),
             new Stat(15),
             new Stat(25)
         );
 
         // act
-        CombatStats updated = combatStats.withHitPoints(new HitPoints(70, 120))
-            .withStat(StatType.ATTACK, new Stat(55));
+        CombatStats updated = combatStats.withStat(StatType.ATTACK, new Stat(55));
 
         // assert
-        assertEquals(new HitPoints(70, 120), updated.hitPoints());
         assertEquals(new Stat(55), updated.attack());
         assertEquals(new Stat(15), updated.defense());
         assertEquals(new Stat(25), updated.speed());
@@ -55,7 +49,6 @@ class CombatStatsTest {
     void apply_composedModifiers_returnsExpectedResolvedStats() {
         // arrange
         CombatStats combatStats = CombatStats.of(
-            new HitPoints(120, 120),
             new Stat(40),
             new Stat(10),
             new Stat(15)
