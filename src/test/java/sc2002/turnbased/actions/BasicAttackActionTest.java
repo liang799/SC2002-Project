@@ -11,15 +11,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
+import sc2002.turnbased.support.TestActionExecutionContext;
 import sc2002.turnbased.support.TestCombatantBuilder;
 
 @Tag("unit")
 class BasicAttackActionTest {
     @Test
-    void execute_WhenUserSelectedTarget_DealsDamageToSelectedTargetOnly() {
+    void execute_WhenUserSelectsTarget_DealsDamageToSelectedTargetOnly() {
         // arrange
         BasicAttackAction action = new BasicAttackAction();
         Combatant attacker = aCombatantNamed("Warrior").build();
@@ -30,7 +30,7 @@ class BasicAttackActionTest {
         Combatant otherEnemy = aCombatantNamed("Wolf").build();
 
         // act
-        List<BattleEvent> events = action.execute(new StubActionExecutionContext(List.of(selectedTarget, otherEnemy)), attacker, selectedTarget);
+        List<BattleEvent> events = action.execute(new TestActionExecutionContext(List.of(selectedTarget, otherEnemy)), attacker, selectedTarget);
         ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
 
         // assert
@@ -55,7 +55,7 @@ class BasicAttackActionTest {
             .build();
 
         // act
-        List<BattleEvent> events = action.execute(new StubActionExecutionContext(List.of(target)), attacker, target);
+        List<BattleEvent> events = action.execute(new TestActionExecutionContext(List.of(target)), attacker, target);
         ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
 
         // assert
@@ -78,7 +78,7 @@ class BasicAttackActionTest {
             .build();
 
         // act
-        List<BattleEvent> events = action.execute(new StubActionExecutionContext(List.of(target)), attacker, target);
+        List<BattleEvent> events = action.execute(new TestActionExecutionContext(List.of(target)), attacker, target);
         ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
 
         // assert
@@ -89,22 +89,5 @@ class BasicAttackActionTest {
 
     private TestCombatantBuilder aCombatantNamed(String name) {
         return TestCombatantBuilder.aCombatant().named(name);
-    }
-
-    private record StubActionExecutionContext(List<Combatant> livingEnemies) implements ActionExecutionContext {
-        @Override
-        public List<Combatant> getLivingEnemies() {
-            return livingEnemies();
-        }
-
-        @Override
-        public List<Combatant> getLivingEnemiesInTurnOrder() {
-            return livingEnemies();
-        }
-
-        @Override
-        public Inventory getInventory() {
-            return new Inventory();
-        }
     }
 }
