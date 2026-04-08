@@ -10,6 +10,7 @@ import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
+import sc2002.turnbased.domain.status.StatusEffectObservationScope;
 import sc2002.turnbased.domain.status.TurnWindow;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.CombatantSummary;
@@ -99,15 +100,17 @@ public class BattleEngine implements ActionExecutionContext {
             player.getSpecialSkill().advanceCooldown();
         }
 
-        TurnWindow turnWindow = actor.statusEffects().resolveTurnWindow();
-        if (!actor.isAlive()) {
-            emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", turnWindow.getNotes()), battleEventListener);
-            return;
-        }
+        try (StatusEffectObservationScope observation = actor.statusEffects().openObservation()) {
+            TurnWindow turnWindow = actor.statusEffects().resolveTurnWindow(actor);
+            if (!actor.isAlive()) {
+                emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", observation.observedEvents()), battleEventListener);
+                return;
+            }
 
-        if (turnWindow.isBlocked()) {
-            emit(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), turnWindow.getNotes()), battleEventListener);
-            return;
+            if (turnWindow.isBlocked()) {
+                emit(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), observation.observedEvents()), battleEventListener);
+                return;
+            }
         }
 
         if (actor == player) {
@@ -210,9 +213,9 @@ public class BattleEngine implements ActionExecutionContext {
     }
 
     private void completeRound() {
-        player.statusEffects().onRoundCompleted();
+        player.statusEffects().onRoundCompleted(player);
         for (Combatant enemy : spawnedEnemies) {
-            enemy.statusEffects().onRoundCompleted();
+            enemy.statusEffects().onRoundCompleted(enemy);
         }
     }
 

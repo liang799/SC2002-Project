@@ -1,6 +1,6 @@
 package sc2002.turnbased.domain;
 
-import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public class Warrior extends PlayerCharacter {
     private static final HitPoints WARRIOR_HIT_POINTS = HitPoints.full(260);
@@ -10,7 +10,7 @@ public class Warrior extends PlayerCharacter {
         .speed(30)
         .build();
 
-    public Warrior() {
-        super("Warrior", WARRIOR_HIT_POINTS, WARRIOR_STATS, new SpecialSkill(new ShieldBashAction(), 3));
+    public Warrior(StatusEffectRegistry statusEffectRegistry, SpecialSkill specialSkill) {
+        super("Warrior", WARRIOR_HIT_POINTS, WARRIOR_STATS, statusEffectRegistry, specialSkill);
     }
 }

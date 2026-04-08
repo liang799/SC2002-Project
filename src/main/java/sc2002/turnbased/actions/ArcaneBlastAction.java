@@ -3,8 +3,9 @@ package sc2002.turnbased.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectObservationScope;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
@@ -32,12 +33,12 @@ public class ArcaneBlastAction implements BattleAction {
             int hpBefore = enemy.getCurrentHp();
             enemy.receiveDamage(damage);
 
-            List<String> notes = new ArrayList<>();
+            List<sc2002.turnbased.domain.status.event.StatusEffectEvent> statusEffectEvents = List.of();
             if (!enemy.isAlive()) {
-                notes.add("ELIMINATED");
-                int attackBefore = actor.getAttack();
-                actor.addStatusEffect(new ArcanePowerStatusEffect(10));
-                notes.add(actor.getName() + " ATK: " + attackBefore + " -> " + actor.getAttack() + " (+10)");
+                try (StatusEffectObservationScope observation = actor.statusEffects().openObservation()) {
+                    actor.addStatusEffect(new ArcanePowerStatusEffect(10));
+                    statusEffectEvents = observation.observedEvents();
+                }
             }
 
             events.add(new ActionEvent(
@@ -49,7 +50,8 @@ public class ArcaneBlastAction implements BattleAction {
                 attackUsed,
                 enemy.getDefense(),
                 damage,
-                notes
+                !enemy.isAlive(),
+                statusEffectEvents
             ));
         }
 

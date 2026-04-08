@@ -2,6 +2,7 @@ package sc2002.turnbased.domain.status;
 
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.StatType;
+import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
 
 public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect, MergeableStatusEffect {
     private final int attackBonus;
@@ -14,8 +15,18 @@ public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect
     }
 
     @Override
+    public StatusEffectKind kind() {
+        return StatusEffectKind.ARCANE_POWER;
+    }
+
+    @Override
     public String name() {
         return "ARCANE POWER +" + attackBonus;
+    }
+
+    @Override
+    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
+        eventPublisher.publish(new ArcanePowerAppliedEvent(ownerName, attackBonus));
     }
 
     @Override

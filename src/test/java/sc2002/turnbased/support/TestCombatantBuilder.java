@@ -3,7 +3,8 @@ package sc2002.turnbased.support;
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.HitPoints;
-import sc2002.turnbased.domain.Stat;
+import sc2002.turnbased.domain.status.StatusEffectEventPublisher;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public final class TestCombatantBuilder {
     private String name = "Test Combatant";
@@ -58,13 +59,14 @@ public final class TestCombatantBuilder {
                 .attack(attack)
                 .defense(defense)
                 .speed(speed)
-                .build()
+                .build(),
+            new StatusEffectRegistry(new StatusEffectEventPublisher())
         );
     }
 
     private static final class TestCombatant extends Combatant {
-        private TestCombatant(String name, HitPoints hitPoints, CombatStats baseStats) {
-            super(name, hitPoints, baseStats);
+        private TestCombatant(String name, HitPoints hitPoints, CombatStats baseStats, StatusEffectRegistry statusEffectRegistry) {
+            super(name, hitPoints, baseStats, statusEffectRegistry);
         }
     }
 }

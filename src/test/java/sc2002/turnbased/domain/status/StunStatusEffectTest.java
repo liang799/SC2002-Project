@@ -5,41 +5,44 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.support.FakeStatusEffectEventPublisher;
+import sc2002.turnbased.support.TestCombatantBuilder;
 
 @Tag("unit")
 class StunStatusEffectTest {
     @Test
     void onTurnOpportunity_whenMultipleTurnsRemain_blocksAndExpiresOnLastBlockedTurn() {
         StunStatusEffect effect = new StunStatusEffect(2);
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
-        TurnEffectResolution firstResolution = effect.onTurnOpportunity();
+        TurnEffectResolution firstResolution = effect.onTurnOpportunity(owner, eventPublisher);
 
         assertEquals("STUNNED", effect.name());
         assertTrue(firstResolution.blocksAction());
         assertEquals("STUNNED", firstResolution.blockerLabel());
-        assertEquals(List.of(), firstResolution.notes());
         assertFalse(effect.isExpired());
 
-        TurnEffectResolution secondResolution = effect.onTurnOpportunity();
+        TurnEffectResolution secondResolution = effect.onTurnOpportunity(owner, eventPublisher);
 
         assertTrue(secondResolution.blocksAction());
-        assertEquals(List.of("Stun expires"), secondResolution.notes());
         assertTrue(effect.isExpired());
     }
 
     @Test
     void onTurnOpportunity_whenAlreadyExpired_allowsTurnWithoutNotes() {
         StunStatusEffect effect = new StunStatusEffect(0);
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
-        TurnEffectResolution resolution = effect.onTurnOpportunity();
+        TurnEffectResolution resolution = effect.onTurnOpportunity(owner, eventPublisher);
 
         assertFalse(resolution.blocksAction());
         assertNull(resolution.blockerLabel());
-        assertEquals(List.of(), resolution.notes());
         assertTrue(effect.isExpired());
     }
 }

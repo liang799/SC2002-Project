@@ -10,15 +10,17 @@ import org.junit.jupiter.api.Test;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.Wizard;
+import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.support.TestCombatantBuilder;
+import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class ArcaneBlastActionTest {
     @Test
     void execute_whenEnemiesAreEliminated_addsAttackBuffThroughStatusEffects() {
-        Wizard wizard = new Wizard();
+        Wizard wizard = TestDependencies.wizard();
         Combatant goblin = TestCombatantBuilder.aCombatant()
             .named("Goblin")
             .withCurrentHp(30)
@@ -39,8 +41,10 @@ class ArcaneBlastActionTest {
         assertEquals(70, wizard.getAttack());
         assertEquals(50, wizard.getBaseAttack());
         assertEquals(List.of("ARCANE POWER +20"), wizard.getActiveStatusNames());
-        assertEquals(List.of("ELIMINATED", "Wizard ATK: 50 -> 60 (+10)"), ((ActionEvent) events.get(1)).getNotes());
-        assertEquals(List.of("ELIMINATED", "Wizard ATK: 60 -> 70 (+10)"), ((ActionEvent) events.get(2)).getNotes());
+        assertEquals(true, ((ActionEvent) events.get(1)).isTargetEliminated());
+        assertEquals(List.of(new ArcanePowerAppliedEvent("Wizard", 10)), ((ActionEvent) events.get(1)).getStatusEffectEvents());
+        assertEquals(true, ((ActionEvent) events.get(2)).isTargetEliminated());
+        assertEquals(List.of(new ArcanePowerAppliedEvent("Wizard", 20)), ((ActionEvent) events.get(2)).getStatusEffectEvents());
     }
 
     private record TestActionExecutionContext(List<Combatant> livingEnemiesInTurnOrder) implements ActionExecutionContext {

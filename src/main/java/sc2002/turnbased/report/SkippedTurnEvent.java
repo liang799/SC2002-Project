@@ -1,18 +1,19 @@
 package sc2002.turnbased.report;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
+import sc2002.turnbased.domain.status.event.StatusEffectEvent;
 
 public class SkippedTurnEvent implements BattleEvent {
     private final String combatantName;
     private final String reason;
-    private final List<String> notes;
+    private final List<StatusEffectEvent> statusEffectEvents;
 
-    public SkippedTurnEvent(String combatantName, String reason, List<String> notes) {
+    public SkippedTurnEvent(String combatantName, String reason, List<StatusEffectEvent> statusEffectEvents) {
         this.combatantName = combatantName;
         this.reason = reason;
-        this.notes = new ArrayList<>(notes);
+        this.statusEffectEvents = List.copyOf(Objects.requireNonNull(statusEffectEvents, "statusEffectEvents"));
     }
 
     public String getCombatantName() {
@@ -23,7 +24,7 @@ public class SkippedTurnEvent implements BattleEvent {
         return reason;
     }
 
-    public List<String> getNotes() {
-        return Collections.unmodifiableList(notes);
+    public List<StatusEffectEvent> getStatusEffectEvents() {
+        return statusEffectEvents;
     }
 }

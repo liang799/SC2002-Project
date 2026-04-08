@@ -4,8 +4,10 @@ import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.status.DefendStatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectObservationScope;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
+import sc2002.turnbased.report.StatusEffectReportEvent;
 
 public class DefendAction implements BattleAction {
     @Override
@@ -20,9 +22,12 @@ public class DefendAction implements BattleAction {
 
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
-        actor.addStatusEffect(new DefendStatusEffect(2));
-        return List.of(new NarrationEvent(
-            actor.getName() + " -> Defend: DEF +10 for current and next round"
-        ));
+        try (StatusEffectObservationScope observation = actor.statusEffects().openObservation()) {
+            actor.addStatusEffect(new DefendStatusEffect(2));
+            return List.of(
+                new NarrationEvent(actor.getName() + " -> Defend"),
+                new StatusEffectReportEvent(observation.observedEvents())
+            );
+        }
     }
 }

@@ -2,6 +2,7 @@ package sc2002.turnbased.domain.status;
 
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.StatType;
+import sc2002.turnbased.domain.status.event.DefendAppliedEvent;
 
 public class DefendStatusEffect implements StatusEffect, StatModifierEffect {
     private int roundsRemaining;
@@ -11,8 +12,18 @@ public class DefendStatusEffect implements StatusEffect, StatModifierEffect {
     }
 
     @Override
+    public StatusEffectKind kind() {
+        return StatusEffectKind.DEFEND;
+    }
+
+    @Override
     public String name() {
         return "DEFENDING";
+    }
+
+    @Override
+    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
+        eventPublisher.publish(new DefendAppliedEvent(ownerName, 10, roundsRemaining));
     }
 
     @Override

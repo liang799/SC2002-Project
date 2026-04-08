@@ -27,7 +27,13 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 
+import sc2002.turnbased.actions.ArcaneBlastAction;
+import sc2002.turnbased.actions.BasicAttackAction;
+import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.domain.CombatantFactory;
+import sc2002.turnbased.domain.DefaultCombatantFactory;
 import sc2002.turnbased.domain.ItemType;
+import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleEventListener;
 import sc2002.turnbased.engine.BattleSetup;
@@ -57,7 +63,7 @@ public class TurnBasedArenaGui extends JFrame {
 
     private final JTextArea log = new JTextArea();
     private final BattleConsoleFormatter formatter = new BattleConsoleFormatter();
-    private final BattleSetupFactory setupFactory = new BattleSetupFactory();
+    private final BattleSetupFactory setupFactory;
     private final ExecutorService battleExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "battle-engine");
         t.setDaemon(true);
@@ -76,8 +82,9 @@ public class TurnBasedArenaGui extends JFrame {
     private JComboBox<ItemType> item1Box;
     private JComboBox<ItemType> item2Box;
 
-    public TurnBasedArenaGui() {
+    public TurnBasedArenaGui(BattleSetupFactory setupFactory) {
         super("SC2002 Turn-Based Arena");
+        this.setupFactory = setupFactory;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(8, 8));
 
@@ -345,7 +352,13 @@ public class TurnBasedArenaGui extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            TurnBasedArenaGui w = new TurnBasedArenaGui();
+            CombatantFactory combatantFactory = new DefaultCombatantFactory(
+                new DefaultStatusEffectRegistryFactory(),
+                new BasicAttackAction(),
+                new ShieldBashAction(),
+                new ArcaneBlastAction()
+            );
+            TurnBasedArenaGui w = new TurnBasedArenaGui(new BattleSetupFactory(combatantFactory));
             w.setVisible(true);
             w.appendLog("SC2002 Turn-Based Combat Arena (GUI)\n"
                 + "Choose class, difficulty (or Custom Mode), two items, then Start battle.\n"

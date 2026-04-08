@@ -8,36 +8,52 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Goblin;
 import sc2002.turnbased.domain.Warrior;
+import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
+import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
+import sc2002.turnbased.support.TestCombatantBuilder;
+import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class StatusEffectRegistryTest {
     @Test
     void resolveTurnWindow_whenStunBlocksNextTurn_marksTurnBlockedAndExpiresEffect() {
-        StatusEffectRegistry registry = new StatusEffectRegistry();
+        StatusEffectRegistry registry = TestDependencies.registry();
+        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
 
-        registry.add(new StunStatusEffect(1));
+        registry.add(owner, new StunStatusEffect(1));
 
-        TurnWindow turnWindow = registry.resolveTurnWindow();
+        try (StatusEffectObservationScope observation = registry.openObservation()) {
+            TurnWindow turnWindow = registry.resolveTurnWindow(owner);
 
-        assertTrue(turnWindow.isBlocked());
-        assertEquals("STUNNED", turnWindow.getBlockerLabel());
-        assertEquals(List.of("Stun expires"), turnWindow.getNotes());
-        assertEquals(List.of(), registry.activeStatusNames(true));
+            assertTrue(turnWindow.isBlocked());
+            assertEquals("STUNNED", turnWindow.getBlockerLabel());
+            assertEquals(List.of(new StatusEffectExpiredEvent("Owner", StatusEffectKind.STUN)), observation.observedEvents());
+            assertEquals(List.of(), registry.activeStatusNames("Owner", true));
+        }
     }
 
     @Test
     void adjustIncomingDamage_whenSmokeBombBlocksEnemyAttack_returnsZeroAndExpiresEffect() {
-        Warrior warrior = new Warrior();
-        Goblin goblin = new Goblin("Goblin");
+        Warrior warrior = TestDependencies.warrior();
+        Goblin goblin = TestDependencies.goblin("Goblin");
 
         warrior.addStatusEffect(new SmokeBombStatusEffect(1));
 
-        DamageAdjustment adjustment = warrior.statusEffects().adjustIncomingDamage(warrior, goblin, 15);
+        try (StatusEffectObservationScope observation = warrior.statusEffects().openObservation()) {
+            DamageAdjustment adjustment = warrior.statusEffects().adjustIncomingDamage(warrior, goblin, 15);
 
-        assertEquals(0, adjustment.damage());
-        assertEquals(List.of("Smoke Bomb active", "Smoke Bomb effect expires"), adjustment.notes());
-        assertEquals(List.of(), warrior.getActiveStatusNames());
+            assertEquals(0, adjustment.damage());
+            assertEquals(
+                List.of(
+                    new SmokeBombActivatedEvent("Warrior", "Goblin", 0),
+                    new StatusEffectExpiredEvent("Warrior", StatusEffectKind.SMOKE_BOMB)
+                ),
+                observation.observedEvents()
+            );
+            assertEquals(List.of(), warrior.getActiveStatusNames());
+        }
     }
 }

@@ -1,6 +1,6 @@
 package sc2002.turnbased.domain;
 
-import sc2002.turnbased.actions.ArcaneBlastAction;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public class Wizard extends PlayerCharacter {
     private static final HitPoints WIZARD_HIT_POINTS = HitPoints.full(200);
@@ -10,7 +10,7 @@ public class Wizard extends PlayerCharacter {
         .speed(20)
         .build();
 
-    public Wizard() {
-        super("Wizard", WIZARD_HIT_POINTS, WIZARD_STATS, new SpecialSkill(new ArcaneBlastAction(), 3));
+    public Wizard(StatusEffectRegistry statusEffectRegistry, SpecialSkill specialSkill) {
+        super("Wizard", WIZARD_HIT_POINTS, WIZARD_STATS, statusEffectRegistry, specialSkill);
     }
 }
