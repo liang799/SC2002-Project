@@ -6,16 +6,17 @@ import java.util.List;
 import java.util.Scanner;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Goblin;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.Warrior;
 import sc2002.turnbased.domain.Wizard;
-import sc2002.turnbased.domain.Wolf;
 import sc2002.turnbased.engine.DifficultyLevel;
+import sc2002.turnbased.engine.EnemyCount;
+import sc2002.turnbased.engine.EnemyType;
 import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerType;
+import sc2002.turnbased.engine.WaveSpec;
 
 public class ConsoleBattleUi {
     private final Scanner scanner;
@@ -39,8 +40,9 @@ public class ConsoleBattleUi {
         }
         out.println();
         out.println("Enemy Types:");
-        showEnemyPreview(new Goblin("Goblin"));
-        showEnemyPreview(new Wolf("Wolf"));
+        for (EnemyType enemyType : EnemyType.values()) {
+            showEnemyPreview(enemyType.create(enemyType.getDisplayName()));
+        }
         out.println();
         out.println("Difficulty Levels and Enemy Counts:");
         for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
@@ -65,12 +67,61 @@ public class ConsoleBattleUi {
         return PlayerType.values()[promptForSelection("Choose a player class", options)];
     }
 
+    public DifficultyLevel promptForDifficultyOrCustom() {
+        List<String> options = new ArrayList<>();
+        for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
+            options.add(difficultyLevel.getDisplayName());
+        }
+        options.add("Custom Mode (build your own waves)");
+        int choice = promptForSelection("Choose a difficulty level", options);
+        if (choice == DifficultyLevel.values().length) {
+            return null; // signals custom mode
+        }
+        return DifficultyLevel.values()[choice];
+    }
+
+    @Deprecated
     public DifficultyLevel promptForDifficultyLevel() {
         List<String> options = new ArrayList<>();
         for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
             options.add(difficultyLevel.getDisplayName());
         }
         return DifficultyLevel.values()[promptForSelection("Choose a difficulty level", options)];
+    }
+
+    public int promptForWaveCount() {
+        return promptForSelection("How many waves?", List.of("1 wave", "2 waves")) + 1;
+    }
+
+    public WaveSpec promptForWaveSpec(int waveNumber) {
+        out.println("Configure Wave " + waveNumber + " (max 4 enemies total, max 3 of each type):");
+        while (true) {
+            List<EnemyCount> enemyCounts = new ArrayList<>();
+            for (EnemyType enemyType : EnemyType.values()) {
+                int count = promptForCount("  " + enemyType.getConfigurationPrompt(), 0, enemyType.getMaxPerWave());
+                enemyCounts.add(new EnemyCount(enemyType, count));
+            }
+            try {
+                return new WaveSpec(enemyCounts);
+            } catch (IllegalArgumentException exception) {
+                out.println("  " + exception.getMessage() + ". Please try again.");
+            }
+        }
+    }
+
+    private int promptForCount(String label, int min, int max) {
+        while (true) {
+            out.print(label + " [" + min + "-" + max + "]: ");
+            String input = scanner.nextLine().trim();
+            try {
+                int value = Integer.parseInt(input);
+                if (value >= min && value <= max) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            out.println("  Please enter a number between " + min + " and " + max + ".");
+        }
     }
 
     public List<ItemType> promptForItems(int itemCount) {
