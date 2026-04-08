@@ -1,4 +1,4 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +13,10 @@ public class TurnEffectResolution {
         this.blocksAction = blocksAction;
         this.blockerLabel = blockerLabel;
         this.notes = new ArrayList<>(notes);
+    }
+
+    public static TurnEffectResolution allow() {
+        return new TurnEffectResolution(false, null, List.of());
     }
 
     public boolean blocksAction() {

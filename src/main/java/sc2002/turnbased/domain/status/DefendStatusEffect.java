@@ -1,8 +1,9 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
-import java.util.List;
+import sc2002.turnbased.domain.CombatStats;
+import sc2002.turnbased.domain.StatType;
 
-public class DefendStatusEffect implements StatusEffect {
+public class DefendStatusEffect implements StatusEffect, StatModifierEffect {
     private int roundsRemaining;
 
     public DefendStatusEffect(int roundsRemaining) {
@@ -10,13 +11,8 @@ public class DefendStatusEffect implements StatusEffect {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "DEFENDING";
-    }
-
-    @Override
-    public TurnEffectResolution onTurnOpportunity() {
-        return new TurnEffectResolution(false, null, List.of());
     }
 
     @Override

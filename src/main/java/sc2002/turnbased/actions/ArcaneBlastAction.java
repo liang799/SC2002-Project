@@ -3,8 +3,8 @@ package sc2002.turnbased.actions;
 import java.util.ArrayList;
 import java.util.List;
 
+import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.StatType;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
@@ -36,7 +36,7 @@ public class ArcaneBlastAction implements BattleAction {
             if (!enemy.isAlive()) {
                 notes.add("ELIMINATED");
                 int attackBefore = actor.getAttack();
-                actor.modifyStats(stats -> stats.addFlat(StatType.ATTACK, 10));
+                actor.addStatusEffect(new ArcanePowerStatusEffect(10));
                 notes.add(actor.getName() + " ATK: " + attackBefore + " -> " + actor.getAttack() + " (+10)");
             }
 

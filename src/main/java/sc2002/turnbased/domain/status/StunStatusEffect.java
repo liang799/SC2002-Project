@@ -1,9 +1,9 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class StunStatusEffect implements StatusEffect {
+public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     private int blockedTurnsRemaining;
 
     public StunStatusEffect(int blockedTurnsRemaining) {
@@ -11,21 +11,23 @@ public class StunStatusEffect implements StatusEffect {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "STUNNED";
     }
 
     @Override
     public TurnEffectResolution onTurnOpportunity() {
         boolean blocksAction = blockedTurnsRemaining > 0;
-        List<String> notes = new ArrayList<>();
-        if (blocksAction) {
-            blockedTurnsRemaining--;
-            if (blockedTurnsRemaining == 0) {
-                notes.add("Stun expires");
-            }
+        if (!blocksAction) {
+            return TurnEffectResolution.allow();
         }
-        return new TurnEffectResolution(blocksAction, getName(), notes);
+
+        List<String> notes = new ArrayList<>();
+        blockedTurnsRemaining--;
+        if (blockedTurnsRemaining == 0) {
+            notes.add("Stun expires");
+        }
+        return new TurnEffectResolution(blocksAction, name(), notes);
     }
 
     @Override

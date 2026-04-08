@@ -46,7 +46,7 @@ class CombatStatsTest {
     }
 
     @Test
-    void apply_composedModifiers_returnsExpectedResolvedStats() {
+    void statOperations_composedUpdates_returnsExpectedResolvedStats() {
         // arrange
         CombatStats combatStats = CombatStats.builder()
             .attack(40)
@@ -58,7 +58,7 @@ class CombatStatsTest {
         CombatStats updated = combatStats
             .addFlat(StatType.ATTACK, 5)
             .multiplyBy(StatType.DEFENSE, 0.8)
-            .apply(stats -> stats.multiplyBy(StatType.SPEED, 2))
+            .multiplyBy(StatType.SPEED, 2)
             .clampMinimum(StatType.DEFENSE, 12);
 
         // assert
