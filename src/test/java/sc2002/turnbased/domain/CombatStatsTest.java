@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class CombatStatsTest {
     @Test
-    void of_validStats_returnsFixedValueObjects() {
+    void builder_namedStatsProvided_returnsFixedValueObjects() {
         // arrange
-        CombatStats combatStats = CombatStats.of(
-            new Stat(45),
-            new Stat(15),
-            new Stat(25)
-        );
+        CombatStats combatStats = CombatStats.builder()
+            .attack(45)
+            .defense(15)
+            .speed(25)
+            .build();
 
         // act
         Stat attack = combatStats.attack();
@@ -30,11 +30,11 @@ class CombatStatsTest {
     @Test
     void withStat_requestedUpdate_returnsUpdatedCopy() {
         // arrange
-        CombatStats combatStats = CombatStats.of(
-            new Stat(45),
-            new Stat(15),
-            new Stat(25)
-        );
+        CombatStats combatStats = CombatStats.builder()
+            .attack(45)
+            .defense(15)
+            .speed(25)
+            .build();
 
         // act
         CombatStats updated = combatStats.withStat(StatType.ATTACK, new Stat(55));
@@ -48,11 +48,11 @@ class CombatStatsTest {
     @Test
     void apply_composedModifiers_returnsExpectedResolvedStats() {
         // arrange
-        CombatStats combatStats = CombatStats.of(
-            new Stat(40),
-            new Stat(10),
-            new Stat(15)
-        );
+        CombatStats combatStats = CombatStats.builder()
+            .attack(40)
+            .defense(10)
+            .speed(15)
+            .build();
 
         // act
         CombatStats updated = combatStats
