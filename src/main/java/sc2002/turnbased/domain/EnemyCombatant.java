@@ -1,13 +1,15 @@
 package sc2002.turnbased.domain;
 
+import java.util.Objects;
+
 import sc2002.turnbased.actions.ActionExecutionContext;
 import sc2002.turnbased.actions.BattleAction;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
-public abstract class EnemyCombatant extends Combatant {
+public class EnemyCombatant extends Combatant {
     private final BattleAction basicAttackAction;
 
-    protected EnemyCombatant(
+    public EnemyCombatant(
         String name,
         HitPoints baseHitPoints,
         CombatStats baseStats,
@@ -15,7 +17,7 @@ public abstract class EnemyCombatant extends Combatant {
         BattleAction basicAttackAction
     ) {
         super(name, baseHitPoints, baseStats, statusEffectRegistry);
-        this.basicAttackAction = basicAttackAction;
+        this.basicAttackAction = Objects.requireNonNull(basicAttackAction, "basicAttackAction");
     }
 
     public BattleAction selectAction(ActionExecutionContext context) {

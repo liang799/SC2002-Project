@@ -5,7 +5,7 @@ import java.util.List;
 import sc2002.turnbased.actions.ArcaneBlastAction;
 import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.ShieldBashAction;
-import sc2002.turnbased.domain.DefaultCombatantFactory;
+import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 
@@ -14,7 +14,7 @@ public final class EasyLevelSetup {
     }
 
     public static BattleSetup createWarriorPotionSmokeBombSetup() {
-        return new BattleSetupFactory(new DefaultCombatantFactory(
+        return new BattleSetupFactory(CombatantFactories.createDefault(
             new DefaultStatusEffectRegistryFactory(),
             new BasicAttackAction(),
             new ShieldBashAction(),

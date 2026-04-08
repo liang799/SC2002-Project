@@ -16,7 +16,7 @@ class CombatantTest {
     @Test
     void receiveDamageAndHeal_existingHitPoints_updatesHitPointsValueObject() {
         // arrange
-        Warrior warrior = TestDependencies.warrior();
+        PlayerCharacter warrior = TestDependencies.warrior();
 
         // act
         warrior.receiveDamage(90);
@@ -32,7 +32,7 @@ class CombatantTest {
     @Test
     void addStatusEffect_arcanePowerBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
         // arrange
-        Wizard wizard = TestDependencies.wizard();
+        PlayerCharacter wizard = TestDependencies.wizard();
 
         // act
         wizard.addStatusEffect(new ArcanePowerStatusEffect(10));
@@ -47,7 +47,7 @@ class CombatantTest {
     @Test
     void addStatusEffect_arcanePowerEffectsStack_returnsMergedAttackBonus() {
         // arrange
-        Warrior warrior = TestDependencies.warrior();
+        PlayerCharacter warrior = TestDependencies.warrior();
 
         // act
         warrior.addStatusEffect(new ArcanePowerStatusEffect(10));
@@ -62,7 +62,7 @@ class CombatantTest {
     @Test
     void addStatusEffect_defendEffectActive_returnsTemporarilyIncreasedDefense() {
         // arrange
-        Warrior warrior = TestDependencies.warrior();
+        PlayerCharacter warrior = TestDependencies.warrior();
         int defenseBeforeDefend = warrior.getDefense();
 
         // act
