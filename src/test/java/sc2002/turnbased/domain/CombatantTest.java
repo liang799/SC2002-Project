@@ -2,6 +2,8 @@ package sc2002.turnbased.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -24,12 +26,12 @@ class CombatantTest {
     }
 
     @Test
-    void modifyStats_attackBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
+    void addStatusEffect_arcanePowerBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
         // arrange
         Wizard wizard = new Wizard();
 
         // act
-        wizard.modifyStats(stats -> stats.addFlat(StatType.ATTACK, 10));
+        wizard.addStatusEffect(new ArcanePowerStatusEffect(10));
         int currentAttack = wizard.getAttack();
         int baseAttack = wizard.getBaseAttack();
 
@@ -39,16 +41,18 @@ class CombatantTest {
     }
 
     @Test
-    void modifyStats_speedMultiplierApplied_returnsScaledSpeed() {
+    void addStatusEffect_arcanePowerEffectsStack_returnsMergedAttackBonus() {
         // arrange
         Warrior warrior = new Warrior();
 
         // act
-        warrior.modifyStats(stats -> stats.multiplyBy(StatType.SPEED, 2));
-        int speed = warrior.getSpeed();
+        warrior.addStatusEffect(new ArcanePowerStatusEffect(10));
+        warrior.addStatusEffect(new ArcanePowerStatusEffect(10));
+        int attack = warrior.getAttack();
 
         // assert
-        assertEquals(60, speed);
+        assertEquals(60, attack);
+        assertEquals(List.of("ARCANE POWER +20"), warrior.getActiveStatusNames());
     }
 
     @Test

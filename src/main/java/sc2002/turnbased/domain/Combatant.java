@@ -7,7 +7,6 @@ public abstract class Combatant {
     private final String name;
     private final CombatStats baseStats;
     private HitPoints hitPoints;
-    private CombatStatsModifier statModifier = CombatStatsModifier.identity();
     private final StatusEffectRegistry statusEffectRegistry = new StatusEffectRegistry();
 
     protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats) {
@@ -64,10 +63,6 @@ public abstract class Combatant {
         hitPoints = hitPoints.heal(amount);
     }
 
-    public void modifyStats(CombatStatsModifier modifier) {
-        statModifier = statModifier.andThen(Objects.requireNonNull(modifier, "modifier"));
-    }
-
     public void addStatusEffect(StatusEffect statusEffect) {
         statusEffectRegistry.add(statusEffect);
     }
@@ -81,7 +76,6 @@ public abstract class Combatant {
     }
 
     private CombatStats effectiveStats() {
-        CombatStats effectiveStats = baseStats.apply(statModifier);
-        return statusEffectRegistry.apply(effectiveStats);
+        return statusEffectRegistry.apply(baseStats);
     }
 }

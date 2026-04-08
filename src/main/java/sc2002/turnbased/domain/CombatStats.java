@@ -52,10 +52,6 @@ public record CombatStats(Stat attack, Stat defense, Stat speed) {
         return withStat(type, modifier.apply(stat(type)));
     }
 
-    public CombatStats apply(CombatStatsModifier modifier) {
-        return Objects.requireNonNull(modifier, "modifier").applyTo(this);
-    }
-
     public static final class Builder {
         private Stat attack;
         private Stat defense;
