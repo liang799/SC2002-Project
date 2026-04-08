@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
 import sc2002.turnbased.support.FakeStatusEffectEventPublisher;
 import sc2002.turnbased.support.TestCombatantBuilder;
 
@@ -90,10 +91,10 @@ class SmokeBombStatusEffectTest {
     }
 
     @Test
-    void adjustIncomingDamage_WhenHitTwice_ConsumesChargesAcrossCalls() {
+    void adjustIncomingDamage_WhenCurrentAndNextEnemyAttackAreProtected_BlocksTwoHitsThenExpires() {
         // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().build();
+        Combatant owner = TestCombatantBuilder.aCombatant().named("Warrior").build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().named("Goblin").build();
         SmokeBombStatusEffect effect = new SmokeBombStatusEffect(2);
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
@@ -107,6 +108,13 @@ class SmokeBombStatusEffectTest {
             () -> assertEquals(0, firstAdjustment.damage()),
             () -> assertEquals(0, secondAdjustment.damage()),
             () -> assertEquals(25, thirdAdjustment.damage()),
+            () -> assertEquals(
+                List.of(
+                    new SmokeBombActivatedEvent("Warrior", "Goblin", 1),
+                    new SmokeBombActivatedEvent("Warrior", "Goblin", 0)
+                ),
+                eventPublisher.publishedEvents()
+            ),
             () -> assertTrue(effect.isExpired())
         );
     }

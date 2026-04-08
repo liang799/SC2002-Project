@@ -1,5 +1,6 @@
 package sc2002.turnbased.domain.status;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,36 +10,39 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.Stat;
+import sc2002.turnbased.support.TestCombatStatsBuilder;
 
 @Tag("unit")
 class DefendStatusEffectTest {
     @Test
-    void modifyStats_WhenEffectIsActive_AddsDefenseBonus() {
-        CombatStats baseStats = CombatStats.builder()
-            .attack(40)
-            .defense(15)
-            .speed(20)
+    void modifyStats_WhenDefendCoversCurrentAndNextTurn_AddsDefenseBonusAcrossBothRounds() {
+        CombatStats baseStats = TestCombatStatsBuilder.combatStats()
+            .withDefense(15)
             .build();
         DefendStatusEffect effect = new DefendStatusEffect(2);
 
-        CombatStats updatedStats = effect.modifyStats(baseStats);
+        CombatStats currentTurnStats = effect.modifyStats(baseStats);
+        effect.onRoundCompleted();
+        CombatStats nextTurnStats = effect.modifyStats(baseStats);
 
-        assertEquals("DEFENDING", effect.name());
-        assertEquals(new Stat(40), updatedStats.attack());
-        assertEquals(new Stat(25), updatedStats.defense());
-        assertEquals(new Stat(20), updatedStats.speed());
-        assertFalse(effect.isExpired());
+        assertAll(
+            () -> assertEquals("DEFENDING", effect.name()),
+            () -> assertEquals(new Stat(40), currentTurnStats.attack()),
+            () -> assertEquals(new Stat(25), currentTurnStats.defense()),
+            () -> assertEquals(new Stat(20), currentTurnStats.speed()),
+            () -> assertEquals(new Stat(25), nextTurnStats.defense()),
+            () -> assertFalse(effect.isExpired())
+        );
     }
 
     @Test
-    void onRoundCompleted_WhenDurationEnds_EffectExpiresAndStopsModifyingStats() {
-        CombatStats baseStats = CombatStats.builder()
-            .attack(40)
-            .defense(15)
-            .speed(20)
+    void onRoundCompleted_WhenCurrentAndNextTurnHavePassed_ExpiresAndStopsModifyingStats() {
+        CombatStats baseStats = TestCombatStatsBuilder.combatStats()
+            .withDefense(15)
             .build();
-        DefendStatusEffect effect = new DefendStatusEffect(1);
+        DefendStatusEffect effect = new DefendStatusEffect(2);
 
+        effect.onRoundCompleted();
         effect.onRoundCompleted();
         CombatStats updatedStats = effect.modifyStats(baseStats);
 
