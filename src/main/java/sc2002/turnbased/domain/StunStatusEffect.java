@@ -3,7 +3,7 @@ package sc2002.turnbased.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StunStatusEffect implements StatusEffect {
+public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     private int blockedTurnsRemaining;
 
     public StunStatusEffect(int blockedTurnsRemaining) {
@@ -11,7 +11,7 @@ public class StunStatusEffect implements StatusEffect {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "STUNNED";
     }
 
@@ -25,7 +25,7 @@ public class StunStatusEffect implements StatusEffect {
                 notes.add("Stun expires");
             }
         }
-        return new TurnEffectResolution(blocksAction, getName(), notes);
+        return new TurnEffectResolution(blocksAction, name(), notes);
     }
 
     @Override

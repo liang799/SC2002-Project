@@ -15,6 +15,10 @@ public class TurnEffectResolution {
         this.notes = new ArrayList<>(notes);
     }
 
+    public static TurnEffectResolution allow() {
+        return new TurnEffectResolution(false, null, List.of());
+    }
+
     public boolean blocksAction() {
         return blocksAction;
     }

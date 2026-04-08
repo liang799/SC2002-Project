@@ -2,7 +2,7 @@ package sc2002.turnbased.domain;
 
 import java.util.List;
 
-public class SmokeBombStatusEffect implements StatusEffect {
+public class SmokeBombStatusEffect implements StatusEffect, IncomingDamageModifierEffect {
     private int protectedEnemyAttacksRemaining;
 
     public SmokeBombStatusEffect(int protectedEnemyAttacksRemaining) {
@@ -10,27 +10,23 @@ public class SmokeBombStatusEffect implements StatusEffect {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "SMOKE BOMB";
     }
 
     @Override
-    public TurnEffectResolution onTurnOpportunity() {
-        return new TurnEffectResolution(false, null, List.of());
-    }
-
-    @Override
-    public int adjustIncomingDamage(Combatant owner, Combatant attacker, int damage, List<String> notes) {
+    public DamageAdjustment adjustIncomingDamage(Combatant owner, Combatant attacker, int damage) {
         if (protectedEnemyAttacksRemaining <= 0 || attacker == owner) {
-            return damage;
+            return DamageAdjustment.unchanged(damage);
         }
 
         protectedEnemyAttacksRemaining--;
+        List<String> notes = new java.util.ArrayList<>();
         notes.add("Smoke Bomb active");
         if (protectedEnemyAttacksRemaining == 0) {
             notes.add("Smoke Bomb effect expires");
         }
-        return 0;
+        return new DamageAdjustment(0, notes);
     }
 
     @Override

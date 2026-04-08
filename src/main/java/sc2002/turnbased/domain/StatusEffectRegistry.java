@@ -9,19 +9,41 @@ public class StatusEffectRegistry {
     private final List<StatusEffect> effects = new ArrayList<>();
 
     public void add(StatusEffect statusEffect) {
-        effects.add(Objects.requireNonNull(statusEffect, "statusEffect"));
+        StatusEffect effectToAdd = Objects.requireNonNull(statusEffect, "statusEffect");
+        pruneExpiredEffects();
+
+        for (int index = 0; index < effects.size(); index++) {
+            StatusEffect existingEffect = effects.get(index);
+            if (existingEffect instanceof MergeableStatusEffect mergeableEffect
+                && mergeableEffect.canMergeWith(effectToAdd)) {
+                effects.set(index, mergeableEffect.merge(effectToAdd));
+                return;
+            }
+            if (effectToAdd instanceof MergeableStatusEffect mergeableEffectToAdd
+                && mergeableEffectToAdd.canMergeWith(existingEffect)) {
+                effects.set(index, mergeableEffectToAdd.merge(existingEffect));
+                return;
+            }
+        }
+
+        effects.add(effectToAdd);
     }
 
-    public int adjustIncomingDamage(Combatant owner, Combatant attacker, int damage, List<String> notes) {
+    public DamageAdjustment adjustIncomingDamage(Combatant owner, Combatant attacker, int damage) {
+        List<String> notes = new ArrayList<>();
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            damage = statusEffect.adjustIncomingDamage(owner, attacker, damage, notes);
+            if (statusEffect instanceof IncomingDamageModifierEffect modifierEffect) {
+                DamageAdjustment adjustment = modifierEffect.adjustIncomingDamage(owner, attacker, damage);
+                damage = adjustment.damage();
+                notes.addAll(adjustment.notes());
+            }
             if (statusEffect.isExpired()) {
                 iterator.remove();
             }
         }
-        return damage;
+        return new DamageAdjustment(damage, notes);
     }
 
     public TurnWindow resolveTurnWindow() {
@@ -32,12 +54,14 @@ public class StatusEffectRegistry {
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            TurnEffectResolution resolution = statusEffect.onTurnOpportunity();
-            if (resolution.blocksAction() && blockerLabel == null) {
-                blocked = true;
-                blockerLabel = resolution.blockerLabel();
+            if (statusEffect instanceof TurnInterferingEffect turnInterferingEffect) {
+                TurnEffectResolution resolution = turnInterferingEffect.onTurnOpportunity();
+                if (resolution.blocksAction() && blockerLabel == null) {
+                    blocked = true;
+                    blockerLabel = resolution.blockerLabel();
+                }
+                notes.addAll(resolution.notes());
             }
-            notes.addAll(resolution.notes());
             if (statusEffect.isExpired()) {
                 iterator.remove();
             }
@@ -65,7 +89,7 @@ public class StatusEffectRegistry {
 
         List<String> names = new ArrayList<>();
         for (StatusEffect statusEffect : effects) {
-            names.add(statusEffect.getName());
+            names.add(statusEffect.name());
         }
         return names;
     }
@@ -75,7 +99,9 @@ public class StatusEffectRegistry {
 
         CombatStats effectiveStats = Objects.requireNonNull(stats, "stats");
         for (StatusEffect statusEffect : effects) {
-            effectiveStats = statusEffect.modifyStats(effectiveStats);
+            if (statusEffect instanceof StatModifierEffect modifierEffect) {
+                effectiveStats = modifierEffect.modifyStats(effectiveStats);
+            }
         }
         return effectiveStats;
     }

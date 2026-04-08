@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.DamageAdjustment;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 
@@ -16,8 +17,9 @@ public class BasicAttackAction implements BattleAction {
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         int baseDamage = Math.max(0, actor.getAttack() - target.getDefense());
-        List<String> notes = new ArrayList<>();
-        int damage = target.statusEffects().adjustIncomingDamage(target, actor, baseDamage, notes);
+        DamageAdjustment damageAdjustment = target.statusEffects().adjustIncomingDamage(target, actor, baseDamage);
+        List<String> notes = new ArrayList<>(damageAdjustment.notes());
+        int damage = damageAdjustment.damage();
         int hpBefore = target.getCurrentHp();
         target.receiveDamage(damage);
 
