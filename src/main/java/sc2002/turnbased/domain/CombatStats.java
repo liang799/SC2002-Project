@@ -22,8 +22,8 @@ public record CombatStats(Stat attack, Stat defense, Stat speed) {
         return stat(statType).value();
     }
 
-    public static CombatStats of(Stat attack, Stat defense, Stat speed) {
-        return new CombatStats(attack, defense, speed);
+    public static Builder builder() {
+        return new Builder();
     }
 
     public CombatStats withStat(StatType type, Stat updatedStat) {
@@ -54,5 +54,42 @@ public record CombatStats(Stat attack, Stat defense, Stat speed) {
 
     public CombatStats apply(CombatStatsModifier modifier) {
         return Objects.requireNonNull(modifier, "modifier").applyTo(this);
+    }
+
+    public static final class Builder {
+        private Stat attack;
+        private Stat defense;
+        private Stat speed;
+
+        public Builder attack(int attack) {
+            return attack(new Stat(attack));
+        }
+
+        public Builder attack(Stat attack) {
+            this.attack = Objects.requireNonNull(attack, "attack");
+            return this;
+        }
+
+        public Builder defense(int defense) {
+            return defense(new Stat(defense));
+        }
+
+        public Builder defense(Stat defense) {
+            this.defense = Objects.requireNonNull(defense, "defense");
+            return this;
+        }
+
+        public Builder speed(int speed) {
+            return speed(new Stat(speed));
+        }
+
+        public Builder speed(Stat speed) {
+            this.speed = Objects.requireNonNull(speed, "speed");
+            return this;
+        }
+
+        public CombatStats build() {
+            return new CombatStats(attack, defense, speed);
+        }
     }
 }
