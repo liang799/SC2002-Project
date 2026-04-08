@@ -70,14 +70,14 @@ public class StatusEffectRegistry {
         return names;
     }
 
-    public int modifierFor(StatType statType) {
+    public CombatStats apply(CombatStats stats) {
         pruneExpiredEffects();
 
-        int modifier = 0;
+        CombatStats effectiveStats = Objects.requireNonNull(stats, "stats");
         for (StatusEffect statusEffect : effects) {
-            modifier += statusEffect.statModifier(statType);
+            effectiveStats = statusEffect.modifyStats(effectiveStats);
         }
-        return modifier;
+        return effectiveStats;
     }
 
     private void pruneExpiredEffects() {

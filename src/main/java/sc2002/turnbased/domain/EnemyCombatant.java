@@ -7,8 +7,8 @@ import sc2002.turnbased.actions.BattleAction;
 public abstract class EnemyCombatant extends Combatant {
     private static final BattleAction BASIC_ATTACK = new BasicAttackAction();
 
-    protected EnemyCombatant(String name, CombatStats baseStats) {
-        super(name, baseStats);
+    protected EnemyCombatant(String name, HitPoints baseHitPoints, CombatStats baseStats) {
+        super(name, baseHitPoints, baseStats);
     }
 
     public BattleAction selectAction(ActionExecutionContext context) {

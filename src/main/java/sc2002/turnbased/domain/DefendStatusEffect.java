@@ -20,11 +20,11 @@ public class DefendStatusEffect implements StatusEffect {
     }
 
     @Override
-    public int statModifier(StatType statType) {
-        if (statType == StatType.DEFENSE && roundsRemaining > 0) {
-            return 10;
+    public CombatStats modifyStats(CombatStats stats) {
+        if (roundsRemaining > 0) {
+            return stats.addFlat(StatType.DEFENSE, 10);
         }
-        return 0;
+        return stats;
     }
 
     @Override

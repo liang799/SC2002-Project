@@ -5,8 +5,8 @@ import java.util.Objects;
 public abstract class PlayerCharacter extends Combatant {
     private final SpecialSkill specialSkill;
 
-    protected PlayerCharacter(String name, CombatStats baseStats, SpecialSkill specialSkill) {
-        super(name, baseStats);
+    protected PlayerCharacter(String name, HitPoints baseHitPoints, CombatStats baseStats, SpecialSkill specialSkill) {
+        super(name, baseHitPoints, baseStats);
         this.specialSkill = Objects.requireNonNull(specialSkill, "specialSkill");
     }
 

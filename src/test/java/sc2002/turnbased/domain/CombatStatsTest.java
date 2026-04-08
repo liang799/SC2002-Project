@@ -2,67 +2,68 @@ package sc2002.turnbased.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag("unit")
 class CombatStatsTest {
     @Test
-    void valueOf_whenStatExists_returnsConfiguredValue() {
-        CombatStats combatStats = createCombatStats();
+    void builder_namedStatsProvided_returnsFixedValueObjects() {
+        // arrange
+        CombatStats combatStats = CombatStats.builder()
+            .attack(45)
+            .defense(15)
+            .speed(25)
+            .build();
 
-        int attack = combatStats.valueOf(StatType.ATTACK);
+        // act
+        Stat attack = combatStats.attack();
+        Stat defense = combatStats.defense();
+        Stat speed = combatStats.speed();
 
-        assertEquals(45, attack);
+        // assert
+        assertEquals(new Stat(45), attack);
+        assertEquals(new Stat(15), defense);
+        assertEquals(new Stat(25), speed);
     }
 
     @Test
-    void valueOf_whenStatIsMissing_returnsZero() {
-        CombatStats combatStats = new CombatStats(
-            new HitPoints(120, 120),
-            Map.of(
-                StatType.ATTACK, new Stat(45)
-            )
-        );
+    void withStat_requestedUpdate_returnsUpdatedCopy() {
+        // arrange
+        CombatStats combatStats = CombatStats.builder()
+            .attack(45)
+            .defense(15)
+            .speed(25)
+            .build();
 
-        int speed = combatStats.valueOf(StatType.SPEED);
-
-        assertEquals(0, speed);
-    }
-
-    @Test
-    void withHitPoints_whenReplacingHitPoints_keepsExistingStats() {
-        CombatStats combatStats = createCombatStats();
-        HitPoints updatedHitPoints = new HitPoints(70, 120);
-
-        CombatStats updated = combatStats.withHitPoints(updatedHitPoints);
-
-        assertEquals(updatedHitPoints, updated.hitPoints());
-        assertEquals(combatStats.stats(), updated.stats());
-    }
-
-    @Test
-    void withStat_whenReplacingAttack_keepsOtherFieldsUnchanged() {
-        CombatStats combatStats = createCombatStats();
-
+        // act
         CombatStats updated = combatStats.withStat(StatType.ATTACK, new Stat(55));
 
-        assertEquals(combatStats.hitPoints(), updated.hitPoints());
-        assertEquals(new Stat(55), updated.stats().get(StatType.ATTACK));
-        assertEquals(combatStats.stats().get(StatType.DEFENSE), updated.stats().get(StatType.DEFENSE));
-        assertEquals(combatStats.stats().get(StatType.SPEED), updated.stats().get(StatType.SPEED));
+        // assert
+        assertEquals(new Stat(55), updated.attack());
+        assertEquals(new Stat(15), updated.defense());
+        assertEquals(new Stat(25), updated.speed());
     }
 
-    private static CombatStats createCombatStats() {
-        return new CombatStats(
-            new HitPoints(120, 120),
-            Map.of(
-                StatType.ATTACK, new Stat(45),
-                StatType.DEFENSE, new Stat(15),
-                StatType.SPEED, new Stat(25)
-            )
-        );
+    @Test
+    void apply_composedModifiers_returnsExpectedResolvedStats() {
+        // arrange
+        CombatStats combatStats = CombatStats.builder()
+            .attack(40)
+            .defense(10)
+            .speed(15)
+            .build();
+
+        // act
+        CombatStats updated = combatStats
+            .addFlat(StatType.ATTACK, 5)
+            .multiplyBy(StatType.DEFENSE, 0.8)
+            .apply(stats -> stats.multiplyBy(StatType.SPEED, 2))
+            .clampMinimum(StatType.DEFENSE, 12);
+
+        // assert
+        assertEquals(new Stat(45), updated.attack());
+        assertEquals(new Stat(12), updated.defense());
+        assertEquals(new Stat(30), updated.speed());
     }
 }
