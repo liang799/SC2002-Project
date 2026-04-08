@@ -6,7 +6,7 @@ import java.util.Objects;
 import sc2002.turnbased.actions.ArcaneBlastAction;
 import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.ShieldBashAction;
-import sc2002.turnbased.domain.DefaultCombatantFactory;
+import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
@@ -30,7 +30,7 @@ public final class HardLevelSetup {
                 selectedItems.add(itemType);
             }
         }
-        return new BattleSetupFactory(new DefaultCombatantFactory(
+        return new BattleSetupFactory(CombatantFactories.createDefault(
             new DefaultStatusEffectRegistryFactory(),
             new BasicAttackAction(),
             new ShieldBashAction(),

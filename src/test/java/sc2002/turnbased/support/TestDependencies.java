@@ -3,8 +3,8 @@ package sc2002.turnbased.support;
 import sc2002.turnbased.actions.ArcaneBlastAction;
 import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.CombatantFactory;
-import sc2002.turnbased.domain.DefaultCombatantFactory;
 import sc2002.turnbased.domain.Goblin;
 import sc2002.turnbased.domain.Warrior;
 import sc2002.turnbased.domain.Wizard;
@@ -19,7 +19,7 @@ public final class TestDependencies {
     private static final StatusEffectRegistryFactory STATUS_EFFECT_REGISTRY_FACTORY = () ->
         new StatusEffectRegistry(new StatusEffectEventPublisher());
 
-    private static final CombatantFactory COMBATANT_FACTORY = new DefaultCombatantFactory(
+    private static final CombatantFactory COMBATANT_FACTORY = CombatantFactories.createDefault(
         STATUS_EFFECT_REGISTRY_FACTORY,
         new BasicAttackAction(),
         new ShieldBashAction(),
