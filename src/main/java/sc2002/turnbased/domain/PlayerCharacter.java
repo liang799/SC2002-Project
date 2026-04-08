@@ -4,10 +4,10 @@ import java.util.Objects;
 
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
-public abstract class PlayerCharacter extends Combatant {
+public class PlayerCharacter extends Combatant {
     private final SpecialSkill specialSkill;
 
-    protected PlayerCharacter(
+    public PlayerCharacter(
         String name,
         HitPoints baseHitPoints,
         CombatStats baseStats,

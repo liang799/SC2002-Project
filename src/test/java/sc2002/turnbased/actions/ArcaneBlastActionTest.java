@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Inventory;
-import sc2002.turnbased.domain.Wizard;
+import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
@@ -20,7 +20,7 @@ import sc2002.turnbased.support.TestDependencies;
 class ArcaneBlastActionTest {
     @Test
     void execute_whenEnemiesAreEliminated_addsAttackBuffThroughStatusEffects() {
-        Wizard wizard = TestDependencies.wizard();
+        PlayerCharacter wizard = TestDependencies.wizard();
         Combatant goblin = TestCombatantBuilder.aCombatant()
             .named("Goblin")
             .withCurrentHp(30)

@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Goblin;
-import sc2002.turnbased.domain.Warrior;
+import sc2002.turnbased.domain.EnemyCombatant;
+import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
 import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
 import sc2002.turnbased.support.TestCombatantBuilder;
@@ -37,8 +37,8 @@ class StatusEffectRegistryTest {
 
     @Test
     void adjustIncomingDamage_whenSmokeBombBlocksEnemyAttack_returnsZeroAndExpiresEffect() {
-        Warrior warrior = TestDependencies.warrior();
-        Goblin goblin = TestDependencies.goblin("Goblin");
+        PlayerCharacter warrior = TestDependencies.warrior();
+        EnemyCombatant goblin = TestDependencies.goblin("Goblin");
 
         warrior.addStatusEffect(new SmokeBombStatusEffect(1));
 

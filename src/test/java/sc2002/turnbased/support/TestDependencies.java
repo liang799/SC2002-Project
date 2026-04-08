@@ -5,9 +5,8 @@ import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.ShieldBashAction;
 import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.CombatantFactory;
-import sc2002.turnbased.domain.Goblin;
-import sc2002.turnbased.domain.Warrior;
-import sc2002.turnbased.domain.Wizard;
+import sc2002.turnbased.domain.EnemyCombatant;
+import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.StatusEffectEventPublisher;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 import sc2002.turnbased.domain.status.StatusEffectRegistryFactory;
@@ -37,16 +36,16 @@ public final class TestDependencies {
         return new BattleSetupFactory(COMBATANT_FACTORY);
     }
 
-    public static Warrior warrior() {
-        return (Warrior) COMBATANT_FACTORY.createPlayer(PlayerType.WARRIOR);
+    public static PlayerCharacter warrior() {
+        return COMBATANT_FACTORY.createPlayer(PlayerType.WARRIOR);
     }
 
-    public static Wizard wizard() {
-        return (Wizard) COMBATANT_FACTORY.createPlayer(PlayerType.WIZARD);
+    public static PlayerCharacter wizard() {
+        return COMBATANT_FACTORY.createPlayer(PlayerType.WIZARD);
     }
 
-    public static Goblin goblin(String name) {
-        return (Goblin) COMBATANT_FACTORY.createEnemy(EnemyType.GOBLIN, name);
+    public static EnemyCombatant goblin(String name) {
+        return COMBATANT_FACTORY.createEnemy(EnemyType.GOBLIN, name);
     }
 
     public static StatusEffectRegistry registry() {
