@@ -3,16 +3,11 @@ package sc2002.turnbased.domain;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
-public record CombatStats(HitPoints hitPoints, Stat attack, Stat defense, Stat speed) {
+public record CombatStats(Stat attack, Stat defense, Stat speed) {
     public CombatStats {
-        Objects.requireNonNull(hitPoints, "hitPoints");
         Objects.requireNonNull(attack, "attack");
         Objects.requireNonNull(defense, "defense");
         Objects.requireNonNull(speed, "speed");
-    }
-
-    public static CombatStats of(HitPoints hitPoints, Stat attack, Stat defense, Stat speed) {
-        return new CombatStats(hitPoints, attack, defense, speed);
     }
 
     public Stat stat(StatType statType) {
@@ -27,16 +22,16 @@ public record CombatStats(HitPoints hitPoints, Stat attack, Stat defense, Stat s
         return stat(statType).value();
     }
 
-    public CombatStats withHitPoints(HitPoints updatedHitPoints) {
-        return new CombatStats(updatedHitPoints, attack, defense, speed);
+    public static CombatStats of(Stat attack, Stat defense, Stat speed) {
+        return new CombatStats(attack, defense, speed);
     }
 
     public CombatStats withStat(StatType type, Stat updatedStat) {
         Objects.requireNonNull(updatedStat, "updatedStat");
         return switch (Objects.requireNonNull(type, "type")) {
-            case ATTACK -> new CombatStats(hitPoints, updatedStat, defense, speed);
-            case DEFENSE -> new CombatStats(hitPoints, attack, updatedStat, speed);
-            case SPEED -> new CombatStats(hitPoints, attack, defense, updatedStat);
+            case ATTACK -> new CombatStats(updatedStat, defense, speed);
+            case DEFENSE -> new CombatStats(attack, updatedStat, speed);
+            case SPEED -> new CombatStats(attack, defense, updatedStat);
         };
     }
 

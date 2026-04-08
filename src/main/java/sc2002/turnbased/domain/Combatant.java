@@ -10,10 +10,10 @@ public abstract class Combatant {
     private CombatStatsModifier statModifier = CombatStatsModifier.identity();
     private final StatusEffectRegistry statusEffectRegistry = new StatusEffectRegistry();
 
-    protected Combatant(String name, CombatStats baseStats) {
+    protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats) {
         this.name = Objects.requireNonNull(name, "name");
+        this.hitPoints = Objects.requireNonNull(baseHitPoints, "baseHitPoints");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
-        this.hitPoints = baseStats.hitPoints();
     }
 
     public String getName() {
@@ -81,7 +81,7 @@ public abstract class Combatant {
     }
 
     private CombatStats effectiveStats() {
-        CombatStats effectiveStats = baseStats.withHitPoints(hitPoints).apply(statModifier);
+        CombatStats effectiveStats = baseStats.apply(statModifier);
         return statusEffectRegistry.apply(effectiveStats);
     }
 }
