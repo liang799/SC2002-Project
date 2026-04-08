@@ -14,7 +14,7 @@ import sc2002.turnbased.support.TestDependencies;
 @Tag("unit")
 class CombatantTest {
     @Test
-    void receiveDamageAndHeal_existingHitPoints_updatesHitPointsValueObject() {
+    void receiveDamageAndHeal_WhenHitPointsChange_UpdatesHitPointsValueObject() {
         // arrange
         PlayerCharacter warrior = TestDependencies.warrior();
 
@@ -30,7 +30,7 @@ class CombatantTest {
     }
 
     @Test
-    void addStatusEffect_arcanePowerBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
+    void addStatusEffect_WhenArcanePowerIsApplied_ReturnsBuffedAttackWithoutChangingBaseAttack() {
         // arrange
         PlayerCharacter wizard = TestDependencies.wizard();
 
@@ -45,7 +45,7 @@ class CombatantTest {
     }
 
     @Test
-    void addStatusEffect_arcanePowerEffectsStack_returnsMergedAttackBonus() {
+    void addStatusEffect_WhenArcanePowerEffectsStack_ReturnsMergedAttackBonus() {
         // arrange
         PlayerCharacter warrior = TestDependencies.warrior();
 
@@ -60,7 +60,7 @@ class CombatantTest {
     }
 
     @Test
-    void addStatusEffect_defendEffectActive_returnsTemporarilyIncreasedDefense() {
+    void addStatusEffect_WhenDefendEffectIsActive_ReturnsTemporarilyIncreasedDefense() {
         // arrange
         PlayerCharacter warrior = TestDependencies.warrior();
         int defenseBeforeDefend = warrior.getDefense();

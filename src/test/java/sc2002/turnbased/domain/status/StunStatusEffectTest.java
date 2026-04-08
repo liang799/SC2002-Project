@@ -15,7 +15,7 @@ import sc2002.turnbased.support.TestCombatantBuilder;
 @Tag("unit")
 class StunStatusEffectTest {
     @Test
-    void onTurnOpportunity_whenMultipleTurnsRemain_blocksAndExpiresOnLastBlockedTurn() {
+    void onTurnOpportunity_WhenMultipleTurnsRemain_BlocksAndExpiresOnLastBlockedTurn() {
         StunStatusEffect effect = new StunStatusEffect(2);
         Combatant owner = TestCombatantBuilder.aCombatant().build();
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
@@ -34,7 +34,7 @@ class StunStatusEffectTest {
     }
 
     @Test
-    void onTurnOpportunity_whenAlreadyExpired_allowsTurnWithoutNotes() {
+    void onTurnOpportunity_WhenAlreadyExpired_AllowsTurnWithoutNotes() {
         StunStatusEffect effect = new StunStatusEffect(0);
         Combatant owner = TestCombatantBuilder.aCombatant().build();
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();

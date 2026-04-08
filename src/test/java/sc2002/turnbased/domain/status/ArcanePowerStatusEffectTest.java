@@ -15,12 +15,12 @@ import sc2002.turnbased.domain.StatType;
 @Tag("unit")
 class ArcanePowerStatusEffectTest {
     @Test
-    void constructor_whenAttackBonusIsNotPositive_throwsIllegalArgumentException() {
+    void constructor_WhenAttackBonusIsNotPositive_ThrowsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new ArcanePowerStatusEffect(0));
     }
 
     @Test
-    void modifyStats_whenApplied_addsAttackWithoutChangingOtherStats() {
+    void modifyStats_WhenApplied_AddsAttackWithoutChangingOtherStats() {
         CombatStats baseStats = CombatStats.builder()
             .attack(40)
             .defense(15)
@@ -38,7 +38,7 @@ class ArcanePowerStatusEffectTest {
     }
 
     @Test
-    void merge_whenCombinedWithSameEffect_returnsSummedAttackBonus() {
+    void merge_WhenCombinedWithSameEffect_ReturnsSummedAttackBonus() {
         ArcanePowerStatusEffect effect = new ArcanePowerStatusEffect(10);
         ArcanePowerStatusEffect otherEffect = new ArcanePowerStatusEffect(20);
 

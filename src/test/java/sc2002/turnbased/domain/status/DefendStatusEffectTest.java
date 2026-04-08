@@ -13,7 +13,7 @@ import sc2002.turnbased.domain.Stat;
 @Tag("unit")
 class DefendStatusEffectTest {
     @Test
-    void modifyStats_whenEffectIsActive_addsDefenseBonus() {
+    void modifyStats_WhenEffectIsActive_AddsDefenseBonus() {
         CombatStats baseStats = CombatStats.builder()
             .attack(40)
             .defense(15)
@@ -31,7 +31,7 @@ class DefendStatusEffectTest {
     }
 
     @Test
-    void onRoundCompleted_whenDurationEnds_effectExpiresAndStopsModifyingStats() {
+    void onRoundCompleted_WhenDurationEnds_EffectExpiresAndStopsModifyingStats() {
         CombatStats baseStats = CombatStats.builder()
             .attack(40)
             .defense(15)

@@ -32,7 +32,7 @@ import sc2002.turnbased.support.TestDependencies;
 class StatusEffectObservationScopeBattleFlowIntegrationTest {
     @Test
     @DisplayName("StatusEffectObservationScope and BattleEngine publish Smoke Bomb activation events")
-    void statusEffectObservationScope_andBattleEngine_publishSmokeBombActivationEvents() {
+    void openObservation_WhenSmokeBombActivates_PublishesActivationEvents() {
         // Arrange
         BattleSetup battleSetup = TestDependencies.battleSetupFactory().createCustom(
             new CustomGameConfiguration(
@@ -69,7 +69,7 @@ class StatusEffectObservationScopeBattleFlowIntegrationTest {
 
     @Test
     @DisplayName("StatusEffectObservationScope and BattleEngine publish Smoke Bomb lifecycle events")
-    void statusEffectObservationScope_andBattleEngine_publishSmokeBombLifecycleEvents() {
+    void openObservation_WhenSmokeBombLifecycleCompletes_PublishesLifecycleEvents() {
         // Arrange
         BattleSetup battleSetup = TestDependencies.battleSetupFactory().createCustom(
             new CustomGameConfiguration(

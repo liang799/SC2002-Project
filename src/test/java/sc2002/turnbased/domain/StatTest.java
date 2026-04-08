@@ -10,7 +10,7 @@ import org.junit.jupiter.api.function.Executable;
 @Tag("unit")
 class StatTest {
     @Test
-    void addFlatAndMultiplyBy_validValues_returnsUpdatedStat() {
+    void addFlatAndMultiplyBy_WhenValuesAreValid_ReturnsUpdatedStat() {
         // arrange
         Stat stat = new Stat(25);
 
@@ -24,7 +24,7 @@ class StatTest {
     }
 
     @Test
-    void clampMinimum_valueBelowMinimum_returnsMinimumValue() {
+    void clampMinimum_WhenValueIsBelowMinimum_ReturnsMinimumValue() {
         // arrange
         Stat stat = new Stat(5);
 
@@ -36,7 +36,7 @@ class StatTest {
     }
 
     @Test
-    void stat_invalidNegativeChanges_throwsIllegalArgumentException() {
+    void stat_WhenNegativeChangesAreApplied_ThrowsIllegalArgumentException() {
         // arrange
         Executable createNegativeStat = () -> new Stat(-1);
         Stat stat = new Stat(5);
