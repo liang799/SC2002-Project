@@ -2,6 +2,7 @@ package sc2002.turnbased.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.Supplier;
 
@@ -16,22 +17,35 @@ import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerDecisionProvider;
 import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.engine.SpeedTurnOrderStrategy;
+import sc2002.turnbased.engine.TurnOrderStrategy;
 import sc2002.turnbased.engine.WaveSpec;
 
 public class TurnBasedArenaCli {
     private final ConsoleBattleUi ui;
     private final BattleSetupFactory battleSetupFactory;
     private final BattleConsoleFormatter formatter;
+    private final TurnOrderStrategy turnOrderStrategy;
 
-    public TurnBasedArenaCli(ConsoleBattleUi ui) {
-        this.ui = ui;
-        this.battleSetupFactory = new BattleSetupFactory();
-        this.formatter = new BattleConsoleFormatter();
+    public TurnBasedArenaCli(
+        ConsoleBattleUi ui,
+        BattleSetupFactory battleSetupFactory,
+        BattleConsoleFormatter formatter,
+        TurnOrderStrategy turnOrderStrategy
+    ) {
+        this.ui = Objects.requireNonNull(ui, "ui");
+        this.battleSetupFactory = Objects.requireNonNull(battleSetupFactory, "battleSetupFactory");
+        this.formatter = Objects.requireNonNull(formatter, "formatter");
+        this.turnOrderStrategy = Objects.requireNonNull(turnOrderStrategy, "turnOrderStrategy");
     }
 
     public static void main(String[] args) {
         ConsoleBattleUi ui = new ConsoleBattleUi(new Scanner(System.in), System.out);
-        new TurnBasedArenaCli(ui).run();
+        new TurnBasedArenaCli(
+            ui,
+            new BattleSetupFactory(),
+            new BattleConsoleFormatter(),
+            new SpeedTurnOrderStrategy()
+        ).run();
     }
 
     public void run() {
@@ -50,7 +64,7 @@ public class TurnBasedArenaCli {
 
             BattleSetup battleSetup = setupSupplier.get();
             PlayerDecisionProvider decisionProvider = new CliPlayerDecisionProvider(ui, battleSetup.getInventory());
-            BattleEngine battleEngine = new BattleEngine(battleSetup, new SpeedTurnOrderStrategy());
+            BattleEngine battleEngine = new BattleEngine(battleSetup, turnOrderStrategy);
             BattleEventListener battleEventListener = event -> ui.showBattleLines(formatter.format(List.of(event)));
             battleEngine.runUntilBattleEnds(decisionProvider, battleEventListener);
 
@@ -98,8 +112,7 @@ public class TurnBasedArenaCli {
         for (int i = 0; i < config.waves().size(); i++) {
             WaveSpec wave = config.waves().get(i);
             ui.showMessage("Wave " + (i + 1) + ": "
-                + wave.goblinCount() + " Goblin(s), "
-                + wave.wolfCount() + " Wolf/Wolves — "
+                + wave.describe() + " — "
                 + wave.totalEnemies() + " enemies total");
         }
         ui.showMessage("");

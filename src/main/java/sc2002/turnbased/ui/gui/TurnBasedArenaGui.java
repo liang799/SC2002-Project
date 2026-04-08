@@ -34,6 +34,8 @@ import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.engine.BattleSetupFactory;
 import sc2002.turnbased.engine.CustomGameConfiguration;
 import sc2002.turnbased.engine.DifficultyLevel;
+import sc2002.turnbased.engine.EnemyCount;
+import sc2002.turnbased.engine.EnemyType;
 import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.engine.SpeedTurnOrderStrategy;
@@ -248,9 +250,15 @@ public class TurnBasedArenaGui extends JFrame {
 
         try {
             List<WaveSpec> waves = new ArrayList<>();
-            waves.add(new WaveSpec((int) w1Goblins.getValue(), (int) w1Wolves.getValue()));
+            waves.add(WaveSpec.of(
+                EnemyCount.of(EnemyType.GOBLIN, (int) w1Goblins.getValue()),
+                EnemyCount.of(EnemyType.WOLF, (int) w1Wolves.getValue())
+            ));
             if (secondWaveCheck.isSelected()) {
-                waves.add(new WaveSpec((int) w2Goblins.getValue(), (int) w2Wolves.getValue()));
+                waves.add(WaveSpec.of(
+                    EnemyCount.of(EnemyType.GOBLIN, (int) w2Goblins.getValue()),
+                    EnemyCount.of(EnemyType.WOLF, (int) w2Wolves.getValue())
+                ));
             }
             CustomGameConfiguration customConfig = new CustomGameConfiguration(playerType, items, waves);
             appendCustomConfigurationLog(customConfig);
@@ -273,8 +281,7 @@ public class TurnBasedArenaGui extends JFrame {
         for (int i = 0; i < config.waves().size(); i++) {
             WaveSpec wave = config.waves().get(i);
             appendLog("Wave " + (i + 1) + ": "
-                + wave.goblinCount() + " Goblin(s), "
-                + wave.wolfCount() + " Wolf/Wolves — "
+                + wave.describe() + " — "
                 + wave.totalEnemies() + " enemies total");
         }
         appendLog("");

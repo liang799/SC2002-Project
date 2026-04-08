@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Scanner;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Goblin;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.Warrior;
 import sc2002.turnbased.domain.Wizard;
-import sc2002.turnbased.domain.Wolf;
 import sc2002.turnbased.engine.DifficultyLevel;
+import sc2002.turnbased.engine.EnemyCount;
+import sc2002.turnbased.engine.EnemyType;
 import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.engine.WaveSpec;
@@ -40,8 +40,9 @@ public class ConsoleBattleUi {
         }
         out.println();
         out.println("Enemy Types:");
-        showEnemyPreview(new Goblin("Goblin"));
-        showEnemyPreview(new Wolf("Wolf"));
+        for (EnemyType enemyType : EnemyType.values()) {
+            showEnemyPreview(enemyType.create(enemyType.getDisplayName()));
+        }
         out.println();
         out.println("Difficulty Levels and Enemy Counts:");
         for (DifficultyLevel difficultyLevel : DifficultyLevel.values()) {
@@ -95,17 +96,16 @@ public class ConsoleBattleUi {
     public WaveSpec promptForWaveSpec(int waveNumber) {
         out.println("Configure Wave " + waveNumber + " (max 4 enemies total, max 3 of each type):");
         while (true) {
-            int goblinCount = promptForCount("  Goblins (HP:55 ATK:35 DEF:15 SPD:25)", 0, 3);
-            int wolfCount   = promptForCount("  Wolves  (HP:40 ATK:45 DEF:5  SPD:35)", 0, 3);
-            if (goblinCount + wolfCount == 0) {
-                out.println("  A wave needs at least 1 enemy. Please try again.");
-                continue;
+            List<EnemyCount> enemyCounts = new ArrayList<>();
+            for (EnemyType enemyType : EnemyType.values()) {
+                int count = promptForCount("  " + enemyType.getConfigurationPrompt(), 0, enemyType.getMaxPerWave());
+                enemyCounts.add(new EnemyCount(enemyType, count));
             }
-            if (goblinCount + wolfCount > 4) {
-                out.println("  That's " + (goblinCount + wolfCount) + " enemies - maximum is 4. Please try again.");
-                continue;
+            try {
+                return new WaveSpec(enemyCounts);
+            } catch (IllegalArgumentException exception) {
+                out.println("  " + exception.getMessage() + ". Please try again.");
             }
-            return new WaveSpec(goblinCount, wolfCount);
         }
     }
 
