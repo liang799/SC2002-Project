@@ -1,0 +1,114 @@
+package sc2002.turnbased.domain;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import sc2002.turnbased.actions.ActionExecutionContext;
+import sc2002.turnbased.actions.BattleAction;
+import sc2002.turnbased.report.ActionEvent;
+import sc2002.turnbased.report.BattleEvent;
+import sc2002.turnbased.support.TestDependencies;
+
+@Tag("unit")
+class EnemyCombatantTest {
+    @Test
+    void attackPlayer_WhenCreatedByFactory_ExecutesBasicAttackAgainstPlayer() {
+        // arrange
+        EnemyCombatant goblin = TestDependencies.goblin("Goblin");
+        PlayerCharacter warrior = TestDependencies.warrior();
+        ActionExecutionContext context = new StubActionExecutionContext();
+
+        // act
+        List<BattleEvent> events = goblin.attackPlayer(context, warrior);
+        ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
+
+        // assert
+        assertEquals(1, events.size());
+        assertEquals(245, warrior.getCurrentHp());
+        assertEquals("Goblin", actionEvent.getActorName());
+        assertEquals("BasicAttack", actionEvent.getActionName());
+        assertEquals("Warrior", actionEvent.getTargetName());
+        assertEquals(15, actionEvent.getDamage());
+    }
+
+    @Test
+    void attackPlayer_WhenCustomAttackActionInjected_DelegatesToInjectedAction() {
+        // arrange
+        RecordingBattleAction attackAction = new RecordingBattleAction();
+        EnemyCombatant goblin = aDefaultEnemyCombatant(attackAction);
+        PlayerCharacter warrior = TestDependencies.warrior();
+        ActionExecutionContext context = new StubActionExecutionContext();
+
+        // act
+        List<BattleEvent> events = goblin.attackPlayer(context, warrior);
+
+        // assert
+        assertSame(context, attackAction.context);
+        assertSame(goblin, attackAction.actor);
+        assertSame(warrior, attackAction.target);
+        assertEquals(1, events.size());
+        assertSame(attackAction.event, events.get(0));
+    }
+
+    private EnemyCombatant aDefaultEnemyCombatant(BattleAction attackAction) {
+        return new EnemyCombatant(
+            "Goblin",
+            new HitPoints(100, 100),
+            CombatStats.builder()
+                .attack(40)
+                .defense(20)
+                .speed(30)
+                .build(),
+            TestDependencies.registry(),
+            attackAction
+        );
+    }
+
+    private static final class RecordingBattleAction implements BattleAction {
+        private final BattleEvent event = new TestBattleEvent();
+        private ActionExecutionContext context;
+        private Combatant actor;
+        private Combatant target;
+
+        @Override
+        public String getName() {
+            return "EnemyAttack";
+        }
+
+        @Override
+        public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
+            this.context = context;
+            this.actor = actor;
+            this.target = target;
+            return List.of(event);
+        }
+    }
+
+    private static final class StubActionExecutionContext implements ActionExecutionContext {
+        private final Inventory inventory = new Inventory();
+
+        @Override
+        public List<Combatant> getLivingEnemies() {
+            return List.of();
+        }
+
+        @Override
+        public List<Combatant> getLivingEnemiesInTurnOrder() {
+            return List.of();
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    private static final class TestBattleEvent implements BattleEvent {
+    }
+}

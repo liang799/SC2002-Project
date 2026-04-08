@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sc2002.turnbased.actions.ActionExecutionContext;
-import sc2002.turnbased.actions.BattleAction;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
@@ -114,19 +113,29 @@ public class BattleEngine implements ActionExecutionContext {
         }
 
         if (actor == player) {
-            Combatant target = decision.targetReference().resolveFrom(livingEnemies());
-            emitAll(decision.action().execute(this, player, target), battleEventListener);
+            processPlayerTurn(decision, battleEventListener);
             return;
         }
 
-        if (actor instanceof EnemyCombatant enemy && player.isAlive()) {
-            BattleAction action = enemy.selectAction(this);
-            emitAll(action.execute(this, enemy, player), battleEventListener);
+        if (actor instanceof EnemyCombatant enemy) {
+            processEnemyTurn(enemy, battleEventListener);
         }
     }
 
     private boolean shouldAdvanceCooldown(Combatant actor, PlayerDecision decision) {
         return actor == player && decision != null && decision.action().advancesCooldown();
+    }
+
+    private void processPlayerTurn(PlayerDecision decision, BattleEventListener battleEventListener) {
+        Combatant target = decision.targetReference().resolveFrom(livingEnemies());
+        emitAll(decision.action().execute(this, player, target), battleEventListener);
+    }
+
+    private void processEnemyTurn(EnemyCombatant enemy, BattleEventListener battleEventListener) {
+        if (!player.isAlive()) {
+            return;
+        }
+        emitAll(enemy.attackPlayer(this, player), battleEventListener);
     }
 
     private List<Combatant> combatantsAliveAtRoundStart() {
