@@ -53,18 +53,18 @@ public final class TestCombatantBuilder {
     public Combatant build() {
         return new TestCombatant(
             name,
-            CombatStats.of(
-                new HitPoints(currentHp, maxHp),
-                new Stat(attack),
-                new Stat(defense),
-                new Stat(speed)
-            )
+            new HitPoints(currentHp, maxHp),
+            CombatStats.builder()
+                .attack(attack)
+                .defense(defense)
+                .speed(speed)
+                .build()
         );
     }
 
     private static final class TestCombatant extends Combatant {
-        private TestCombatant(String name, CombatStats baseStats) {
-            super(name, baseStats);
+        private TestCombatant(String name, HitPoints hitPoints, CombatStats baseStats) {
+            super(name, hitPoints, baseStats);
         }
     }
 }

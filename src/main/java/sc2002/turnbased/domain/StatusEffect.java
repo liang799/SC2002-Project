@@ -5,8 +5,8 @@ public interface StatusEffect {
 
     TurnEffectResolution onTurnOpportunity();
 
-    default int statModifier(StatType statType) {
-        return 0;
+    default CombatStats modifyStats(CombatStats stats) {
+        return stats;
     }
 
     default int adjustIncomingDamage(Combatant owner, Combatant attacker, int damage, java.util.List<String> notes) {
