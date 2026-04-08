@@ -1,6 +1,7 @@
 package sc2002.turnbased.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.List;
@@ -10,13 +11,35 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.actions.ActionExecutionContext;
 import sc2002.turnbased.actions.BattleAction;
+import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class EnemyCombatantTest {
     @Test
-    void attackPlayer_delegatesToInjectedAttackAction() {
+    void attackPlayer_WhenCreatedByFactory_ExecutesBasicAttackAgainstPlayer() {
+        // arrange
+        EnemyCombatant goblin = TestDependencies.goblin("Goblin");
+        PlayerCharacter warrior = TestDependencies.warrior();
+        ActionExecutionContext context = new StubActionExecutionContext();
+
+        // act
+        List<BattleEvent> events = goblin.attackPlayer(context, warrior);
+        ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
+
+        // assert
+        assertEquals(1, events.size());
+        assertEquals(245, warrior.getCurrentHp());
+        assertEquals("Goblin", actionEvent.getActorName());
+        assertEquals("BasicAttack", actionEvent.getActionName());
+        assertEquals("Warrior", actionEvent.getTargetName());
+        assertEquals(15, actionEvent.getDamage());
+    }
+
+    @Test
+    void attackPlayer_WhenCustomAttackActionInjected_DelegatesToInjectedAction() {
+        // arrange
         RecordingBattleAction attackAction = new RecordingBattleAction();
         EnemyCombatant goblin = new EnemyCombatant(
             "Goblin",
@@ -32,8 +55,10 @@ class EnemyCombatantTest {
         PlayerCharacter warrior = TestDependencies.warrior();
         ActionExecutionContext context = new StubActionExecutionContext();
 
+        // act
         List<BattleEvent> events = goblin.attackPlayer(context, warrior);
 
+        // assert
         assertSame(context, attackAction.context);
         assertSame(goblin, attackAction.actor);
         assertSame(warrior, attackAction.target);
