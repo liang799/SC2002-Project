@@ -22,22 +22,12 @@ class BasicAttackActionTest {
     void execute_WhenUserSelectedTarget_DealsDamageToSelectedTargetOnly() {
         // arrange
         BasicAttackAction action = new BasicAttackAction();
-        Combatant attacker = TestCombatantBuilder.aCombatant()
-            .named("Warrior")
-            .withAttack(40)
-            .build();
-        Combatant selectedTarget = TestCombatantBuilder.aCombatant()
-            .named("Goblin")
+        Combatant attacker = aCombatantNamed("Warrior").build();
+        Combatant selectedTarget = aCombatantNamed("Goblin")
             .withCurrentHp(70)
-            .withMaxHp(70)
             .withDefense(15)
             .build();
-        Combatant otherEnemy = TestCombatantBuilder.aCombatant()
-            .named("Wolf")
-            .withCurrentHp(80)
-            .withMaxHp(80)
-            .withDefense(5)
-            .build();
+        Combatant otherEnemy = aCombatantNamed("Wolf").build();
 
         // act
         List<BattleEvent> events = action.execute(new StubActionExecutionContext(List.of(selectedTarget, otherEnemy)), attacker, selectedTarget);
@@ -45,7 +35,7 @@ class BasicAttackActionTest {
 
         // assert
         assertEquals(45, selectedTarget.getCurrentHp());
-        assertEquals(80, otherEnemy.getCurrentHp());
+        assertEquals(100, otherEnemy.getCurrentHp());
         assertEquals("Warrior", actionEvent.getActorName());
         assertEquals("BasicAttack", actionEvent.getActionName());
         assertEquals("Goblin", actionEvent.getTargetName());
@@ -57,14 +47,10 @@ class BasicAttackActionTest {
     void execute_WhenTargetDefenseExceedsAttack_DealsZeroDamage() {
         // arrange
         BasicAttackAction action = new BasicAttackAction();
-        Combatant attacker = TestCombatantBuilder.aCombatant()
-            .named("Goblin")
+        Combatant attacker = aCombatantNamed("Goblin")
             .withAttack(10)
             .build();
-        Combatant target = TestCombatantBuilder.aCombatant()
-            .named("Warrior")
-            .withCurrentHp(100)
-            .withMaxHp(100)
+        Combatant target = aCombatantNamed("Warrior")
             .withDefense(25)
             .build();
 
@@ -83,14 +69,11 @@ class BasicAttackActionTest {
     void execute_WhenDamageExceedsCurrentHp_ClampsTargetHpAtZero() {
         // arrange
         BasicAttackAction action = new BasicAttackAction();
-        Combatant attacker = TestCombatantBuilder.aCombatant()
-            .named("Wolf")
+        Combatant attacker = aCombatantNamed("Wolf")
             .withAttack(90)
             .build();
-        Combatant target = TestCombatantBuilder.aCombatant()
-            .named("Wizard")
+        Combatant target = aCombatantNamed("Wizard")
             .withCurrentHp(20)
-            .withMaxHp(60)
             .withDefense(10)
             .build();
 
@@ -102,6 +85,10 @@ class BasicAttackActionTest {
         assertEquals(0, target.getCurrentHp());
         assertEquals(0, actionEvent.getHpAfter());
         assertTrue(actionEvent.isTargetEliminated());
+    }
+
+    private TestCombatantBuilder aCombatantNamed(String name) {
+        return TestCombatantBuilder.aCombatant().named(name);
     }
 
     private record StubActionExecutionContext(List<Combatant> livingEnemies) implements ActionExecutionContext {

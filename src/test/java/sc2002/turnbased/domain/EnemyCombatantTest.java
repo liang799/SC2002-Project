@@ -41,17 +41,7 @@ class EnemyCombatantTest {
     void attackPlayer_WhenCustomAttackActionInjected_DelegatesToInjectedAction() {
         // arrange
         RecordingBattleAction attackAction = new RecordingBattleAction();
-        EnemyCombatant goblin = new EnemyCombatant(
-            "Goblin",
-            new HitPoints(110, 110),
-            CombatStats.builder()
-                .attack(35)
-                .defense(10)
-                .speed(15)
-                .build(),
-            TestDependencies.registry(),
-            attackAction
-        );
+        EnemyCombatant goblin = aDefaultEnemyCombatant(attackAction);
         PlayerCharacter warrior = TestDependencies.warrior();
         ActionExecutionContext context = new StubActionExecutionContext();
 
@@ -64,6 +54,20 @@ class EnemyCombatantTest {
         assertSame(warrior, attackAction.target);
         assertEquals(1, events.size());
         assertSame(attackAction.event, events.get(0));
+    }
+
+    private EnemyCombatant aDefaultEnemyCombatant(BattleAction attackAction) {
+        return new EnemyCombatant(
+            "Goblin",
+            new HitPoints(100, 100),
+            CombatStats.builder()
+                .attack(40)
+                .defense(20)
+                .speed(30)
+                .build(),
+            TestDependencies.registry(),
+            attackAction
+        );
     }
 
     private static final class RecordingBattleAction implements BattleAction {
