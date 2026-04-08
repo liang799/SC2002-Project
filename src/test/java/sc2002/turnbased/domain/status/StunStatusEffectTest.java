@@ -17,7 +17,7 @@ class StunStatusEffectTest {
     @Test
     void onTurnOpportunity_whenMultipleTurnsRemain_blocksAndExpiresOnLastBlockedTurn() {
         StunStatusEffect effect = new StunStatusEffect(2);
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
         TurnEffectResolution firstResolution = effect.onTurnOpportunity(owner, eventPublisher);
@@ -36,7 +36,7 @@ class StunStatusEffectTest {
     @Test
     void onTurnOpportunity_whenAlreadyExpired_allowsTurnWithoutNotes() {
         StunStatusEffect effect = new StunStatusEffect(0);
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
         TurnEffectResolution resolution = effect.onTurnOpportunity(owner, eventPublisher);

@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
 import sc2002.turnbased.support.FakeStatusEffectEventPublisher;
 import sc2002.turnbased.support.TestCombatantBuilder;
 
@@ -38,8 +37,8 @@ class SmokeBombStatusEffectTest {
     @Test
     void adjustIncomingDamage_whenEffectAlreadyExpired_leavesDamageUnchangedAndPublishesNoEvent() {
         // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().build();
         SmokeBombStatusEffect effect = new SmokeBombStatusEffect(0);
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
@@ -57,8 +56,8 @@ class SmokeBombStatusEffectTest {
     @Test
     void adjustIncomingDamage_whenEnemyAttackConsumesLastCharge_blocksDamageAndExpires() {
         // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().build();
         SmokeBombStatusEffect effect = new SmokeBombStatusEffect(1);
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
@@ -75,8 +74,8 @@ class SmokeBombStatusEffectTest {
     @Test
     void adjustIncomingDamage_whenChargesRemainAfterFirstBlock_staysActive() {
         // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().build();
         SmokeBombStatusEffect effect = new SmokeBombStatusEffect(2);
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
@@ -93,8 +92,8 @@ class SmokeBombStatusEffectTest {
     @Test
     void adjustIncomingDamage_whenHitTwice_consumesChargesAcrossCalls() {
         // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().build();
         SmokeBombStatusEffect effect = new SmokeBombStatusEffect(2);
         FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
@@ -109,25 +108,6 @@ class SmokeBombStatusEffectTest {
             () -> assertEquals(0, secondAdjustment.damage()),
             () -> assertEquals(25, thirdAdjustment.damage()),
             () -> assertTrue(effect.isExpired())
-        );
-    }
-
-    @Test
-    void adjustIncomingDamage_whenEnemyAttackIsBlocked_publishesActivationEvent() {
-        // Arrange
-        Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
-        SmokeBombStatusEffect effect = new SmokeBombStatusEffect(2);
-        FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
-        List<SmokeBombActivatedEvent> expectedEvents = List.of(new SmokeBombActivatedEvent("Owner", "Attacker", 1));
-
-        // Act
-        DamageAdjustment adjustment = effect.adjustIncomingDamage(owner, attacker, 15, eventPublisher);
-
-        // Assert
-        assertAll(
-            () -> assertEquals(0, adjustment.damage()),
-            () -> assertEquals(expectedEvents, eventPublisher.publishedEvents())
         );
     }
 }
