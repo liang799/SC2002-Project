@@ -40,7 +40,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("unit")
     @DisplayName("WaveSpec accepts valid enemy combinations")
-    void givenValidEnemyCounts_whenCreatingWaveSpec_thenInstantiatesSuccessfully() {
+    void waveSpec_WhenEnemyCountsAreValid_CreatesInstanceSuccessfully() {
         assertAll(
             () -> assertDoesNotThrow(() -> waveSpec(1, 0)),
             () -> assertDoesNotThrow(() -> waveSpec(0, 1)),
@@ -54,7 +54,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("unit")
     @DisplayName("WaveSpec rejects invalid enemy combinations")
-    void givenInvalidEnemyCounts_whenCreatingWaveSpec_thenThrowsIllegalArgumentException() {
+    void waveSpec_WhenEnemyCountsAreInvalid_ThrowsIllegalArgumentException() {
         assertAll(
             () -> assertThrows(IllegalArgumentException.class, () -> waveSpec(0, 0)),
             () -> assertThrows(IllegalArgumentException.class, () -> waveSpec(3, 2)),
@@ -68,7 +68,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("unit")
     @DisplayName("WaveSpec totals all configured enemies")
-    void givenValidEnemyCounts_whenCountingTotalEnemies_thenReturnsCombinedTotal() {
+    void totalEnemies_WhenWaveSpecContainsMultipleEnemyTypes_ReturnsCombinedTotal() {
         WaveSpec waveSpec = waveSpec(2, 1);
 
         assertEquals(3, waveSpec.totalEnemies());
@@ -77,7 +77,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("unit")
     @DisplayName("CustomGameConfiguration accepts one-wave and two-wave setups")
-    void givenValidInputs_whenCreatingCustomGameConfiguration_thenInstantiatesSuccessfully() {
+    void customGameConfiguration_WhenInputsAreValid_CreatesInstanceSuccessfully() {
         List<ItemType> selectedItems = selectedItems(ItemType.POTION, ItemType.SMOKE_BOMB);
 
         assertAll(
@@ -89,7 +89,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("unit")
     @DisplayName("CustomGameConfiguration rejects invalid setup inputs")
-    void givenInvalidInputs_whenCreatingCustomGameConfiguration_thenThrows() {
+    void customGameConfiguration_WhenInputsAreInvalid_ThrowsException() {
         List<ItemType> selectedItems = selectedItems(ItemType.POTION, ItemType.SMOKE_BOMB);
 
         assertAll(
@@ -115,7 +115,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("integration")
     @DisplayName("Custom battle setup keeps a single wave in the initial enemy list")
-    void givenSingleWaveCustomConfiguration_whenCreatingBattleSetup_thenCreatesOnlyInitialEnemies() {
+    void createCustom_WhenConfigurationContainsSingleWave_CreatesOnlyInitialEnemies() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(PlayerType.WARRIOR, selectedItems(ItemType.POTION, ItemType.POWER_STONE), waveSpec(1, 0))
         );
@@ -129,7 +129,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("integration")
     @DisplayName("Custom battle setup creates every configured enemy in a wave")
-    void givenFourEnemyCustomConfiguration_whenCreatingBattleSetup_thenCreatesAllConfiguredEnemies() {
+    void createCustom_WhenConfigurationContainsFourEnemies_CreatesAllConfiguredEnemies() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(PlayerType.WIZARD, selectedItems(ItemType.POTION, ItemType.POWER_STONE), waveSpec(2, 2))
         );
@@ -143,7 +143,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("integration")
     @DisplayName("Custom battle setup splits configured waves into initial and backup enemies")
-    void givenTwoWaveCustomConfiguration_whenCreatingBattleSetup_thenCreatesInitialAndBackupEnemies() {
+    void createCustom_WhenConfigurationContainsTwoWaves_CreatesInitialAndBackupEnemies() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(
                 PlayerType.WARRIOR,
@@ -162,7 +162,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("integration")
     @DisplayName("Custom battle setup assigns distinct names across repeated enemy types")
-    void givenRepeatedEnemyTypesAcrossWaves_whenCreatingBattleSetup_thenAssignsDistinctEnemyNames() {
+    void createCustom_WhenRepeatedEnemyTypesAppearAcrossWaves_AssignsDistinctEnemyNames() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(
                 PlayerType.WARRIOR,
@@ -186,7 +186,7 @@ class CustomGameModeVerifierTest {
     @Test
     @Tag("integration")
     @DisplayName("Custom battle setup preserves player selection and chosen items")
-    void givenPlayerTypeAndSelectedItems_whenCreatingBattleSetup_thenCreatesMatchingPlayerStatsAndInventory() {
+    void createCustom_WhenPlayerTypeAndItemsAreSelected_CreatesMatchingPlayerStatsAndInventory() {
         BattleSetup wizardSetup = battleSetupFactory.createCustom(
             customConfig(PlayerType.WIZARD, selectedItems(ItemType.POTION, ItemType.POWER_STONE), waveSpec(1, 0))
         );
@@ -204,8 +204,8 @@ class CustomGameModeVerifierTest {
 
     @Test
     @Tag("e2e")
-    @DisplayName("Single-wave custom battles run to victory")
-    void givenSingleWaveCustomBattle_whenRunningUntilBattleEnds_thenPlayerWins() {
+    @DisplayName("Given a single-wave custom battle, when the battle runs to completion, then the player wins")
+    void givenSingleWaveCustomBattle_WhenBattleRunsToCompletion_ThenPlayerWins() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(PlayerType.WARRIOR, selectedItems(ItemType.POTION, ItemType.SMOKE_BOMB), waveSpec(1, 0))
         );
@@ -224,8 +224,8 @@ class CustomGameModeVerifierTest {
 
     @Test
     @Tag("e2e")
-    @DisplayName("Two-wave custom battles trigger the backup spawn and still end in victory")
-    void givenTwoWaveCustomBattle_whenRunningUntilBattleEnds_thenBackupSpawnTriggersAndPlayerWins() {
+    @DisplayName("Given a two-wave custom battle, when the battle runs to completion, then backup spawn triggers and the player wins")
+    void givenTwoWaveCustomBattle_WhenBattleRunsToCompletion_ThenBackupSpawnTriggersAndPlayerWins() {
         BattleSetup battleSetup = battleSetupFactory.createCustom(
             customConfig(
                 PlayerType.WARRIOR,

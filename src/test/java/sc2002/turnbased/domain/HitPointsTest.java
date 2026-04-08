@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class HitPointsTest {
     @Test
-    void takeDamage_whenDamageExceedsCurrentHp_capsCurrentHpAtZero() {
+    void takeDamage_WhenDamageExceedsCurrentHp_CapsCurrentHpAtZero() {
         HitPoints hitPoints = new HitPoints(70, 100);
 
         HitPoints updatedHitPoints = hitPoints.takeDamage(90);
@@ -19,7 +19,7 @@ class HitPointsTest {
     }
 
     @Test
-    void heal_whenHealingExceedsMaxHp_capsCurrentHpAtMax() {
+    void heal_WhenHealingExceedsMaxHp_CapsCurrentHpAtMax() {
         HitPoints hitPoints = new HitPoints(40, 100);
 
         HitPoints updatedHitPoints = hitPoints.heal(80);
@@ -28,22 +28,22 @@ class HitPointsTest {
     }
 
     @Test
-    void constructor_whenCurrentHpIsNegative_throwsIllegalArgumentException() {
+    void constructor_WhenCurrentHpIsNegative_ThrowsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new HitPoints(-1, 100));
     }
 
     @Test
-    void constructor_whenCurrentHpExceedsMaxHp_throwsIllegalArgumentException() {
+    void constructor_WhenCurrentHpExceedsMaxHp_ThrowsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new HitPoints(101, 100));
     }
 
     @Test
-    void constructor_whenMaxHpIsNotPositive_throwsIllegalArgumentException() {
+    void constructor_WhenMaxHpIsNotPositive_ThrowsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new HitPoints(0, 0));
     }
 
     @Test
-    void isDead_whenCurrentHpIsZero_returnsTrue() {
+    void isDead_WhenCurrentHpIsZero_ReturnsTrue() {
         HitPoints hitPoints = new HitPoints(0, 100);
 
         boolean isDead = hitPoints.isDead();
@@ -52,7 +52,7 @@ class HitPointsTest {
     }
 
     @Test
-    void getHealthPercentage_whenCurrentHpIsQuarterOfMax_returnsTwentyFivePercent() {
+    void getHealthPercentage_WhenCurrentHpIsQuarterOfMax_ReturnsTwentyFivePercent() {
         HitPoints hitPoints = new HitPoints(25, 100);
 
         double healthPercentage = hitPoints.getHealthPercentage();

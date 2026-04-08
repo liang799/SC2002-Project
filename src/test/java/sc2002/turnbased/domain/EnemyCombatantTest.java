@@ -13,7 +13,9 @@ import sc2002.turnbased.actions.ActionExecutionContext;
 import sc2002.turnbased.actions.BattleAction;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
+import sc2002.turnbased.support.TestActionExecutionContext;
 import sc2002.turnbased.support.TestDependencies;
+import sc2002.turnbased.support.TestEnemyCombatantBuilder;
 
 @Tag("unit")
 class EnemyCombatantTest {
@@ -22,7 +24,7 @@ class EnemyCombatantTest {
         // arrange
         EnemyCombatant goblin = TestDependencies.goblin("Goblin");
         PlayerCharacter warrior = TestDependencies.warrior();
-        ActionExecutionContext context = new StubActionExecutionContext();
+        TestActionExecutionContext context = new TestActionExecutionContext(List.of());
 
         // act
         List<BattleEvent> events = goblin.attackPlayer(context, warrior);
@@ -38,12 +40,14 @@ class EnemyCombatantTest {
     }
 
     @Test
-    void attackPlayer_WhenCustomAttackActionInjected_DelegatesToInjectedAction() {
+    void attackPlayer_WhenCustomAttackActionIsInjected_DelegatesToInjectedAction() {
         // arrange
         RecordingBattleAction attackAction = new RecordingBattleAction();
-        EnemyCombatant goblin = aDefaultEnemyCombatant(attackAction);
+        EnemyCombatant goblin = TestEnemyCombatantBuilder.anEnemyCombatant(attackAction)
+            .named("Goblin")
+            .build();
         PlayerCharacter warrior = TestDependencies.warrior();
-        ActionExecutionContext context = new StubActionExecutionContext();
+        TestActionExecutionContext context = new TestActionExecutionContext(List.of());
 
         // act
         List<BattleEvent> events = goblin.attackPlayer(context, warrior);
@@ -54,20 +58,6 @@ class EnemyCombatantTest {
         assertSame(warrior, attackAction.target);
         assertEquals(1, events.size());
         assertSame(attackAction.event, events.get(0));
-    }
-
-    private EnemyCombatant aDefaultEnemyCombatant(BattleAction attackAction) {
-        return new EnemyCombatant(
-            "Goblin",
-            new HitPoints(100, 100),
-            CombatStats.builder()
-                .attack(40)
-                .defense(20)
-                .speed(30)
-                .build(),
-            TestDependencies.registry(),
-            attackAction
-        );
     }
 
     private static final class RecordingBattleAction implements BattleAction {
@@ -87,25 +77,6 @@ class EnemyCombatantTest {
             this.actor = actor;
             this.target = target;
             return List.of(event);
-        }
-    }
-
-    private static final class StubActionExecutionContext implements ActionExecutionContext {
-        private final Inventory inventory = new Inventory();
-
-        @Override
-        public List<Combatant> getLivingEnemies() {
-            return List.of();
-        }
-
-        @Override
-        public List<Combatant> getLivingEnemiesInTurnOrder() {
-            return List.of();
-        }
-
-        @Override
-        public Inventory getInventory() {
-            return inventory;
         }
     }
 

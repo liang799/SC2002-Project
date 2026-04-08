@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class CombatStatsTest {
     @Test
-    void builder_namedStatsProvided_returnsFixedValueObjects() {
+    void builder_WhenNamedStatsAreProvided_ReturnsFixedValueObjects() {
         // arrange
         CombatStats combatStats = CombatStats.builder()
             .attack(45)
@@ -28,7 +28,7 @@ class CombatStatsTest {
     }
 
     @Test
-    void withStat_requestedUpdate_returnsUpdatedCopy() {
+    void withStat_WhenAStatUpdateIsRequested_ReturnsUpdatedCopy() {
         // arrange
         CombatStats combatStats = CombatStats.builder()
             .attack(45)
@@ -46,7 +46,7 @@ class CombatStatsTest {
     }
 
     @Test
-    void statOperations_composedUpdates_returnsExpectedResolvedStats() {
+    void statOperations_WhenUpdatesAreComposed_ReturnsExpectedResolvedStats() {
         // arrange
         CombatStats combatStats = CombatStats.builder()
             .attack(40)

@@ -12,7 +12,7 @@ import sc2002.turnbased.actions.ShieldBashAction;
 @Tag("unit")
 class SpecialSkillTest {
     @Test
-    void isAvailable_whenCooldownHasNotBeenTriggered_returnsTrue() {
+    void isAvailable_WhenCooldownHasNotBeenTriggered_ReturnsTrue() {
         SpecialSkill specialSkill = specialSkillWithCooldown(3);
 
         boolean available = specialSkill.isAvailable();
@@ -21,7 +21,7 @@ class SpecialSkillTest {
     }
 
     @Test
-    void triggerCooldown_whenCalled_setsCooldownRemainingToConfiguredTurns() {
+    void triggerCooldown_WhenCalled_SetsCooldownRemainingToConfiguredTurns() {
         SpecialSkill specialSkill = specialSkillWithCooldown(3);
 
         specialSkill.triggerCooldown();
@@ -31,7 +31,7 @@ class SpecialSkillTest {
     }
 
     @Test
-    void advanceCooldown_whenCooldownIsActive_decrementsRemainingTurns() {
+    void advanceCooldown_WhenCooldownIsActive_DecrementsRemainingTurns() {
         SpecialSkill specialSkill = specialSkillWithCooldown(3);
         specialSkill.triggerCooldown();
 
@@ -42,7 +42,7 @@ class SpecialSkillTest {
     }
 
     @Test
-    void advanceCooldown_whenFinalTurnElapses_makesSkillAvailableAgain() {
+    void advanceCooldown_WhenFinalTurnElapses_MakesSkillAvailableAgain() {
         SpecialSkill specialSkill = specialSkillWithCooldown(1);
         specialSkill.triggerCooldown();
 

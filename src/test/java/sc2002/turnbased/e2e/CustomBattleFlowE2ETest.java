@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static sc2002.turnbased.support.BattleRoundAssertions.assertCapturedRound;
+import static sc2002.turnbased.support.ExpectedCombatantState.enemy;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,7 +33,6 @@ import sc2002.turnbased.domain.status.event.StatusEffectEvent;
 import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
-import sc2002.turnbased.engine.BattleSetupFactory;
 import sc2002.turnbased.engine.DifficultyLevel;
 import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerDecision;
@@ -40,9 +41,7 @@ import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.engine.SpeedTurnOrderStrategy;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
-import sc2002.turnbased.report.CombatantSummary;
 import sc2002.turnbased.report.NarrationEvent;
-import sc2002.turnbased.report.RoundSummaryEvent;
 import sc2002.turnbased.report.SkippedTurnEvent;
 import sc2002.turnbased.support.BattleTestSupport;
 import sc2002.turnbased.support.BattleTestSupport.RoundCapture;
@@ -51,8 +50,8 @@ import sc2002.turnbased.support.TestDependencies;
 @Tag("e2e")
 class CustomBattleFlowE2ETest {
     @Test
-    @DisplayName("Medium warrior battle flow matches the expected end-to-end transcript")
-    void mediumWarriorBattleFlowMatchesExpectedTranscript() {
+    @DisplayName("Given a medium warrior battle flow, when rounds are run, then the transcript matches the expected outcome")
+    void givenMediumWarriorBattleFlow_WhenRoundsAreRun_ThenTranscriptMatchesExpectedOutcome() {
         BattleSetup battleSetup = TestDependencies.battleSetupFactory().create(
             new GameConfiguration(
                 PlayerType.WARRIOR,
@@ -66,69 +65,69 @@ class CustomBattleFlowE2ETest {
 
         Map<Integer, RoundCapture> rounds = BattleTestSupport.captureRounds(events);
 
-        assertRound(rounds.get(1), 220, 3, 1, 1, Set.of(),
-            enemy("Goblin", 55, true, Set.of()),
-            enemy("Wolf", 5, true, Set.of("STUNNED"))
+        assertCapturedRound(rounds.get(1), 220, 3, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 1), Set.of(),
+            enemy("Goblin", 55),
+            enemy("Wolf", 5).stunned()
         );
-        assertRound(rounds.get(2), 220, 2, 1, 0, Set.of(),
-            enemy("Goblin", 55, true, Set.of()),
-            enemy("Wolf", 5, true, Set.of("STUNNED"))
+        assertCapturedRound(rounds.get(2), 220, 2, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 55),
+            enemy("Wolf", 5).stunned()
         );
-        assertRound(rounds.get(3), 220, 1, 1, 0, Set.of(),
-            enemy("Goblin", 55, true, Set.of()),
-            enemy("Wolf", 0, false, Set.of())
+        assertCapturedRound(rounds.get(3), 220, 1, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 55),
+            enemy("Wolf", 0)
         );
-        assertRound(rounds.get(4), 215, 0, 1, 0, Set.of("DEFENDING"),
-            enemy("Goblin", 55, true, Set.of()),
-            enemy("Wolf", 0, false, Set.of())
+        assertCapturedRound(rounds.get(4), 215, 0, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
+            enemy("Goblin", 55),
+            enemy("Wolf", 0)
         );
-        assertRound(rounds.get(5), 215, 3, 1, 0, Set.of("DEFENDING"),
-            enemy("Goblin", 30, true, Set.of("STUNNED")),
-            enemy("Wolf", 0, false, Set.of())
+        assertCapturedRound(rounds.get(5), 215, 3, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
+            enemy("Goblin", 30).stunned(),
+            enemy("Wolf", 0)
         );
-        assertRound(rounds.get(6), 215, 2, 1, 0, Set.of(),
-            enemy("Goblin", 5, true, Set.of()),
-            enemy("Wolf", 0, false, Set.of())
+        assertCapturedRound(rounds.get(6), 215, 2, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 5),
+            enemy("Wolf", 0)
         );
-        assertRound(rounds.get(7), 245, 1, 0, 0, Set.of(),
-            enemy("Goblin", 5, true, Set.of()),
-            enemy("Wolf", 0, false, Set.of())
+        assertCapturedRound(rounds.get(7), 245, 1, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 5),
+            enemy("Wolf", 0)
         );
-        assertRound(rounds.get(8), 245, 0, 0, 0, Set.of(),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 40, true, Set.of()),
-            enemy("Wolf B", 40, true, Set.of())
+        assertCapturedRound(rounds.get(8), 245, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 40),
+            enemy("Wolf B", 40)
         );
-        assertRound(rounds.get(9), 195, 0, 0, 0, Set.of("DEFENDING"),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 40, true, Set.of()),
-            enemy("Wolf B", 40, true, Set.of())
+        assertCapturedRound(rounds.get(9), 195, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 40),
+            enemy("Wolf B", 40)
         );
-        assertRound(rounds.get(10), 165, 3, 0, 0, Set.of("DEFENDING"),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 5, true, Set.of("STUNNED")),
-            enemy("Wolf B", 40, true, Set.of())
+        assertCapturedRound(rounds.get(10), 165, 3, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 5).stunned(),
+            enemy("Wolf B", 40)
         );
-        assertRound(rounds.get(11), 140, 2, 0, 0, Set.of(),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 0, false, Set.of()),
-            enemy("Wolf B", 40, true, Set.of())
+        assertCapturedRound(rounds.get(11), 140, 2, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 40)
         );
-        assertRound(rounds.get(12), 115, 1, 0, 0, Set.of(),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 0, false, Set.of()),
-            enemy("Wolf B", 5, true, Set.of())
+        assertCapturedRound(rounds.get(12), 115, 1, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 5)
         );
-        assertRound(rounds.get(13), 90, 0, 0, 0, Set.of(),
-            enemy("Goblin", 0, false, Set.of()),
-            enemy("Wolf", 0, false, Set.of()),
-            enemy("Wolf A", 0, false, Set.of()),
-            enemy("Wolf B", 0, false, Set.of())
+        assertCapturedRound(rounds.get(13), 90, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
+            enemy("Goblin", 0),
+            enemy("Wolf", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 0)
         );
 
         assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20,
@@ -157,38 +156,6 @@ class CustomBattleFlowE2ETest {
             List.of("Round 12 fallback used: attempted SpecialSkill with cooldown 2, switched to BasicAttack."),
             decisionProvider.getFallbackDescriptions()
         );
-    }
-
-    private static void assertRound(
-        RoundCapture roundCapture,
-        int expectedWarriorHp,
-        int expectedCooldown,
-        int expectedPotionCount,
-        int expectedSmokeBombCount,
-        Set<String> expectedPlayerStatuses,
-        ExpectedEnemyState... expectedEnemies
-    ) {
-        assertNotNull(roundCapture, "Missing expected round capture");
-        RoundSummaryEvent summary = roundCapture.summary();
-        assertNotNull(summary, "Missing round summary");
-        CombatantSummary playerSummary = summary.getPlayerSummary();
-
-        assertAll(
-            () -> assertEquals(expectedWarriorHp, playerSummary.getCurrentHp(), "Unexpected Warrior HP in round " + summary.getRoundNumber()),
-            () -> assertEquals(expectedCooldown, summary.getSpecialSkillCooldown(), "Unexpected cooldown in round " + summary.getRoundNumber()),
-            () -> assertEquals(expectedPotionCount, summary.getInventorySnapshot().getOrDefault(ItemType.POTION, 0), "Unexpected Potion count in round " + summary.getRoundNumber()),
-            () -> assertEquals(expectedSmokeBombCount, summary.getInventorySnapshot().getOrDefault(ItemType.SMOKE_BOMB, 0), "Unexpected Smoke Bomb count in round " + summary.getRoundNumber()),
-            () -> assertTrue(playerSummary.getActiveStatuses().containsAll(expectedPlayerStatuses), "Unexpected Warrior statuses in round " + summary.getRoundNumber())
-        );
-
-        for (ExpectedEnemyState expectedEnemy : expectedEnemies) {
-            CombatantSummary actual = BattleTestSupport.findEnemy(summary, expectedEnemy.name());
-            assertAll(
-                () -> assertEquals(expectedEnemy.hp(), actual.getCurrentHp(), "Unexpected HP for " + expectedEnemy.name() + " in round " + summary.getRoundNumber()),
-                () -> assertEquals(expectedEnemy.alive(), actual.isAlive(), "Unexpected alive state for " + expectedEnemy.name() + " in round " + summary.getRoundNumber()),
-                () -> assertTrue(actual.getActiveStatuses().containsAll(expectedEnemy.statuses()), "Unexpected statuses for " + expectedEnemy.name() + " in round " + summary.getRoundNumber())
-            );
-        }
     }
 
     private static void assertAction(
@@ -261,13 +228,6 @@ class CustomBattleFlowE2ETest {
             .map(NarrationEvent::getText)
             .anyMatch("Victory:"::equals);
         assertTrue(victoryFound, "Expected victory narration to be emitted");
-    }
-
-    private static ExpectedEnemyState enemy(String name, int hp, boolean alive, Set<String> statuses) {
-        return new ExpectedEnemyState(name, hp, alive, statuses);
-    }
-
-    private record ExpectedEnemyState(String name, int hp, boolean alive, Set<String> statuses) {
     }
 
     private static final class CustomFlowDecisionProvider implements PlayerDecisionProvider {

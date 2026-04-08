@@ -19,7 +19,7 @@ import sc2002.turnbased.support.TestDependencies;
 @Tag("unit")
 class StatusEffectRegistryTest {
     @Test
-    void resolveTurnWindow_whenStunBlocksNextTurn_marksTurnBlockedAndExpiresEffect() {
+    void resolveTurnWindow_WhenStunBlocksNextTurn_MarksTurnBlockedAndExpiresEffect() {
         StatusEffectRegistry registry = TestDependencies.registry();
         Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
 
@@ -36,7 +36,7 @@ class StatusEffectRegistryTest {
     }
 
     @Test
-    void adjustIncomingDamage_whenSmokeBombBlocksEnemyAttack_returnsZeroAndExpiresEffect() {
+    void adjustIncomingDamage_WhenSmokeBombBlocksEnemyAttack_ReturnsZeroAndExpiresEffect() {
         PlayerCharacter warrior = TestDependencies.warrior();
         EnemyCombatant goblin = TestDependencies.goblin("Goblin");
 
