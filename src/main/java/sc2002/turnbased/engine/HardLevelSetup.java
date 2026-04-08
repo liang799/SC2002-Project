@@ -10,7 +10,6 @@ import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.Wizard;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 
 public final class HardLevelSetup {
@@ -21,9 +20,6 @@ public final class HardLevelSetup {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(inventory, "inventory");
 
-        PlayerType playerType = player instanceof Wizard
-            ? PlayerType.WIZARD
-            : PlayerType.WARRIOR;
         List<ItemType> selectedItems = new java.util.ArrayList<>();
         for (ItemType itemType : ItemType.values()) {
             for (int count = 0; count < inventory.countOf(itemType); count++) {
@@ -36,7 +32,14 @@ public final class HardLevelSetup {
             new ShieldBashAction(),
             new ArcaneBlastAction()
         )).create(
-            new GameConfiguration(playerType, DifficultyLevel.HARD, selectedItems)
+            new GameConfiguration(resolvePlayerType(player), DifficultyLevel.HARD, selectedItems)
         );
+    }
+
+    private static PlayerType resolvePlayerType(PlayerCharacter player) {
+        return java.util.Arrays.stream(PlayerType.values())
+            .filter(playerType -> playerType.getDisplayName().equals(player.getName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Unsupported player class: " + player.getName()));
     }
 }
