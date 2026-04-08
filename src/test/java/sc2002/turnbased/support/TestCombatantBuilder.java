@@ -1,12 +1,15 @@
 package sc2002.turnbased.support;
 
+import java.util.Objects;
+
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.HitPoints;
-import sc2002.turnbased.domain.status.StatusEffectEventPublisher;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
+import sc2002.turnbased.domain.status.StatusEffectRegistryFactory;
 
 public final class TestCombatantBuilder {
+    private final StatusEffectRegistryFactory statusEffectRegistryFactory;
     private String name = "Test Combatant";
     private int currentHp = 100;
     private int maxHp = 100;
@@ -14,11 +17,16 @@ public final class TestCombatantBuilder {
     private int defense = 20;
     private int speed = 30;
 
-    private TestCombatantBuilder() {
+    private TestCombatantBuilder(StatusEffectRegistryFactory statusEffectRegistryFactory) {
+        this.statusEffectRegistryFactory = Objects.requireNonNull(statusEffectRegistryFactory, "statusEffectRegistryFactory");
     }
 
     public static TestCombatantBuilder aCombatant() {
-        return new TestCombatantBuilder();
+        return aCombatant(TestDependencies::registry);
+    }
+
+    public static TestCombatantBuilder aCombatant(StatusEffectRegistryFactory statusEffectRegistryFactory) {
+        return new TestCombatantBuilder(statusEffectRegistryFactory);
     }
 
     public TestCombatantBuilder named(String name) {
@@ -33,6 +41,12 @@ public final class TestCombatantBuilder {
 
     public TestCombatantBuilder withMaxHp(int maxHp) {
         this.maxHp = maxHp;
+        return this;
+    }
+
+    public TestCombatantBuilder withHp(int hp) {
+        currentHp = hp;
+        maxHp = hp;
         return this;
     }
 
@@ -60,7 +74,7 @@ public final class TestCombatantBuilder {
                 .defense(defense)
                 .speed(speed)
                 .build(),
-            new StatusEffectRegistry(new StatusEffectEventPublisher())
+            statusEffectRegistryFactory.create()
         );
     }
 
