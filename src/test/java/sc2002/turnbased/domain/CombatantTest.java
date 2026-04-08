@@ -9,13 +9,14 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
 import sc2002.turnbased.domain.status.DefendStatusEffect;
+import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class CombatantTest {
     @Test
     void receiveDamageAndHeal_existingHitPoints_updatesHitPointsValueObject() {
         // arrange
-        Warrior warrior = new Warrior();
+        Warrior warrior = TestDependencies.warrior();
 
         // act
         warrior.receiveDamage(90);
@@ -31,7 +32,7 @@ class CombatantTest {
     @Test
     void addStatusEffect_arcanePowerBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
         // arrange
-        Wizard wizard = new Wizard();
+        Wizard wizard = TestDependencies.wizard();
 
         // act
         wizard.addStatusEffect(new ArcanePowerStatusEffect(10));
@@ -46,7 +47,7 @@ class CombatantTest {
     @Test
     void addStatusEffect_arcanePowerEffectsStack_returnsMergedAttackBonus() {
         // arrange
-        Warrior warrior = new Warrior();
+        Warrior warrior = TestDependencies.warrior();
 
         // act
         warrior.addStatusEffect(new ArcanePowerStatusEffect(10));
@@ -61,13 +62,13 @@ class CombatantTest {
     @Test
     void addStatusEffect_defendEffectActive_returnsTemporarilyIncreasedDefense() {
         // arrange
-        Warrior warrior = new Warrior();
+        Warrior warrior = TestDependencies.warrior();
         int defenseBeforeDefend = warrior.getDefense();
 
         // act
         warrior.addStatusEffect(new DefendStatusEffect(1));
         int defenseDuringDefend = warrior.getDefense();
-        warrior.statusEffects().onRoundCompleted();
+        warrior.statusEffects().onRoundCompleted(warrior);
         int defenseAfterDefend = warrior.getDefense();
 
         // assert

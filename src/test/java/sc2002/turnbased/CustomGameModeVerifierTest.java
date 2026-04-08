@@ -32,9 +32,10 @@ import sc2002.turnbased.engine.WaveSpec;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
 import sc2002.turnbased.report.RoundSummaryEvent;
+import sc2002.turnbased.support.TestDependencies;
 
 class CustomGameModeVerifierTest {
-    private final BattleSetupFactory battleSetupFactory = new BattleSetupFactory();
+    private final BattleSetupFactory battleSetupFactory = TestDependencies.battleSetupFactory();
 
     @Test
     @Tag("unit")

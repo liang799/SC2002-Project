@@ -25,6 +25,10 @@ import sc2002.turnbased.actions.UseSpecialSkillAction;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
+import sc2002.turnbased.domain.status.StatusEffectKind;
+import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
+import sc2002.turnbased.domain.status.event.StatusEffectEvent;
+import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.engine.BattleSetupFactory;
@@ -42,13 +46,14 @@ import sc2002.turnbased.report.RoundSummaryEvent;
 import sc2002.turnbased.report.SkippedTurnEvent;
 import sc2002.turnbased.support.BattleTestSupport;
 import sc2002.turnbased.support.BattleTestSupport.RoundCapture;
+import sc2002.turnbased.support.TestDependencies;
 
 @Tag("e2e")
 class CustomBattleFlowE2ETest {
     @Test
     @DisplayName("Medium warrior battle flow matches the expected end-to-end transcript")
     void mediumWarriorBattleFlowMatchesExpectedTranscript() {
-        BattleSetup battleSetup = new BattleSetupFactory().create(
+        BattleSetup battleSetup = TestDependencies.battleSetupFactory().create(
             new GameConfiguration(
                 PlayerType.WARRIOR,
                 DifficultyLevel.MEDIUM,
@@ -126,16 +131,23 @@ class CustomBattleFlowE2ETest {
             enemy("Wolf B", 0, false, Set.of())
         );
 
-        assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20, Set.of("Smoke Bomb active"));
-        assertAction(rounds.get(3), "Goblin", "Warrior", 0, 20, Set.of("Smoke Bomb active", "Smoke Bomb effect expires"));
-        assertAction(rounds.get(4), "Goblin", "Warrior", 5, 30, Set.of());
-        assertAction(rounds.get(10), "Wolf A", "Warrior", 15, 30, Set.of());
-        assertAction(rounds.get(10), "Wolf B", "Warrior", 15, 30, Set.of());
+        assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20,
+            List.of(new SmokeBombActivatedEvent("Warrior", "Goblin", 1)));
+        assertAction(rounds.get(3), "Goblin", "Warrior", 0, 20,
+            List.of(
+                new SmokeBombActivatedEvent("Warrior", "Goblin", 0),
+                new StatusEffectExpiredEvent("Warrior", StatusEffectKind.SMOKE_BOMB)
+            ));
+        assertAction(rounds.get(4), "Goblin", "Warrior", 5, 30, List.of());
+        assertAction(rounds.get(10), "Wolf A", "Warrior", 15, 30, List.of());
+        assertAction(rounds.get(10), "Wolf B", "Warrior", 15, 30, List.of());
 
-        assertSkipped(rounds.get(2), "Wolf", "STUNNED", Set.of());
-        assertSkipped(rounds.get(3), "Wolf", "STUNNED", Set.of("Stun expires"));
-        assertSkipped(rounds.get(5), "Goblin", "STUNNED", Set.of());
-        assertSkipped(rounds.get(6), "Goblin", "STUNNED", Set.of("Stun expires"));
+        assertSkipped(rounds.get(2), "Wolf", "STUNNED", List.of());
+        assertSkipped(rounds.get(3), "Wolf", "STUNNED",
+            List.of(new StatusEffectExpiredEvent("Wolf", StatusEffectKind.STUN)));
+        assertSkipped(rounds.get(5), "Goblin", "STUNNED", List.of());
+        assertSkipped(rounds.get(6), "Goblin", "STUNNED",
+            List.of(new StatusEffectExpiredEvent("Goblin", StatusEffectKind.STUN)));
 
         assertNarrationContains(rounds.get(8), "Backup Spawn triggered: Wolf A, Wolf B");
         assertVictoryNarration(events);
@@ -185,7 +197,7 @@ class CustomBattleFlowE2ETest {
         String target,
         int expectedDamage,
         int expectedDefense,
-        Set<String> expectedNotes
+        List<StatusEffectEvent> expectedStatusEffectEvents
     ) {
         assertNotNull(roundCapture, "Missing expected round capture");
 
@@ -199,7 +211,11 @@ class CustomBattleFlowE2ETest {
         assertAll(
             () -> assertEquals(expectedDamage, actionEvent.getDamage(), "Unexpected damage for " + actor + " -> " + target),
             () -> assertEquals(expectedDefense, actionEvent.getTargetDefense(), "Unexpected target defense for " + actor + " -> " + target),
-            () -> assertTrue(actionEvent.getNotes().containsAll(expectedNotes), "Unexpected notes for " + actor + " -> " + target)
+            () -> assertEquals(
+                expectedStatusEffectEvents,
+                actionEvent.getStatusEffectEvents(),
+                "Unexpected status effect events for " + actor + " -> " + target
+            )
         );
     }
 
@@ -207,7 +223,7 @@ class CustomBattleFlowE2ETest {
         RoundCapture roundCapture,
         String combatantName,
         String expectedReason,
-        Set<String> expectedNotes
+        List<StatusEffectEvent> expectedStatusEffectEvents
     ) {
         assertNotNull(roundCapture, "Missing expected round capture");
 
@@ -220,7 +236,11 @@ class CustomBattleFlowE2ETest {
 
         assertAll(
             () -> assertEquals(expectedReason, skippedTurnEvent.getReason(), "Unexpected skip reason for " + combatantName),
-            () -> assertTrue(skippedTurnEvent.getNotes().containsAll(expectedNotes), "Unexpected skip notes for " + combatantName)
+            () -> assertEquals(
+                expectedStatusEffectEvents,
+                skippedTurnEvent.getStatusEffectEvents(),
+                "Unexpected status effect events for " + combatantName
+            )
         );
     }
 
