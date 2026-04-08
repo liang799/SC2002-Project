@@ -10,12 +10,13 @@ public abstract class Combatant {
     private final String name;
     private final CombatStats baseStats;
     private HitPoints hitPoints;
-    private final StatusEffectRegistry statusEffectRegistry = new StatusEffectRegistry();
+    private final StatusEffectRegistry statusEffectRegistry;
 
-    protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats) {
+    protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats, StatusEffectRegistry statusEffectRegistry) {
         this.name = Objects.requireNonNull(name, "name");
         this.hitPoints = Objects.requireNonNull(baseHitPoints, "baseHitPoints");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
+        this.statusEffectRegistry = Objects.requireNonNull(statusEffectRegistry, "statusEffectRegistry");
     }
 
     public String getName() {
@@ -67,7 +68,7 @@ public abstract class Combatant {
     }
 
     public void addStatusEffect(StatusEffect statusEffect) {
-        statusEffectRegistry.add(statusEffect);
+        statusEffectRegistry.add(this, statusEffect);
     }
 
     public StatusEffectRegistry statusEffects() {
@@ -75,10 +76,10 @@ public abstract class Combatant {
     }
 
     public List<String> getActiveStatusNames() {
-        return statusEffectRegistry.activeStatusNames(isAlive());
+        return statusEffectRegistry.activeStatusNames(name, isAlive());
     }
 
     private CombatStats effectiveStats() {
-        return statusEffectRegistry.apply(baseStats);
+        return statusEffectRegistry.apply(name, baseStats);
     }
 }

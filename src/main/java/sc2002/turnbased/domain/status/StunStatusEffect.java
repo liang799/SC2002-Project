@@ -1,7 +1,7 @@
 package sc2002.turnbased.domain.status;
 
-import java.util.ArrayList;
-import java.util.List;
+import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.status.event.StunAppliedEvent;
 
 public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     private int blockedTurnsRemaining;
@@ -11,23 +11,29 @@ public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     }
 
     @Override
+    public StatusEffectKind kind() {
+        return StatusEffectKind.STUN;
+    }
+
+    @Override
     public String name() {
         return "STUNNED";
     }
 
     @Override
-    public TurnEffectResolution onTurnOpportunity() {
+    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
+        eventPublisher.publish(new StunAppliedEvent(ownerName, blockedTurnsRemaining));
+    }
+
+    @Override
+    public TurnEffectResolution onTurnOpportunity(Combatant owner, StatusEffectEventPublisher eventPublisher) {
         boolean blocksAction = blockedTurnsRemaining > 0;
         if (!blocksAction) {
             return TurnEffectResolution.allow();
         }
 
-        List<String> notes = new ArrayList<>();
         blockedTurnsRemaining--;
-        if (blockedTurnsRemaining == 0) {
-            notes.add("Stun expires");
-        }
-        return new TurnEffectResolution(blocksAction, name(), notes);
+        return new TurnEffectResolution(blocksAction, name());
     }
 
     @Override

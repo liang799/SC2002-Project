@@ -5,12 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.Warrior;
-import sc2002.turnbased.domain.Wizard;
 import sc2002.turnbased.engine.DifficultyLevel;
 import sc2002.turnbased.engine.EnemyCount;
 import sc2002.turnbased.engine.EnemyType;
@@ -21,18 +20,20 @@ import sc2002.turnbased.engine.WaveSpec;
 public class ConsoleBattleUi {
     private final Scanner scanner;
     private final PrintStream out;
+    private final CombatantFactory combatantFactory;
 
-    public ConsoleBattleUi(Scanner scanner, PrintStream out) {
+    public ConsoleBattleUi(Scanner scanner, PrintStream out, CombatantFactory combatantFactory) {
         this.scanner = scanner;
         this.out = out;
+        this.combatantFactory = combatantFactory;
     }
 
     public void showLoadingScreen() {
         out.println("=== SC2002 Turn-Based Combat Arena ===");
         out.println();
         out.println("Playable Classes:");
-        showPlayerPreview(PlayerType.WARRIOR, new Warrior());
-        showPlayerPreview(PlayerType.WIZARD, new Wizard());
+        showPlayerPreview(PlayerType.WARRIOR, PlayerType.WARRIOR.createPlayer(combatantFactory));
+        showPlayerPreview(PlayerType.WIZARD, PlayerType.WIZARD.createPlayer(combatantFactory));
         out.println();
         out.println("Usable Items:");
         for (ItemType itemType : ItemType.values()) {
@@ -41,7 +42,7 @@ public class ConsoleBattleUi {
         out.println();
         out.println("Enemy Types:");
         for (EnemyType enemyType : EnemyType.values()) {
-            showEnemyPreview(enemyType.create(enemyType.getDisplayName()));
+            showEnemyPreview(enemyType.create(enemyType.getDisplayName(), combatantFactory));
         }
         out.println();
         out.println("Difficulty Levels and Enemy Counts:");

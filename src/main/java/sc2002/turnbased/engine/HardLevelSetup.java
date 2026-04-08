@@ -3,10 +3,15 @@ package sc2002.turnbased.engine;
 import java.util.List;
 import java.util.Objects;
 
+import sc2002.turnbased.actions.ArcaneBlastAction;
+import sc2002.turnbased.actions.BasicAttackAction;
+import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.domain.DefaultCombatantFactory;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.Wizard;
+import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 
 public final class HardLevelSetup {
     private HardLevelSetup() {
@@ -25,7 +30,12 @@ public final class HardLevelSetup {
                 selectedItems.add(itemType);
             }
         }
-        return new BattleSetupFactory().create(
+        return new BattleSetupFactory(new DefaultCombatantFactory(
+            new DefaultStatusEffectRegistryFactory(),
+            new BasicAttackAction(),
+            new ShieldBashAction(),
+            new ArcaneBlastAction()
+        )).create(
             new GameConfiguration(playerType, DifficultyLevel.HARD, selectedItems)
         );
     }

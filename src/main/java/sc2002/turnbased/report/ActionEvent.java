@@ -1,8 +1,9 @@
 package sc2002.turnbased.report;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
+import sc2002.turnbased.domain.status.event.StatusEffectEvent;
 
 public class ActionEvent implements BattleEvent {
     private final String actorName;
@@ -13,7 +14,8 @@ public class ActionEvent implements BattleEvent {
     private final int attackerAttack;
     private final int targetDefense;
     private final int damage;
-    private final List<String> notes;
+    private final boolean targetEliminated;
+    private final List<StatusEffectEvent> statusEffectEvents;
 
     public ActionEvent(
         String actorName,
@@ -24,7 +26,8 @@ public class ActionEvent implements BattleEvent {
         int attackerAttack,
         int targetDefense,
         int damage,
-        List<String> notes
+        boolean targetEliminated,
+        List<StatusEffectEvent> statusEffectEvents
     ) {
         this.actorName = actorName;
         this.actionName = actionName;
@@ -34,7 +37,8 @@ public class ActionEvent implements BattleEvent {
         this.attackerAttack = attackerAttack;
         this.targetDefense = targetDefense;
         this.damage = damage;
-        this.notes = new ArrayList<>(notes);
+        this.targetEliminated = targetEliminated;
+        this.statusEffectEvents = List.copyOf(Objects.requireNonNull(statusEffectEvents, "statusEffectEvents"));
     }
 
     public String getActorName() {
@@ -69,7 +73,11 @@ public class ActionEvent implements BattleEvent {
         return damage;
     }
 
-    public List<String> getNotes() {
-        return Collections.unmodifiableList(notes);
+    public boolean isTargetEliminated() {
+        return targetEliminated;
+    }
+
+    public List<StatusEffectEvent> getStatusEffectEvents() {
+        return statusEffectEvents;
     }
 }

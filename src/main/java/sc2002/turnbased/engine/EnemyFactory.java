@@ -1,5 +1,6 @@
 package sc2002.turnbased.engine;
 
+import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.EnemyCombatant;
 
 public interface EnemyFactory {
@@ -9,7 +10,7 @@ public interface EnemyFactory {
 
     int getMaxPerWave();
 
-    EnemyCombatant create(String name);
+    EnemyCombatant create(String name, CombatantFactory combatantFactory);
 
     default String formatCount(int count) {
         return count + " " + (count == 1 ? getDisplayName() : getPluralDisplayName());

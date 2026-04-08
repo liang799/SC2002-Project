@@ -1,17 +1,24 @@
 package sc2002.turnbased.domain;
 
 import sc2002.turnbased.actions.ActionExecutionContext;
-import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.BattleAction;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public abstract class EnemyCombatant extends Combatant {
-    private static final BattleAction BASIC_ATTACK = new BasicAttackAction();
+    private final BattleAction basicAttackAction;
 
-    protected EnemyCombatant(String name, HitPoints baseHitPoints, CombatStats baseStats) {
-        super(name, baseHitPoints, baseStats);
+    protected EnemyCombatant(
+        String name,
+        HitPoints baseHitPoints,
+        CombatStats baseStats,
+        StatusEffectRegistry statusEffectRegistry,
+        BattleAction basicAttackAction
+    ) {
+        super(name, baseHitPoints, baseStats, statusEffectRegistry);
+        this.basicAttackAction = basicAttackAction;
     }
 
     public BattleAction selectAction(ActionExecutionContext context) {
-        return BASIC_ATTACK;
+        return basicAttackAction;
     }
 }

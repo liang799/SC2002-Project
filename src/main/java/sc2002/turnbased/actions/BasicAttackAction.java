@@ -5,6 +5,7 @@ import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.status.DamageAdjustment;
+import sc2002.turnbased.domain.status.StatusEffectObservationScope;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 
@@ -17,26 +18,24 @@ public class BasicAttackAction implements BattleAction {
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         int baseDamage = Math.max(0, actor.getAttack() - target.getDefense());
-        DamageAdjustment damageAdjustment = target.statusEffects().adjustIncomingDamage(target, actor, baseDamage);
-        List<String> notes = new ArrayList<>(damageAdjustment.notes());
-        int damage = damageAdjustment.damage();
-        int hpBefore = target.getCurrentHp();
-        target.receiveDamage(damage);
+        try (StatusEffectObservationScope observation = target.statusEffects().openObservation()) {
+            DamageAdjustment damageAdjustment = target.statusEffects().adjustIncomingDamage(target, actor, baseDamage);
+            int damage = damageAdjustment.damage();
+            int hpBefore = target.getCurrentHp();
+            target.receiveDamage(damage);
 
-        if (!target.isAlive()) {
-            notes.add("ELIMINATED");
+            return List.of(new ActionEvent(
+                actor.getName(),
+                getName(),
+                target.getName(),
+                hpBefore,
+                target.getCurrentHp(),
+                actor.getAttack(),
+                target.getDefense(),
+                damage,
+                !target.isAlive(),
+                observation.observedEvents()
+            ));
         }
-
-        return List.of(new ActionEvent(
-            actor.getName(),
-            getName(),
-            target.getName(),
-            hpBefore,
-            target.getCurrentHp(),
-            actor.getAttack(),
-            target.getDefense(),
-            damage,
-            notes
-        ));
     }
 }

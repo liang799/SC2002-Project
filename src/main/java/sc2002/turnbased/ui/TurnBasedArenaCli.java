@@ -6,7 +6,13 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.Supplier;
 
+import sc2002.turnbased.actions.ArcaneBlastAction;
+import sc2002.turnbased.actions.BasicAttackAction;
+import sc2002.turnbased.actions.ShieldBashAction;
+import sc2002.turnbased.domain.CombatantFactory;
+import sc2002.turnbased.domain.DefaultCombatantFactory;
 import sc2002.turnbased.domain.ItemType;
+import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleEventListener;
 import sc2002.turnbased.engine.BattleSetup;
@@ -39,10 +45,16 @@ public class TurnBasedArenaCli {
     }
 
     public static void main(String[] args) {
-        ConsoleBattleUi ui = new ConsoleBattleUi(new Scanner(System.in), System.out);
+        CombatantFactory combatantFactory = new DefaultCombatantFactory(
+            new DefaultStatusEffectRegistryFactory(),
+            new BasicAttackAction(),
+            new ShieldBashAction(),
+            new ArcaneBlastAction()
+        );
+        ConsoleBattleUi ui = new ConsoleBattleUi(new Scanner(System.in), System.out, combatantFactory);
         new TurnBasedArenaCli(
             ui,
-            new BattleSetupFactory(),
+            new BattleSetupFactory(combatantFactory),
             new BattleConsoleFormatter(),
             new SpeedTurnOrderStrategy()
         ).run();
