@@ -8,45 +8,64 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class CombatantTest {
     @Test
-    void combatantHpMutationsFlowThroughHitPointsValueObject() {
+    void receiveDamageAndHeal_existingHitPoints_updatesHitPointsValueObject() {
+        // arrange
         Warrior warrior = new Warrior();
 
+        // act
         warrior.receiveDamage(90);
-        assertEquals(new HitPoints(170, 260), warrior.getHitPoints());
-
+        HitPoints damagedHitPoints = warrior.getHitPoints();
         warrior.heal(500);
-        assertEquals(new HitPoints(260, 260), warrior.getHitPoints());
+        HitPoints healedHitPoints = warrior.getHitPoints();
+
+        // assert
+        assertEquals(new HitPoints(170, 260), damagedHitPoints);
+        assertEquals(new HitPoints(260, 260), healedHitPoints);
     }
 
     @Test
-    void attackBuffChangesCurrentAttackWithoutMutatingBaseAttack() {
+    void modifyStats_attackBuffApplied_returnsBuffedAttackWithoutChangingBaseAttack() {
+        // arrange
         Wizard wizard = new Wizard();
 
-        wizard.adjustStat(StatType.ATTACK, 10);
+        // act
+        wizard.modifyStats(stats -> stats.addFlat(StatType.ATTACK, 10));
+        int currentAttack = wizard.getAttack();
+        int baseAttack = wizard.getBaseAttack();
 
-        assertEquals(60, wizard.getAttack());
-        assertEquals(50, wizard.getBaseAttack());
+        // assert
+        assertEquals(60, currentAttack);
+        assertEquals(50, baseAttack);
     }
 
     @Test
-    void genericStatResolutionSupportsFutureStatModifiers() {
+    void modifyStats_speedMultiplierApplied_returnsScaledSpeed() {
+        // arrange
         Warrior warrior = new Warrior();
 
-        warrior.adjustStat(StatType.SPEED, 5);
+        // act
+        warrior.modifyStats(stats -> stats.multiplyBy(StatType.SPEED, 2));
+        int speed = warrior.getSpeed();
 
-        assertEquals(35, warrior.getSpeed());
+        // assert
+        assertEquals(60, speed);
     }
 
     @Test
-    void defendEffectTemporarilyRaisesDefense() {
+    void addStatusEffect_defendEffectActive_returnsTemporarilyIncreasedDefense() {
+        // arrange
         Warrior warrior = new Warrior();
+        int defenseBeforeDefend = warrior.getDefense();
 
-        assertEquals(20, warrior.getDefense());
+        // act
         warrior.addStatusEffect(new DefendStatusEffect(1));
-        assertEquals(30, warrior.getDefense());
-
+        int defenseDuringDefend = warrior.getDefense();
         warrior.statusEffects().onRoundCompleted();
+        int defenseAfterDefend = warrior.getDefense();
 
-        assertEquals(20, warrior.getDefense());
+        // assert
+        assertEquals(20, defenseBeforeDefend);
+        assertEquals(30, defenseDuringDefend);
+        assertEquals(20, defenseAfterDefend);
     }
 }
