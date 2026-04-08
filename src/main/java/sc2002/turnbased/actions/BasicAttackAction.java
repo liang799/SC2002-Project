@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.DamageAdjustment;
+import sc2002.turnbased.domain.status.DamageAdjustment;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 

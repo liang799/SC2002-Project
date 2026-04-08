@@ -7,6 +7,9 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
+import sc2002.turnbased.domain.status.DefendStatusEffect;
+
 @Tag("unit")
 class CombatantTest {
     @Test

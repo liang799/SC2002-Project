@@ -1,4 +1,7 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
+
+import sc2002.turnbased.domain.CombatStats;
+import sc2002.turnbased.domain.StatType;
 
 public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect, MergeableStatusEffect {
     private final int attackBonus;

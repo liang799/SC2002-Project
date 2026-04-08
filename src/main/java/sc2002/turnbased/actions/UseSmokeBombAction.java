@@ -4,7 +4,7 @@ import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.ItemType;
-import sc2002.turnbased.domain.SmokeBombStatusEffect;
+import sc2002.turnbased.domain.status.SmokeBombStatusEffect;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
 

@@ -3,7 +3,7 @@ package sc2002.turnbased.actions;
 import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.DefendStatusEffect;
+import sc2002.turnbased.domain.status.DefendStatusEffect;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
 

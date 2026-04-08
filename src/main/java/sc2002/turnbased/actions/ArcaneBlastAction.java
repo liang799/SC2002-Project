@@ -3,7 +3,7 @@ package sc2002.turnbased.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import sc2002.turnbased.domain.ArcanePowerStatusEffect;
+import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;

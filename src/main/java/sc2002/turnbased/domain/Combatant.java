@@ -3,6 +3,9 @@ package sc2002.turnbased.domain;
 import java.util.List;
 import java.util.Objects;
 
+import sc2002.turnbased.domain.status.StatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
+
 public abstract class Combatant {
     private final String name;
     private final CombatStats baseStats;

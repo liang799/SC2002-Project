@@ -1,4 +1,4 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import java.util.List;
 import java.util.Objects;

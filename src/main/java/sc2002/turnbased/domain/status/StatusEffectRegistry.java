@@ -1,9 +1,12 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+
+import sc2002.turnbased.domain.CombatStats;
+import sc2002.turnbased.domain.Combatant;
 
 public class StatusEffectRegistry {
     private final List<StatusEffect> effects = new ArrayList<>();

@@ -1,6 +1,8 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import java.util.List;
+
+import sc2002.turnbased.domain.Combatant;
 
 public class SmokeBombStatusEffect implements StatusEffect, IncomingDamageModifierEffect {
     private int protectedEnemyAttacksRemaining;

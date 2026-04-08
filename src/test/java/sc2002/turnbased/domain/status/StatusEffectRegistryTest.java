@@ -1,4 +1,4 @@
-package sc2002.turnbased.domain;
+package sc2002.turnbased.domain.status;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -7,6 +7,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import sc2002.turnbased.domain.Goblin;
+import sc2002.turnbased.domain.Warrior;
 
 @Tag("unit")
 class StatusEffectRegistryTest {
