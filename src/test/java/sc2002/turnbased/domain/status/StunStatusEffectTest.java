@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.support.FakeStatusEffectEventPublisher;
 import sc2002.turnbased.support.TestCombatantBuilder;
-import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class StunStatusEffectTest {
@@ -18,7 +18,7 @@ class StunStatusEffectTest {
     void onTurnOpportunity_whenMultipleTurnsRemain_blocksAndExpiresOnLastBlockedTurn() {
         StunStatusEffect effect = new StunStatusEffect(2);
         Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        StatusEffectEventPublisher eventPublisher = TestDependencies.statusEffectEventPublisher();
+        FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
         TurnEffectResolution firstResolution = effect.onTurnOpportunity(owner, eventPublisher);
 
@@ -37,7 +37,7 @@ class StunStatusEffectTest {
     void onTurnOpportunity_whenAlreadyExpired_allowsTurnWithoutNotes() {
         StunStatusEffect effect = new StunStatusEffect(0);
         Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
-        StatusEffectEventPublisher eventPublisher = TestDependencies.statusEffectEventPublisher();
+        FakeStatusEffectEventPublisher eventPublisher = new FakeStatusEffectEventPublisher();
 
         TurnEffectResolution resolution = effect.onTurnOpportunity(owner, eventPublisher);
 

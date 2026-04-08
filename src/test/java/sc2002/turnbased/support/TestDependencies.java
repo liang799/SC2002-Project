@@ -52,8 +52,4 @@ public final class TestDependencies {
     public static StatusEffectRegistry registry() {
         return STATUS_EFFECT_REGISTRY_FACTORY.create();
     }
-
-    public static StatusEffectEventPublisher statusEffectEventPublisher() {
-        return new StatusEffectEventPublisher();
-    }
 }
