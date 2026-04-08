@@ -18,10 +18,10 @@ import sc2002.turnbased.support.BattleTestSupport;
 import sc2002.turnbased.support.BattleTestSupport.ScenarioRun;
 
 @Tag("integration")
-class AppendixAScenariosIntegrationTest {
+class BattleEngineAppendixAScenariosIntegrationTest {
     @Test
-    @DisplayName("Appendix A easy warrior scenario matches expected transcript and round state")
-    void easyWarriorScenarioMatchesExpectedState() {
+    @DisplayName("BattleEngine and Appendix A easy warrior scenario produce expected transcript and round state")
+    void battleEngine_andAppendixAEasyWarriorScenario_produceExpectedTranscriptAndRoundState() {
         ScenarioRun run = BattleTestSupport.runScenario(AppendixAScenarios.easyWarrior());
 
         assertEquals(11, run.summaries().size());
@@ -89,8 +89,8 @@ class AppendixAScenariosIntegrationTest {
     }
 
     @Test
-    @DisplayName("Appendix A medium warrior scenario matches expected transcript and round state")
-    void mediumWarriorScenarioMatchesExpectedState() {
+    @DisplayName("BattleEngine and Appendix A medium warrior scenario produce expected transcript and round state")
+    void battleEngine_andAppendixAMediumWarriorScenario_produceExpectedTranscriptAndRoundState() {
         ScenarioRun run = BattleTestSupport.runScenario(AppendixAScenarios.mediumWarrior());
 
         assertEquals(9, run.summaries().size());
@@ -149,8 +149,8 @@ class AppendixAScenariosIntegrationTest {
     }
 
     @Test
-    @DisplayName("Appendix A medium wizard scenario matches expected transcript and round state")
-    void mediumWizardScenarioMatchesExpectedState() {
+    @DisplayName("BattleEngine and Appendix A medium wizard scenario produce expected transcript and round state")
+    void battleEngine_andAppendixAMediumWizardScenario_produceExpectedTranscriptAndRoundState() {
         ScenarioRun run = BattleTestSupport.runScenario(AppendixAScenarios.mediumWizard());
 
         assertEquals(3, run.summaries().size());

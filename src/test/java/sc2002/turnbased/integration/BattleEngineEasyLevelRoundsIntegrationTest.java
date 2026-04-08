@@ -25,10 +25,10 @@ import sc2002.turnbased.report.RoundSummaryEvent;
 import sc2002.turnbased.support.BattleTestSupport;
 
 @Tag("integration")
-class EasyLevelRoundsIntegrationTest {
+class BattleEngineEasyLevelRoundsIntegrationTest {
     @Test
-    @DisplayName("Easy warrior opening rounds stay deterministic")
-    void easyWarriorOpeningRoundsStayDeterministic() {
+    @DisplayName("BattleEngine and easy warrior opening script produce deterministic round summaries")
+    void battleEngine_andEasyWarriorOpeningScript_produceDeterministicRoundSummaries() {
         BattleSetup battleSetup = EasyLevelSetup.createWarriorPotionSmokeBombSetup();
         BattleEngine battleEngine = new BattleEngine(battleSetup, new SpeedTurnOrderStrategy());
 
