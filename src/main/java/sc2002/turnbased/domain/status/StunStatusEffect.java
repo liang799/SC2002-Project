@@ -18,12 +18,14 @@ public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     @Override
     public TurnEffectResolution onTurnOpportunity() {
         boolean blocksAction = blockedTurnsRemaining > 0;
+        if (!blocksAction) {
+            return TurnEffectResolution.allow();
+        }
+
         List<String> notes = new ArrayList<>();
-        if (blocksAction) {
-            blockedTurnsRemaining--;
-            if (blockedTurnsRemaining == 0) {
-                notes.add("Stun expires");
-            }
+        blockedTurnsRemaining--;
+        if (blockedTurnsRemaining == 0) {
+            notes.add("Stun expires");
         }
         return new TurnEffectResolution(blocksAction, name(), notes);
     }
