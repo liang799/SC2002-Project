@@ -7,7 +7,7 @@ public abstract class Combatant {
     private final String name;
     private final CombatStats baseStats;
     private HitPoints hitPoints;
-    private final CombatStatModifierRegistry statModifiers = new CombatStatModifierRegistry();
+    private CombatStatsModifier statModifier = CombatStatsModifier.identity();
     private final StatusEffectRegistry statusEffectRegistry = new StatusEffectRegistry();
 
     protected Combatant(String name, CombatStats baseStats) {
@@ -37,7 +37,7 @@ public abstract class Combatant {
     }
 
     public int getBaseAttack() {
-        return baseStats.valueOf(StatType.ATTACK);
+        return baseStats.attack().value();
     }
 
     public int getDefense() {
@@ -53,10 +53,7 @@ public abstract class Combatant {
     }
 
     public int getStat(StatType statType) {
-        int resolved = baseStats.valueOf(statType)
-            + statModifiers.modifierFor(statType)
-            + statusEffectRegistry.modifierFor(statType);
-        return Math.max(0, resolved);
+        return effectiveStats().valueOf(statType);
     }
 
     public void receiveDamage(int damage) {
@@ -67,8 +64,8 @@ public abstract class Combatant {
         hitPoints = hitPoints.heal(amount);
     }
 
-    public void adjustStat(StatType statType, int amount) {
-        statModifiers.adjust(statType, amount);
+    public void modifyStats(CombatStatsModifier modifier) {
+        statModifier = statModifier.andThen(Objects.requireNonNull(modifier, "modifier"));
     }
 
     public void addStatusEffect(StatusEffect statusEffect) {
@@ -81,5 +78,10 @@ public abstract class Combatant {
 
     public List<String> getActiveStatusNames() {
         return statusEffectRegistry.activeStatusNames(isAlive());
+    }
+
+    private CombatStats effectiveStats() {
+        CombatStats effectiveStats = baseStats.withHitPoints(hitPoints).apply(statModifier);
+        return statusEffectRegistry.apply(effectiveStats);
     }
 }

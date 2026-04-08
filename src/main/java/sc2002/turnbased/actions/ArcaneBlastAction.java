@@ -36,7 +36,7 @@ public class ArcaneBlastAction implements BattleAction {
             if (!enemy.isAlive()) {
                 notes.add("ELIMINATED");
                 int attackBefore = actor.getAttack();
-                actor.adjustStat(StatType.ATTACK, 10);
+                actor.modifyStats(stats -> stats.addFlat(StatType.ATTACK, 10));
                 notes.add(actor.getName() + " ATK: " + attackBefore + " -> " + actor.getAttack() + " (+10)");
             }
 
