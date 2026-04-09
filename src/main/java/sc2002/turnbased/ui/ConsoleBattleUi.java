@@ -162,9 +162,10 @@ public class ConsoleBattleUi {
         out.println("Items: " + formatInventory(inventory));
         out.println("Enemies:");
         for (Combatant enemy : livingEnemies) {
-            String statusSuffix = enemy.getActiveStatusNames().isEmpty()
+            List<String> activeStatuses = enemy.getActiveStatuses();
+            String statusSuffix = activeStatuses.isEmpty()
                 ? ""
-                : " [" + String.join(", ", enemy.getActiveStatusNames()) + "]";
+                : " [" + String.join(", ", activeStatuses) + "]";
             out.println("- " + enemy.getName() + ": HP " + enemy.getCurrentHp() + "/" + enemy.getMaxHp() + statusSuffix);
         }
     }

@@ -8,6 +8,7 @@ import sc2002.turnbased.actions.ShieldBashAction;
 import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public final class MediumLevelSetup {
     private MediumLevelSetup() {
@@ -15,7 +16,7 @@ public final class MediumLevelSetup {
 
     public static BattleSetup createWarriorPowerStonePotionSetup() {
         return new BattleSetupFactory(CombatantFactories.createDefault(
-            new DefaultStatusEffectRegistryFactory(),
+            new DefaultStatusEffectRegistryFactory(StatusEffectRegistry::new),
             new BasicAttackAction(),
             new ShieldBashAction(),
             new ArcaneBlastAction()
@@ -30,7 +31,7 @@ public final class MediumLevelSetup {
 
     public static BattleSetup createWizardPowerStonePotionSetup() {
         return new BattleSetupFactory(CombatantFactories.createDefault(
-            new DefaultStatusEffectRegistryFactory(),
+            new DefaultStatusEffectRegistryFactory(StatusEffectRegistry::new),
             new BasicAttackAction(),
             new ShieldBashAction(),
             new ArcaneBlastAction()

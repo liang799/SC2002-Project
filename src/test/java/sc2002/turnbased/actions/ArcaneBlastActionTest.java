@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.support.TestActionExecutionContext;
@@ -22,7 +21,6 @@ import sc2002.turnbased.support.TestDependencies;
 class ArcaneBlastActionTest {
     @Test
     void execute_WhenEnemiesAreEliminated_AddsAttackBuffThroughStatusEffects() {
-        // arrange
         PlayerCharacter wizard = TestDependencies.wizard();
         Combatant goblin = TestCombatantBuilder.aCombatant()
             .named("Goblin")
@@ -36,19 +34,17 @@ class ArcaneBlastActionTest {
             .build();
         ArcaneBlastAction action = new ArcaneBlastAction();
 
-        // act
         List<BattleEvent> events = action.execute(new TestActionExecutionContext(List.of(goblin, wolf)), wizard, null);
         ActionEvent goblinEvent = assertInstanceOf(ActionEvent.class, events.get(1));
         ActionEvent wolfEvent = assertInstanceOf(ActionEvent.class, events.get(2));
 
-        // assert
         assertEquals(3, events.size());
         assertEquals(70, wizard.getAttack());
         assertEquals(50, wizard.getBaseAttack());
-        assertEquals(List.of("ARCANE POWER +20"), wizard.getActiveStatusNames());
+        assertEquals(List.of("ARCANE POWER +20"), wizard.getActiveStatuses());
         assertTrue(goblinEvent.isTargetEliminated());
-        assertEquals(List.of(new ArcanePowerAppliedEvent("Wizard", 10)), goblinEvent.getStatusEffectEvents());
+        assertEquals(List.of("Wizard gains ARCANE POWER +10"), goblinEvent.getStatusEffectNotes());
         assertTrue(wolfEvent.isTargetEliminated());
-        assertEquals(List.of(new ArcanePowerAppliedEvent("Wizard", 20)), wolfEvent.getStatusEffectEvents());
+        assertEquals(List.of("Wizard gains ARCANE POWER +20"), wolfEvent.getStatusEffectNotes());
     }
 }

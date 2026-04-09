@@ -23,7 +23,7 @@ public class UsePowerStoneSkillAction implements BattleAction {
     @Override
     public TargetingMode targetingMode(Combatant actor) {
         if (actor instanceof PlayerCharacter player) {
-            return player.getSpecialSkill().action().targetingMode(actor);
+            return player.specialSkillTargetingMode();
         }
         return TargetingMode.NONE;
     }
@@ -34,15 +34,14 @@ public class UsePowerStoneSkillAction implements BattleAction {
         if (!(actor instanceof PlayerCharacter player)) {
             throw new IllegalStateException("Power Stone is only supported for player characters");
         }
-        BattleAction specialSkillAction = player.getSpecialSkill().action();
 
         List<BattleEvent> events = new ArrayList<>();
-        String intro = actor.getName() + " -> Item -> Power Stone used -> " + specialSkillAction.getName() + " triggered";
+        String intro = actor.getName() + " -> Item -> Power Stone used -> " + player.getSpecialSkillName() + " triggered";
         if (target != null) {
             intro += " on " + target.getName();
         }
         events.add(new NarrationEvent(intro));
-        events.addAll(specialSkillAction.execute(context, actor, target));
+        events.addAll(player.useSpecialSkillWithoutCooldown(context, target));
         return events;
     }
 }

@@ -15,7 +15,7 @@ public class UseSpecialSkillAction implements BattleAction {
     @Override
     public TargetingMode targetingMode(Combatant actor) {
         if (actor instanceof PlayerCharacter player) {
-            return player.getSpecialSkill().action().targetingMode(actor);
+            return player.specialSkillTargetingMode();
         }
         return TargetingMode.NONE;
     }
@@ -26,8 +26,6 @@ public class UseSpecialSkillAction implements BattleAction {
             throw new IllegalStateException("Special skills are only supported for player characters");
         }
 
-        List<BattleEvent> events = player.getSpecialSkill().action().execute(context, actor, target);
-        player.getSpecialSkill().triggerCooldown();
-        return events;
+        return player.useSpecialSkill(context, target);
     }
 }

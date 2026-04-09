@@ -1,8 +1,12 @@
 package sc2002.turnbased.domain;
 
+import java.util.List;
 import java.util.Objects;
 
+import sc2002.turnbased.actions.ActionExecutionContext;
 import sc2002.turnbased.actions.BattleAction;
+import sc2002.turnbased.actions.TargetingMode;
+import sc2002.turnbased.report.BattleEvent;
 
 public class SpecialSkill {
     private final BattleAction action;
@@ -18,8 +22,12 @@ public class SpecialSkill {
         this.cooldownRemaining = 0;
     }
 
-    public BattleAction action() {
-        return action;
+    public String actionName() {
+        return action.getName();
+    }
+
+    public TargetingMode targetingMode(Combatant actor) {
+        return action.targetingMode(Objects.requireNonNull(actor, "actor"));
     }
 
     public boolean isAvailable() {
@@ -28,6 +36,23 @@ public class SpecialSkill {
 
     public int cooldownRemaining() {
         return cooldownRemaining;
+    }
+
+    public List<BattleEvent> use(ActionExecutionContext context, Combatant actor, Combatant target) {
+        if (!isAvailable()) {
+            throw new IllegalStateException("Special skill is on cooldown");
+        }
+        List<BattleEvent> events = useWithoutTriggeringCooldown(context, actor, target);
+        triggerCooldown();
+        return events;
+    }
+
+    public List<BattleEvent> useWithoutTriggeringCooldown(ActionExecutionContext context, Combatant actor, Combatant target) {
+        return action.execute(
+            Objects.requireNonNull(context, "context"),
+            Objects.requireNonNull(actor, "actor"),
+            target
+        );
     }
 
     public void advanceCooldown() {

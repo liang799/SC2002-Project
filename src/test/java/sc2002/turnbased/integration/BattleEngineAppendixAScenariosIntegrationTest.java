@@ -82,7 +82,7 @@ class BattleEngineAppendixAScenariosIntegrationTest {
         );
 
         assertAll(
-            () -> assertTrue(run.formattedOutput().contains("Goblin A -> ELIMINATED: Skipped | Stun expires")),
+            () -> assertTrue(run.formattedOutput().contains("Goblin A -> ELIMINATED: Skipped | Stun expired")),
             () -> assertTrue(run.formattedOutput().contains("Warrior -> Item -> Smoke Bomb used")),
             () -> assertTrue(run.formattedOutput().contains("Victory:"))
         );

@@ -1,12 +1,18 @@
 package sc2002.turnbased.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
+import sc2002.turnbased.domain.status.DamageAdjustment;
 import sc2002.turnbased.domain.status.StatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectOutcome;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public abstract class Combatant {
+    private final CombatantId combatantId;
     private final String name;
     private final CombatStats baseStats;
     private HitPoints hitPoints;
@@ -14,9 +20,14 @@ public abstract class Combatant {
 
     protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats, StatusEffectRegistry statusEffectRegistry) {
         this.name = Objects.requireNonNull(name, "name");
+        this.combatantId = CombatantId.of(name);
         this.hitPoints = Objects.requireNonNull(baseHitPoints, "baseHitPoints");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
         this.statusEffectRegistry = Objects.requireNonNull(statusEffectRegistry, "statusEffectRegistry");
+    }
+
+    public CombatantId combatantId() {
+        return combatantId;
     }
 
     public String getName() {
@@ -55,6 +66,22 @@ public abstract class Combatant {
         return !getHitPoints().isDead();
     }
 
+    public AttackResolution attack(Combatant target) {
+        return attack(target, getAttack());
+    }
+
+    public AttackResolution attack(Combatant target, int attackPower) {
+        Combatant attackTarget = Objects.requireNonNull(target, "target");
+        if (attackPower < 0) {
+            throw new IllegalArgumentException("attackPower must not be negative");
+        }
+
+        int attackUsed = attackPower;
+        int targetDefense = attackTarget.getDefense();
+        int baseDamage = Math.max(0, attackUsed - targetDefense);
+        return attackTarget.resolveAttackFrom(this, attackUsed, targetDefense, baseDamage);
+    }
+
     public int getStat(StatType statType) {
         return effectiveStats().valueOf(statType);
     }
@@ -67,19 +94,55 @@ public abstract class Combatant {
         hitPoints = hitPoints.heal(amount);
     }
 
-    public void addStatusEffect(StatusEffect statusEffect) {
-        statusEffectRegistry.add(this, statusEffect);
+    public List<CombatantStatusOutcome> addStatusEffect(StatusEffect statusEffect) {
+        Objects.requireNonNull(statusEffect, "statusEffect");
+        return wrapStatusEffectOutcomes(statusEffectRegistry.add(this, statusEffect));
     }
 
-    public StatusEffectRegistry statusEffects() {
-        return statusEffectRegistry;
+    public Optional<String> getTurnBlockReason() {
+        return statusEffectRegistry.getTurnBlockReason(this);
     }
 
-    public List<String> getActiveStatusNames() {
-        return statusEffectRegistry.activeStatusNames(name, isAlive());
+    public List<CombatantStatusOutcome> consumeStatusEffectOutcomes() {
+        return wrapStatusEffectOutcomes(statusEffectRegistry.consumeOutcomes());
+    }
+
+    public List<CombatantStatusOutcome> completeRound() {
+        return wrapStatusEffectOutcomes(statusEffectRegistry.completeRound(this));
+    }
+
+    public List<String> getActiveStatuses() {
+        return statusEffectRegistry.activeStatuses(this);
+    }
+
+    private AttackResolution resolveAttackFrom(Combatant attacker, int attackUsed, int targetDefense, int baseDamage) {
+        int hpBefore = getCurrentHp();
+        DamageAdjustment damageAdjustment = statusEffectRegistry.adjustIncomingDamage(this, attacker, baseDamage);
+        int damage = damageAdjustment.damage();
+        receiveDamage(damage);
+        List<CombatantStatusOutcome> statusEffectOutcomes = new ArrayList<>(wrapStatusEffectOutcomes(damageAdjustment.modifiers()));
+        statusEffectOutcomes.addAll(wrapStatusEffectOutcomes(statusEffectRegistry.consumeOutcomes()));
+
+        return new AttackResolution(
+            attackUsed,
+            targetDefense,
+            hpBefore,
+            getCurrentHp(),
+            damage,
+            !isAlive(),
+            statusEffectOutcomes
+        );
     }
 
     private CombatStats effectiveStats() {
-        return statusEffectRegistry.apply(name, baseStats);
+        return statusEffectRegistry.apply(this, baseStats);
+    }
+
+    private List<CombatantStatusOutcome> wrapStatusEffectOutcomes(List<? extends StatusEffectOutcome> outcomes) {
+        return List.copyOf(
+            Objects.requireNonNull(outcomes, "outcomes").stream()
+                .map(outcome -> new CombatantStatusOutcome(combatantId, outcome))
+                .toList()
+        );
     }
 }

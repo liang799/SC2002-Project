@@ -36,7 +36,7 @@ public class CliPlayerDecisionProvider implements PlayerDecisionProvider {
             options.add("BasicAttack");
             options.add("Defend");
             options.add("Item");
-            if (player.getSpecialSkillCooldown() == 0) {
+            if (player.canUseSpecialSkill()) {
                 options.add("SpecialSkill");
             } else {
                 options.add("SpecialSkill (Cooldown " + player.getSpecialSkillCooldown() + ")");
@@ -55,7 +55,7 @@ public class CliPlayerDecisionProvider implements PlayerDecisionProvider {
                     }
                     break;
                 case 3:
-                    if (player.getSpecialSkillCooldown() > 0) {
+                    if (!player.canUseSpecialSkill()) {
                         ui.showMessage("SpecialSkill is still on cooldown.");
                         break;
                     }

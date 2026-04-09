@@ -7,7 +7,7 @@ import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.status.StatusEffectEventPublisher;
+import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 import sc2002.turnbased.domain.status.StatusEffectRegistryFactory;
 import sc2002.turnbased.engine.BattleSetupFactory;
@@ -15,8 +15,8 @@ import sc2002.turnbased.engine.EnemyType;
 import sc2002.turnbased.engine.PlayerType;
 
 public final class TestDependencies {
-    private static final StatusEffectRegistryFactory STATUS_EFFECT_REGISTRY_FACTORY = () ->
-        new StatusEffectRegistry(new StatusEffectEventPublisher());
+    private static final StatusEffectRegistryFactory STATUS_EFFECT_REGISTRY_FACTORY =
+        new DefaultStatusEffectRegistryFactory(StatusEffectRegistry::new);
 
     private static final CombatantFactory COMBATANT_FACTORY = CombatantFactories.createDefault(
         STATUS_EFFECT_REGISTRY_FACTORY,

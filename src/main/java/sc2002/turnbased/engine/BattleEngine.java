@@ -9,14 +9,14 @@ import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.status.StatusEffectObservationScope;
-import sc2002.turnbased.domain.status.TurnWindow;
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.CombatantSummary;
 import sc2002.turnbased.report.NarrationEvent;
 import sc2002.turnbased.report.RoundStartEvent;
 import sc2002.turnbased.report.RoundSummaryEvent;
 import sc2002.turnbased.report.SkippedTurnEvent;
+import sc2002.turnbased.report.StatusEffectReportEvent;
 
 public class BattleEngine implements ActionExecutionContext {
     private final PlayerCharacter player;
@@ -60,7 +60,7 @@ public class BattleEngine implements ActionExecutionContext {
 
             spawnBackupIfNeeded(battleEventListener);
             emit(createRoundSummary(roundNumber), battleEventListener);
-            completeRound();
+            completeRound(battleEventListener);
             if (isBattleOver()) {
                 break;
             }
@@ -96,20 +96,32 @@ public class BattleEngine implements ActionExecutionContext {
             decision = playerDecisionProvider.decide(roundNumber, player, livingEnemies());
         }
         if (shouldAdvanceCooldown(actor, decision)) {
-            player.getSpecialSkill().advanceCooldown();
+            player.advanceRoundState();
         }
 
-        try (StatusEffectObservationScope observation = actor.statusEffects().openObservation()) {
-            TurnWindow turnWindow = actor.statusEffects().resolveTurnWindow(actor);
-            if (!actor.isAlive()) {
-                emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", observation.observedEvents()), battleEventListener);
-                return;
-            }
+        java.util.Optional<String> turnBlockReason = actor.getTurnBlockReason();
+        if (!actor.isAlive()) {
+            emit(
+                SkippedTurnEvent.fromStatusEffectOutcomes(
+                    actor.getName(),
+                    "ELIMINATED",
+                    actor.consumeStatusEffectOutcomes()
+                ),
+                battleEventListener
+            );
+            return;
+        }
 
-            if (turnWindow.isBlocked()) {
-                emit(new SkippedTurnEvent(actor.getName(), turnWindow.getBlockerLabel(), observation.observedEvents()), battleEventListener);
-                return;
-            }
+        if (turnBlockReason.isPresent()) {
+            emit(
+                SkippedTurnEvent.fromStatusEffectOutcomes(
+                    actor.getName(),
+                    turnBlockReason.get(),
+                    actor.consumeStatusEffectOutcomes()
+                ),
+                battleEventListener
+            );
+            return;
         }
 
         if (actor == player) {
@@ -135,7 +147,7 @@ public class BattleEngine implements ActionExecutionContext {
         if (!player.isAlive()) {
             return;
         }
-        emitAll(enemy.attackPlayer(this, player), battleEventListener);
+        emitAll(enemy.takeTurn(this, player), battleEventListener);
     }
 
     private List<Combatant> combatantsAliveAtRoundStart() {
@@ -221,11 +233,21 @@ public class BattleEngine implements ActionExecutionContext {
         );
     }
 
-    private void completeRound() {
-        player.statusEffects().onRoundCompleted(player);
+    private void completeRound(BattleEventListener battleEventListener) {
+        emitStatusEffectOutcomes(player.completeRound(), battleEventListener);
         for (Combatant enemy : spawnedEnemies) {
-            enemy.statusEffects().onRoundCompleted(enemy);
+            emitStatusEffectOutcomes(enemy.completeRound(), battleEventListener);
         }
+    }
+
+    private void emitStatusEffectOutcomes(
+        List<CombatantStatusOutcome> statusEffectOutcomes,
+        BattleEventListener battleEventListener
+    ) {
+        if (statusEffectOutcomes.isEmpty()) {
+            return;
+        }
+        emit(StatusEffectReportEvent.fromStatusEffectOutcomes(statusEffectOutcomes), battleEventListener);
     }
 
     private CombatantSummary toSummary(Combatant combatant) {
@@ -236,7 +258,7 @@ public class BattleEngine implements ActionExecutionContext {
             combatant.getAttack(),
             combatant.getBaseAttack(),
             combatant.isAlive(),
-            combatant.getActiveStatusNames()
+            combatant.getActiveStatuses()
         );
     }
 

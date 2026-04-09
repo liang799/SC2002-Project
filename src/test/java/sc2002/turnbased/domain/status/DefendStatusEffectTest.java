@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.CombatStats;
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Stat;
+import sc2002.turnbased.support.TestCombatantBuilder;
 import sc2002.turnbased.support.TestCombatStatsBuilder;
 
 @Tag("unit")
@@ -20,13 +22,15 @@ class DefendStatusEffectTest {
             .withDefense(15)
             .build();
         DefendStatusEffect effect = new DefendStatusEffect(2);
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
 
         CombatStats currentTurnStats = effect.modifyStats(baseStats);
-        effect.onRoundCompleted();
+        String initialDescription = effect.description();
+        effect.onRoundEnd(owner);
         CombatStats nextTurnStats = effect.modifyStats(baseStats);
 
         assertAll(
-            () -> assertEquals("DEFENDING", effect.name()),
+            () -> assertEquals("DEFENDING", initialDescription),
             () -> assertEquals(new Stat(40), currentTurnStats.attack()),
             () -> assertEquals(new Stat(25), currentTurnStats.defense()),
             () -> assertEquals(new Stat(20), currentTurnStats.speed()),
@@ -41,9 +45,10 @@ class DefendStatusEffectTest {
             .withDefense(15)
             .build();
         DefendStatusEffect effect = new DefendStatusEffect(2);
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
 
-        effect.onRoundCompleted();
-        effect.onRoundCompleted();
+        effect.onRoundEnd(owner);
+        effect.onRoundEnd(owner);
         CombatStats updatedStats = effect.modifyStats(baseStats);
 
         assertTrue(effect.isExpired());

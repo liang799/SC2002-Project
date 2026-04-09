@@ -4,5 +4,6 @@ public enum StatusEffectKind {
     ARCANE_POWER,
     DEFEND,
     SMOKE_BOMB,
+    STRENGTH_BOOST,
     STUN
 }

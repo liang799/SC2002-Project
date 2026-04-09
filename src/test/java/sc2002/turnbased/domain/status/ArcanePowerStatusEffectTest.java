@@ -6,12 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.CombatStats;
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.Stat;
 import sc2002.turnbased.domain.StatType;
+import sc2002.turnbased.support.TestCombatantBuilder;
 import sc2002.turnbased.support.TestCombatStatsBuilder;
 
 @Tag("unit")
@@ -30,7 +35,7 @@ class ArcanePowerStatusEffectTest {
 
         CombatStats updatedStats = effect.modifyStats(baseStats);
 
-        assertEquals("ARCANE POWER +10", effect.name());
+        assertEquals("ARCANE POWER +10", effect.description());
         assertEquals(new Stat(50), updatedStats.attack());
         assertEquals(new Stat(15), updatedStats.defense());
         assertEquals(new Stat(20), updatedStats.speed());
@@ -38,15 +43,16 @@ class ArcanePowerStatusEffectTest {
     }
 
     @Test
-    void onRoundCompleted_WhenMultipleRoundsPass_RemainsActiveAndKeepsAttackBonusUntilLevelEnds() {
+    void onRoundEnd_WhenMultipleRoundsPass_RemainsActiveAndKeepsAttackBonusUntilLevelEnds() {
         CombatStats baseStats = TestCombatStatsBuilder.combatStats()
             .withAttack(40)
             .build();
         ArcanePowerStatusEffect effect = new ArcanePowerStatusEffect(10);
+        Combatant owner = TestCombatantBuilder.aCombatant().build();
 
-        effect.onRoundCompleted();
+        effect.onRoundEnd(owner);
         CombatStats afterFirstRound = effect.modifyStats(baseStats);
-        effect.onRoundCompleted();
+        effect.onRoundEnd(owner);
         CombatStats afterSecondRound = effect.modifyStats(baseStats);
 
         assertAll(
@@ -57,19 +63,38 @@ class ArcanePowerStatusEffectTest {
     }
 
     @Test
-    void merge_WhenCombinedWithSameEffect_ReturnsSummedAttackBonus() {
+    void mergeWith_WhenCombinedWithSameEffect_ReturnsSummedAttackBonus() {
         ArcanePowerStatusEffect effect = new ArcanePowerStatusEffect(10);
         ArcanePowerStatusEffect otherEffect = new ArcanePowerStatusEffect(20);
 
-        StatusEffect merged = effect.merge(otherEffect);
-        CombatStats updatedStats = ((StatModifierEffect) merged).modifyStats(
+        Optional<StatusEffect> merged = effect.mergeWith(otherEffect);
+
+        assertTrue(merged.isPresent());
+        CombatStats updatedStats = merged.get().modifyStats(
             TestCombatStatsBuilder.combatStats()
                 .withAttack(40)
                 .build()
         );
 
-        assertTrue(effect.canMergeWith(otherEffect));
-        assertEquals("ARCANE POWER +30", merged.name());
+        assertEquals("ARCANE POWER +30", merged.get().description());
         assertEquals(70, updatedStats.valueOf(StatType.ATTACK));
+    }
+
+    @Test
+    void mergeWith_WhenOtherEffectIsNull_ThrowsNullPointerException() {
+        ArcanePowerStatusEffect effect = new ArcanePowerStatusEffect(10);
+
+        assertThrows(NullPointerException.class, () -> effect.mergeWith(null));
+    }
+
+    @Test
+    void onApply_WhenApplied_ReportsReadableMessage() {
+        ArcanePowerStatusEffect effect = new ArcanePowerStatusEffect(10);
+        Combatant owner = TestCombatantBuilder.aCombatant().named("Wizard").build();
+
+        assertEquals(
+            List.of(StatusEffectChange.applied(StatusEffectKind.ARCANE_POWER, 10)),
+            effect.onApply(owner)
+        );
     }
 }

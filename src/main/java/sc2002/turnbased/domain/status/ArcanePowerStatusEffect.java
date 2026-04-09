@@ -1,10 +1,14 @@
 package sc2002.turnbased.domain.status;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.StatType;
-import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
 
-public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect, MergeableStatusEffect {
+public class ArcanePowerStatusEffect implements StatusEffect {
     private final int attackBonus;
 
     public ArcanePowerStatusEffect(int attackBonus) {
@@ -20,13 +24,13 @@ public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect
     }
 
     @Override
-    public String name() {
+    public String description() {
         return "ARCANE POWER +" + attackBonus;
     }
 
     @Override
-    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
-        eventPublisher.publish(new ArcanePowerAppliedEvent(ownerName, attackBonus));
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), attackBonus));
     }
 
     @Override
@@ -35,17 +39,12 @@ public class ArcanePowerStatusEffect implements StatusEffect, StatModifierEffect
     }
 
     @Override
-    public boolean canMergeWith(StatusEffect other) {
-        return other instanceof ArcanePowerStatusEffect;
-    }
-
-    @Override
-    public StatusEffect merge(StatusEffect other) {
+    public Optional<StatusEffect> mergeWith(StatusEffect other) {
+        Objects.requireNonNull(other, "other");
         if (!(other instanceof ArcanePowerStatusEffect arcanePowerStatusEffect)) {
-            throw new IllegalArgumentException("Cannot merge ArcanePowerStatusEffect with " + other.getClass().getSimpleName());
+            return Optional.empty();
         }
-
-        return new ArcanePowerStatusEffect(attackBonus + arcanePowerStatusEffect.attackBonus);
+        return Optional.of(new ArcanePowerStatusEffect(attackBonus + arcanePowerStatusEffect.attackBonus));
     }
 
     @Override

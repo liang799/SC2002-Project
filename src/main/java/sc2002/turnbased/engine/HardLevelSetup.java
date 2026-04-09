@@ -11,6 +11,7 @@ import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public final class HardLevelSetup {
     private HardLevelSetup() {
@@ -27,7 +28,7 @@ public final class HardLevelSetup {
             }
         }
         return new BattleSetupFactory(CombatantFactories.createDefault(
-            new DefaultStatusEffectRegistryFactory(),
+            new DefaultStatusEffectRegistryFactory(StatusEffectRegistry::new),
             new BasicAttackAction(),
             new ShieldBashAction(),
             new ArcaneBlastAction()

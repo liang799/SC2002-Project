@@ -27,10 +27,6 @@ import sc2002.turnbased.actions.UseSpecialSkillAction;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
-import sc2002.turnbased.domain.status.StatusEffectKind;
-import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
-import sc2002.turnbased.domain.status.event.StatusEffectEvent;
-import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.engine.DifficultyLevel;
@@ -130,23 +126,20 @@ class CustomBattleFlowE2ETest {
             enemy("Wolf B", 0)
         );
 
-        assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20,
-            List.of(new SmokeBombActivatedEvent("Warrior", "Goblin", 1)));
+        assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20, List.of("Smoke Bomb blocked the attack"));
         assertAction(rounds.get(3), "Goblin", "Warrior", 0, 20,
             List.of(
-                new SmokeBombActivatedEvent("Warrior", "Goblin", 0),
-                new StatusEffectExpiredEvent("Warrior", StatusEffectKind.SMOKE_BOMB)
+                "Smoke Bomb blocked the attack",
+                "Smoke Bomb expired"
             ));
         assertAction(rounds.get(4), "Goblin", "Warrior", 5, 30, List.of());
         assertAction(rounds.get(10), "Wolf A", "Warrior", 15, 30, List.of());
         assertAction(rounds.get(10), "Wolf B", "Warrior", 15, 30, List.of());
 
         assertSkipped(rounds.get(2), "Wolf", "STUNNED", List.of());
-        assertSkipped(rounds.get(3), "Wolf", "STUNNED",
-            List.of(new StatusEffectExpiredEvent("Wolf", StatusEffectKind.STUN)));
+        assertSkipped(rounds.get(3), "Wolf", "STUNNED", List.of("Stun expired"));
         assertSkipped(rounds.get(5), "Goblin", "STUNNED", List.of());
-        assertSkipped(rounds.get(6), "Goblin", "STUNNED",
-            List.of(new StatusEffectExpiredEvent("Goblin", StatusEffectKind.STUN)));
+        assertSkipped(rounds.get(6), "Goblin", "STUNNED", List.of("Stun expired"));
 
         assertNarrationContains(rounds.get(8), "Backup Spawn triggered: Wolf A, Wolf B");
         assertVictoryNarration(events);
@@ -164,7 +157,7 @@ class CustomBattleFlowE2ETest {
         String target,
         int expectedDamage,
         int expectedDefense,
-        List<StatusEffectEvent> expectedStatusEffectEvents
+        List<String> expectedStatusEffectNotes
     ) {
         assertNotNull(roundCapture, "Missing expected round capture");
 
@@ -179,9 +172,9 @@ class CustomBattleFlowE2ETest {
             () -> assertEquals(expectedDamage, actionEvent.getDamage(), "Unexpected damage for " + actor + " -> " + target),
             () -> assertEquals(expectedDefense, actionEvent.getTargetDefense(), "Unexpected target defense for " + actor + " -> " + target),
             () -> assertEquals(
-                expectedStatusEffectEvents,
-                actionEvent.getStatusEffectEvents(),
-                "Unexpected status effect events for " + actor + " -> " + target
+                expectedStatusEffectNotes,
+                actionEvent.getStatusEffectNotes(),
+                "Unexpected status effect notes for " + actor + " -> " + target
             )
         );
     }
@@ -190,7 +183,7 @@ class CustomBattleFlowE2ETest {
         RoundCapture roundCapture,
         String combatantName,
         String expectedReason,
-        List<StatusEffectEvent> expectedStatusEffectEvents
+        List<String> expectedStatusEffectNotes
     ) {
         assertNotNull(roundCapture, "Missing expected round capture");
 
@@ -204,9 +197,9 @@ class CustomBattleFlowE2ETest {
         assertAll(
             () -> assertEquals(expectedReason, skippedTurnEvent.getReason(), "Unexpected skip reason for " + combatantName),
             () -> assertEquals(
-                expectedStatusEffectEvents,
-                skippedTurnEvent.getStatusEffectEvents(),
-                "Unexpected status effect events for " + combatantName
+                expectedStatusEffectNotes,
+                skippedTurnEvent.getStatusEffectNotes(),
+                "Unexpected status effect notes for " + combatantName
             )
         );
     }
@@ -242,7 +235,7 @@ class CustomBattleFlowE2ETest {
                 throw new IllegalStateException("No planned turn configured for round " + roundNumber);
             }
 
-            if (plannedTurn.primaryAction() instanceof UseSpecialSkillAction && player.getSpecialSkillCooldown() > 0) {
+            if (plannedTurn.primaryAction() instanceof UseSpecialSkillAction && !player.canUseSpecialSkill()) {
                 cooldownBlockedRounds.add(roundNumber);
                 if (plannedTurn.fallbackAction() == null) {
                     throw new IllegalStateException("Special skill was unavailable in round " + roundNumber + " and no fallback action was configured");

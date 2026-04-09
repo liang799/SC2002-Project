@@ -55,7 +55,7 @@ public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
                 "BasicAttack",
                 "Defend",
                 "Item",
-                player.getSpecialSkillCooldown() == 0
+                player.canUseSpecialSkill()
                     ? "SpecialSkill"
                     : "SpecialSkill (Cooldown " + player.getSpecialSkillCooldown() + ")"
             };
@@ -85,7 +85,7 @@ public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
                     result.set(item);
                     break;
                 case 3:
-                    if (player.getSpecialSkillCooldown() > 0) {
+                    if (!player.canUseSpecialSkill()) {
                         JOptionPane.showMessageDialog(owner, "SpecialSkill is still on cooldown.", "Invalid", JOptionPane.WARNING_MESSAGE);
                         result.set(null);
                     } else {
@@ -179,8 +179,9 @@ public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
         b.append(" | Cooldown ").append(player.getSpecialSkillCooldown()).append("\n\nEnemies:\n");
         for (Combatant e : livingEnemies) {
             b.append("- ").append(e.getName()).append(": HP ").append(e.getCurrentHp()).append("/").append(e.getMaxHp());
-            if (!e.getActiveStatusNames().isEmpty()) {
-                b.append(" [").append(String.join(", ", e.getActiveStatusNames())).append("]");
+            List<String> activeStatuses = e.getActiveStatuses();
+            if (!activeStatuses.isEmpty()) {
+                b.append(" [").append(String.join(", ", activeStatuses)).append("]");
             }
             b.append("\n");
         }

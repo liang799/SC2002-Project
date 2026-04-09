@@ -6,30 +6,35 @@ import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.StatType;
 
-public class DefendStatusEffect implements StatusEffect {
-    private static final int DEFENSE_BONUS = 10;
+public class StrengthBoostStatusEffect implements StatusEffect {
+    private final int attackBonus;
     private int roundsRemaining;
 
-    public DefendStatusEffect(int roundsRemaining) {
-        if (roundsRemaining < 0) {
-            throw new IllegalArgumentException("roundsRemaining must not be negative");
+    /** Creates an active strength boost; roundsRemaining must start positive. */
+    public StrengthBoostStatusEffect(int attackBonus, int roundsRemaining) {
+        if (attackBonus <= 0) {
+            throw new IllegalArgumentException("attackBonus must be positive");
         }
+        if (roundsRemaining <= 0) {
+            throw new IllegalArgumentException("roundsRemaining must be positive");
+        }
+        this.attackBonus = attackBonus;
         this.roundsRemaining = roundsRemaining;
     }
 
     @Override
     public StatusEffectKind kind() {
-        return StatusEffectKind.DEFEND;
+        return StatusEffectKind.STRENGTH_BOOST;
     }
 
     @Override
     public String description() {
-        return "DEFENDING";
+        return "STRENGTH BOOST +" + attackBonus;
     }
 
     @Override
     public List<StatusEffectOutcome> onApply(Combatant owner) {
-        return List.of(StatusEffectChange.applied(kind(), DEFENSE_BONUS, roundsRemaining));
+        return List.of(StatusEffectChange.applied(kind(), attackBonus, roundsRemaining));
     }
 
     @Override
@@ -37,7 +42,7 @@ public class DefendStatusEffect implements StatusEffect {
         if (isExpired()) {
             return stats;
         }
-        return stats.addFlat(StatType.DEFENSE, DEFENSE_BONUS);
+        return stats.addFlat(StatType.ATTACK, attackBonus);
     }
 
     @Override
