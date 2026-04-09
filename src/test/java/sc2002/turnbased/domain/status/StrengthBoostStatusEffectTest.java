@@ -15,43 +15,40 @@ import sc2002.turnbased.support.TestCombatantBuilder;
 import sc2002.turnbased.support.TestCombatStatsBuilder;
 
 @Tag("unit")
-class DefendStatusEffectTest {
+class StrengthBoostStatusEffectTest {
     @Test
-    void modifyStats_WhenDefendCoversCurrentAndNextTurn_AddsDefenseBonusAcrossBothRounds() {
+    void modifyStats_WhenRoundsRemain_AddsAttackForConfiguredDuration() {
         CombatStats baseStats = TestCombatStatsBuilder.combatStats()
-            .withDefense(15)
+            .withAttack(40)
             .build();
-        DefendStatusEffect effect = new DefendStatusEffect(2);
         Combatant owner = TestCombatantBuilder.aCombatant().build();
+        StrengthBoostStatusEffect effect = new StrengthBoostStatusEffect(15, 3);
 
-        CombatStats currentTurnStats = effect.modifyStats(baseStats);
+        CombatStats initialStats = effect.modifyStats(baseStats);
         String initialDescription = effect.description();
         effect.onRoundEnd(owner);
-        CombatStats nextTurnStats = effect.modifyStats(baseStats);
+        CombatStats afterOneRound = effect.modifyStats(baseStats);
 
         assertAll(
-            () -> assertEquals("DEFENDING", initialDescription),
-            () -> assertEquals(new Stat(40), currentTurnStats.attack()),
-            () -> assertEquals(new Stat(25), currentTurnStats.defense()),
-            () -> assertEquals(new Stat(20), currentTurnStats.speed()),
-            () -> assertEquals(new Stat(25), nextTurnStats.defense()),
+            () -> assertEquals(new Stat(55), initialStats.attack()),
+            () -> assertEquals(new Stat(55), afterOneRound.attack()),
+            () -> assertEquals("STRENGTH BOOST +15", initialDescription),
             () -> assertFalse(effect.isExpired())
         );
     }
 
     @Test
-    void onRoundCompleted_WhenCurrentAndNextTurnHavePassed_ExpiresAndStopsModifyingStats() {
+    void onRoundCompleted_WhenDurationElapses_ExpiresAndStopsBuffingAttack() {
         CombatStats baseStats = TestCombatStatsBuilder.combatStats()
-            .withDefense(15)
+            .withAttack(40)
             .build();
-        DefendStatusEffect effect = new DefendStatusEffect(2);
         Combatant owner = TestCombatantBuilder.aCombatant().build();
+        StrengthBoostStatusEffect effect = new StrengthBoostStatusEffect(15, 1);
 
         effect.onRoundEnd(owner);
-        effect.onRoundEnd(owner);
-        CombatStats updatedStats = effect.modifyStats(baseStats);
+        CombatStats expiredStats = effect.modifyStats(baseStats);
 
         assertTrue(effect.isExpired());
-        assertEquals(baseStats, updatedStats);
+        assertEquals(40, expiredStats.attack().value());
     }
 }

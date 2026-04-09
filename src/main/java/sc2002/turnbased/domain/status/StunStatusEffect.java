@@ -1,12 +1,17 @@
 package sc2002.turnbased.domain.status;
 
-import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.status.event.StunAppliedEvent;
+import java.util.List;
+import java.util.Optional;
 
-public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
+import sc2002.turnbased.domain.Combatant;
+
+public class StunStatusEffect implements StatusEffect {
     private int blockedTurnsRemaining;
 
     public StunStatusEffect(int blockedTurnsRemaining) {
+        if (blockedTurnsRemaining < 0) {
+            throw new IllegalArgumentException("blockedTurnsRemaining must not be negative");
+        }
         this.blockedTurnsRemaining = blockedTurnsRemaining;
     }
 
@@ -16,24 +21,28 @@ public class StunStatusEffect implements StatusEffect, TurnInterferingEffect {
     }
 
     @Override
-    public String name() {
+    public String description() {
         return "STUNNED";
     }
 
     @Override
-    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
-        eventPublisher.publish(new StunAppliedEvent(ownerName, blockedTurnsRemaining));
+    public List<String> onApply(Combatant owner) {
+        return List.of(owner.getName() + " STUNNED (" + blockedTurnsRemaining + " turns)");
     }
 
     @Override
-    public TurnEffectResolution onTurnOpportunity(Combatant owner, StatusEffectEventPublisher eventPublisher) {
-        boolean blocksAction = blockedTurnsRemaining > 0;
-        if (!blocksAction) {
-            return TurnEffectResolution.allow();
+    public Optional<String> getTurnBlockReason(Combatant owner) {
+        if (blockedTurnsRemaining == 0) {
+            return Optional.empty();
         }
 
         blockedTurnsRemaining--;
-        return new TurnEffectResolution(blocksAction, name());
+        return Optional.of(description());
+    }
+
+    @Override
+    public List<String> onExpire(Combatant owner) {
+        return List.of("Stun expired");
     }
 
     @Override

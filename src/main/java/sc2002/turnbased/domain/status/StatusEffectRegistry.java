@@ -4,137 +4,129 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.Combatant;
 
 public class StatusEffectRegistry {
     private final List<StatusEffect> effects = new ArrayList<>();
-    private final StatusEffectEventPublisher eventPublisher;
+    private final List<String> pendingNotes = new ArrayList<>();
 
-    public StatusEffectRegistry(StatusEffectEventPublisher eventPublisher) {
-        this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
-    }
-
-    public void add(Combatant owner, StatusEffect statusEffect) {
+    public List<String> add(Combatant owner, StatusEffect statusEffect) {
         Combatant effectOwner = Objects.requireNonNull(owner, "owner");
         StatusEffect effectToAdd = Objects.requireNonNull(statusEffect, "statusEffect");
         pruneExpiredEffects(effectOwner);
 
         for (int index = 0; index < effects.size(); index++) {
             StatusEffect existingEffect = effects.get(index);
-            if (existingEffect instanceof MergeableStatusEffect mergeableEffect
-                && mergeableEffect.canMergeWith(effectToAdd)) {
-                StatusEffect mergedEffect = mergeableEffect.merge(effectToAdd);
-                effects.set(index, mergedEffect);
-                mergedEffect.onRegistered(effectOwner.getName(), eventPublisher);
-                return;
-            }
-            if (effectToAdd instanceof MergeableStatusEffect mergeableEffectToAdd
-                && mergeableEffectToAdd.canMergeWith(existingEffect)) {
-                StatusEffect mergedEffect = mergeableEffectToAdd.merge(existingEffect);
-                effects.set(index, mergedEffect);
-                mergedEffect.onRegistered(effectOwner.getName(), eventPublisher);
-                return;
+            Optional<StatusEffect> mergedEffect = merge(existingEffect, effectToAdd);
+            if (mergedEffect.isPresent()) {
+                effects.set(index, mergedEffect.get());
+                recordNotes(mergedEffect.get().onApply(effectOwner));
+                return consumeNotes();
             }
         }
 
         effects.add(effectToAdd);
-        effectToAdd.onRegistered(effectOwner.getName(), eventPublisher);
+        recordNotes(effectToAdd.onApply(effectOwner));
+        return consumeNotes();
     }
 
     public DamageAdjustment adjustIncomingDamage(Combatant owner, Combatant attacker, int damage) {
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            if (statusEffect instanceof IncomingDamageModifierEffect modifierEffect) {
-                DamageAdjustment adjustment = modifierEffect.adjustIncomingDamage(owner, attacker, damage, eventPublisher);
-                damage = adjustment.damage();
-            }
+            DamageAdjustment adjustment = statusEffect.modifyIncomingDamage(owner, attacker, damage);
+            recordNotes(adjustment.notes());
+            damage = adjustment.damage();
             if (statusEffect.isExpired()) {
-                statusEffect.onExpired(owner.getName(), eventPublisher);
+                recordNotes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
-        return new DamageAdjustment(damage);
+        return new DamageAdjustment(damage, consumeNotes());
     }
 
-    public TurnWindow resolveTurnWindow(Combatant owner) {
-        boolean blocked = false;
-        String blockerLabel = null;
-
+    public Optional<String> getTurnBlockReason(Combatant owner) {
+        Optional<String> blockReason = Optional.empty();
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            if (statusEffect instanceof TurnInterferingEffect turnInterferingEffect) {
-                TurnEffectResolution resolution = turnInterferingEffect.onTurnOpportunity(owner, eventPublisher);
-                if (resolution.blocksAction() && blockerLabel == null) {
-                    blocked = true;
-                    blockerLabel = resolution.blockerLabel();
-                }
+            if (blockReason.isEmpty()) {
+                blockReason = statusEffect.getTurnBlockReason(owner);
             }
             if (statusEffect.isExpired()) {
-                statusEffect.onExpired(owner.getName(), eventPublisher);
+                recordNotes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
-
-        return new TurnWindow(blocked, blockerLabel);
+        return blockReason;
     }
 
-    public void onRoundCompleted(Combatant owner) {
+    public List<String> completeRound(Combatant owner) {
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            statusEffect.onRoundCompleted();
+            recordNotes(statusEffect.onRoundEnd(owner));
             if (statusEffect.isExpired()) {
-                statusEffect.onExpired(owner.getName(), eventPublisher);
+                recordNotes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
+        return consumeNotes();
     }
 
-    public List<String> activeStatusNames(String ownerName, boolean ownerAlive) {
-        pruneExpiredEffects(ownerName);
-        if (!ownerAlive) {
+    public List<String> activeStatuses(Combatant owner) {
+        Combatant effectOwner = Objects.requireNonNull(owner, "owner");
+        pruneExpiredEffects(effectOwner);
+        if (!effectOwner.isAlive()) {
             return List.of();
         }
 
-        List<String> names = new ArrayList<>();
-        for (StatusEffect statusEffect : effects) {
-            names.add(statusEffect.name());
-        }
-        return names;
+        return effects.stream()
+            .filter(statusEffect -> !statusEffect.isExpired())
+            .map(StatusEffect::description)
+            .toList();
     }
 
-    public CombatStats apply(String ownerName, CombatStats stats) {
-        pruneExpiredEffects(ownerName);
+    public CombatStats apply(Combatant owner, CombatStats stats) {
+        Combatant effectOwner = Objects.requireNonNull(owner, "owner");
+        pruneExpiredEffects(effectOwner);
 
         CombatStats effectiveStats = Objects.requireNonNull(stats, "stats");
         for (StatusEffect statusEffect : effects) {
-            if (statusEffect instanceof StatModifierEffect modifierEffect) {
-                effectiveStats = modifierEffect.modifyStats(effectiveStats);
-            }
+            effectiveStats = statusEffect.modifyStats(effectiveStats);
         }
         return effectiveStats;
     }
 
-    public StatusEffectObservationScope openObservation() {
-        return new StatusEffectObservationScope(eventPublisher);
+    public List<String> consumeNotes() {
+        List<String> notes = List.copyOf(pendingNotes);
+        pendingNotes.clear();
+        return notes;
     }
 
     private void pruneExpiredEffects(Combatant owner) {
-        pruneExpiredEffects(owner.getName());
-    }
-
-    private void pruneExpiredEffects(String ownerName) {
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
             if (statusEffect.isExpired()) {
-                statusEffect.onExpired(ownerName, eventPublisher);
+                recordNotes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
+    }
+
+    private void recordNotes(List<String> notes) {
+        pendingNotes.addAll(List.copyOf(Objects.requireNonNull(notes, "notes")));
+    }
+
+    private Optional<StatusEffect> merge(StatusEffect existingEffect, StatusEffect incomingEffect) {
+        Optional<StatusEffect> mergedEffect = existingEffect.mergeWith(incomingEffect);
+        if (mergedEffect.isPresent()) {
+            return mergedEffect;
+        }
+        return incomingEffect.mergeWith(existingEffect);
     }
 }

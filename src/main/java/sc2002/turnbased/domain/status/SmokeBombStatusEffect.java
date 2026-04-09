@@ -1,14 +1,17 @@
 package sc2002.turnbased.domain.status;
 
-import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
-import sc2002.turnbased.domain.status.event.SmokeBombAppliedEvent;
+import java.util.List;
 
-public class SmokeBombStatusEffect implements StatusEffect, IncomingDamageModifierEffect {
-    private int protectedEnemyAttacksRemaining;
+import sc2002.turnbased.domain.Combatant;
+
+public class SmokeBombStatusEffect implements StatusEffect {
+    private int chargesRemaining;
 
     public SmokeBombStatusEffect(int protectedEnemyAttacksRemaining) {
-        this.protectedEnemyAttacksRemaining = protectedEnemyAttacksRemaining;
+        if (protectedEnemyAttacksRemaining < 0) {
+            throw new IllegalArgumentException("protectedEnemyAttacksRemaining must not be negative");
+        }
+        this.chargesRemaining = protectedEnemyAttacksRemaining;
     }
 
     @Override
@@ -17,37 +20,36 @@ public class SmokeBombStatusEffect implements StatusEffect, IncomingDamageModifi
     }
 
     @Override
-    public String name() {
+    public String description() {
         return "SMOKE BOMB";
     }
 
     @Override
-    public void onRegistered(String ownerName, StatusEffectEventPublisher eventPublisher) {
-        eventPublisher.publish(new SmokeBombAppliedEvent(ownerName, protectedEnemyAttacksRemaining));
+    public List<String> onApply(Combatant owner) {
+        return List.of(owner.getName() + " gains Smoke Bomb protection for " + chargesRemaining + " enemy attacks");
     }
 
     @Override
-    public DamageAdjustment adjustIncomingDamage(
+    public DamageAdjustment modifyIncomingDamage(
         Combatant owner,
         Combatant attacker,
-        int damage,
-        StatusEffectEventPublisher eventPublisher
+        int damage
     ) {
-        if (protectedEnemyAttacksRemaining <= 0 || attacker == owner) {
+        if (chargesRemaining == 0 || attacker == owner) {
             return DamageAdjustment.unchanged(damage);
         }
 
-        protectedEnemyAttacksRemaining--;
-        eventPublisher.publish(new SmokeBombActivatedEvent(
-            owner.getName(),
-            attacker.getName(),
-            protectedEnemyAttacksRemaining
-        ));
-        return new DamageAdjustment(0);
+        chargesRemaining--;
+        return new DamageAdjustment(0, List.of("Smoke Bomb blocked the attack"));
+    }
+
+    @Override
+    public List<String> onExpire(Combatant owner) {
+        return List.of("Smoke Bomb expired");
     }
 
     @Override
     public boolean isExpired() {
-        return protectedEnemyAttacksRemaining == 0;
+        return chargesRemaining == 0;
     }
 }

@@ -6,30 +6,34 @@ import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.StatType;
 
-public class DefendStatusEffect implements StatusEffect {
-    private static final int DEFENSE_BONUS = 10;
+public class StrengthBoostStatusEffect implements StatusEffect {
+    private final int attackBonus;
     private int roundsRemaining;
 
-    public DefendStatusEffect(int roundsRemaining) {
+    public StrengthBoostStatusEffect(int attackBonus, int roundsRemaining) {
+        if (attackBonus <= 0) {
+            throw new IllegalArgumentException("attackBonus must be positive");
+        }
         if (roundsRemaining < 0) {
             throw new IllegalArgumentException("roundsRemaining must not be negative");
         }
+        this.attackBonus = attackBonus;
         this.roundsRemaining = roundsRemaining;
     }
 
     @Override
     public StatusEffectKind kind() {
-        return StatusEffectKind.DEFEND;
+        return StatusEffectKind.STRENGTH_BOOST;
     }
 
     @Override
     public String description() {
-        return "DEFENDING";
+        return "STRENGTH BOOST +" + attackBonus;
     }
 
     @Override
     public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " DEF +" + DEFENSE_BONUS + " for " + roundsRemaining + " rounds");
+        return List.of(owner.getName() + " gains STRENGTH BOOST +" + attackBonus + " for " + roundsRemaining + " rounds");
     }
 
     @Override
@@ -37,7 +41,7 @@ public class DefendStatusEffect implements StatusEffect {
         if (isExpired()) {
             return stats;
         }
-        return stats.addFlat(StatType.DEFENSE, DEFENSE_BONUS);
+        return stats.addFlat(StatType.ATTACK, attackBonus);
     }
 
     @Override
@@ -50,7 +54,7 @@ public class DefendStatusEffect implements StatusEffect {
 
     @Override
     public List<String> onExpire(Combatant owner) {
-        return List.of("Defend expired");
+        return List.of("Strength Boost expired");
     }
 
     @Override
