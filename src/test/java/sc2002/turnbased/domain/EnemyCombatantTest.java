@@ -20,14 +20,14 @@ import sc2002.turnbased.support.TestEnemyCombatantBuilder;
 @Tag("unit")
 class EnemyCombatantTest {
     @Test
-    void attackPlayer_WhenCreatedByFactory_ExecutesBasicAttackAgainstPlayer() {
+    void takeTurn_WhenCreatedByFactory_ExecutesBasicAttackAgainstTarget() {
         // arrange
         EnemyCombatant goblin = TestDependencies.goblin("Goblin");
         PlayerCharacter warrior = TestDependencies.warrior();
         TestActionExecutionContext context = new TestActionExecutionContext(List.of());
 
         // act
-        List<BattleEvent> events = goblin.attackPlayer(context, warrior);
+        List<BattleEvent> events = goblin.takeTurn(context, warrior);
         ActionEvent actionEvent = assertInstanceOf(ActionEvent.class, events.get(0));
 
         // assert
@@ -40,7 +40,7 @@ class EnemyCombatantTest {
     }
 
     @Test
-    void attackPlayer_WhenCustomAttackActionIsInjected_DelegatesToInjectedAction() {
+    void takeTurn_WhenCustomAttackActionIsInjected_DelegatesToInjectedAction() {
         // arrange
         RecordingBattleAction attackAction = new RecordingBattleAction();
         EnemyCombatant goblin = TestEnemyCombatantBuilder.anEnemyCombatant(attackAction)
@@ -50,7 +50,7 @@ class EnemyCombatantTest {
         TestActionExecutionContext context = new TestActionExecutionContext(List.of());
 
         // act
-        List<BattleEvent> events = goblin.attackPlayer(context, warrior);
+        List<BattleEvent> events = goblin.takeTurn(context, warrior);
 
         // assert
         assertSame(context, attackAction.context);

@@ -9,21 +9,21 @@ import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public class EnemyCombatant extends Combatant {
-    private final BattleAction attackAction;
+    private final BattleAction turnAction;
 
     public EnemyCombatant(
         String name,
         HitPoints baseHitPoints,
         CombatStats baseStats,
         StatusEffectRegistry statusEffectRegistry,
-        BattleAction attackAction
+        BattleAction turnAction
     ) {
         super(name, baseHitPoints, baseStats, statusEffectRegistry);
-        this.attackAction = Objects.requireNonNull(attackAction, "attackAction");
+        this.turnAction = Objects.requireNonNull(turnAction, "turnAction");
     }
 
-    public List<BattleEvent> attackPlayer(ActionExecutionContext context, PlayerCharacter player) {
+    public List<BattleEvent> takeTurn(ActionExecutionContext context, Combatant target) {
         Objects.requireNonNull(context, "context");
-        return attackAction.execute(context, this, Objects.requireNonNull(player, "player"));
+        return turnAction.execute(context, this, Objects.requireNonNull(target, "target"));
     }
 }
