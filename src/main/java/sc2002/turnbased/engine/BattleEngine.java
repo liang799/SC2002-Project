@@ -9,12 +9,14 @@ import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.CombatantSummary;
 import sc2002.turnbased.report.NarrationEvent;
 import sc2002.turnbased.report.RoundStartEvent;
 import sc2002.turnbased.report.RoundSummaryEvent;
 import sc2002.turnbased.report.SkippedTurnEvent;
+import sc2002.turnbased.report.StatusEffectReportEvent;
 
 public class BattleEngine implements ActionExecutionContext {
     private final PlayerCharacter player;
@@ -58,7 +60,7 @@ public class BattleEngine implements ActionExecutionContext {
 
             spawnBackupIfNeeded(battleEventListener);
             emit(createRoundSummary(roundNumber), battleEventListener);
-            completeRound();
+            completeRound(battleEventListener);
             if (isBattleOver()) {
                 break;
             }
@@ -231,11 +233,21 @@ public class BattleEngine implements ActionExecutionContext {
         );
     }
 
-    private void completeRound() {
-        player.completeRound();
+    private void completeRound(BattleEventListener battleEventListener) {
+        emitStatusEffectOutcomes(player.completeRound(), battleEventListener);
         for (Combatant enemy : spawnedEnemies) {
-            enemy.completeRound();
+            emitStatusEffectOutcomes(enemy.completeRound(), battleEventListener);
         }
+    }
+
+    private void emitStatusEffectOutcomes(
+        List<CombatantStatusOutcome> statusEffectOutcomes,
+        BattleEventListener battleEventListener
+    ) {
+        if (statusEffectOutcomes.isEmpty()) {
+            return;
+        }
+        emit(StatusEffectReportEvent.fromStatusEffectOutcomes(statusEffectOutcomes), battleEventListener);
     }
 
     private CombatantSummary toSummary(Combatant combatant) {
