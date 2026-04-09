@@ -3,9 +3,9 @@ package sc2002.turnbased.actions;
 import java.util.ArrayList;
 import java.util.List;
 
+import sc2002.turnbased.domain.AttackResolution;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
-import sc2002.turnbased.domain.status.StatusEffectObservationScope;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
@@ -29,30 +29,12 @@ public class ArcaneBlastAction implements BattleAction {
 
         events.add(new NarrationEvent(actor.getName() + " -> Arcane Blast -> all enemies"));
         for (Combatant enemy : targets) {
-            int damage = Math.max(0, attackUsed - enemy.getDefense());
-            int hpBefore = enemy.getCurrentHp();
-            enemy.receiveDamage(damage);
-
-            List<sc2002.turnbased.domain.status.event.StatusEffectEvent> statusEffectEvents = List.of();
-            if (!enemy.isAlive()) {
-                try (StatusEffectObservationScope observation = actor.statusEffects().openObservation()) {
-                    actor.addStatusEffect(new ArcanePowerStatusEffect(10));
-                    statusEffectEvents = observation.observedEvents();
-                }
+            AttackResolution attackResolution = actor.attack(enemy, attackUsed);
+            if (attackResolution.targetEliminated()) {
+                attackResolution = attackResolution.appendStatusEffectNotes(actor.addStatusEffect(new ArcanePowerStatusEffect(10)));
             }
 
-            events.add(new ActionEvent(
-                actor.getName(),
-                getName(),
-                enemy.getName(),
-                hpBefore,
-                enemy.getCurrentHp(),
-                attackUsed,
-                enemy.getDefense(),
-                damage,
-                !enemy.isAlive(),
-                statusEffectEvents
-            ));
+            events.add(new ActionEvent(actor.getName(), getName(), enemy.getName(), attackResolution));
         }
 
         return events;

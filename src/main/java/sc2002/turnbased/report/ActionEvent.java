@@ -3,7 +3,7 @@ package sc2002.turnbased.report;
 import java.util.List;
 import java.util.Objects;
 
-import sc2002.turnbased.domain.status.event.StatusEffectEvent;
+import sc2002.turnbased.domain.AttackResolution;
 
 public class ActionEvent implements BattleEvent {
     private final String actorName;
@@ -15,7 +15,7 @@ public class ActionEvent implements BattleEvent {
     private final int targetDefense;
     private final int damage;
     private final boolean targetEliminated;
-    private final List<StatusEffectEvent> statusEffectEvents;
+    private final List<String> statusEffectNotes;
 
     public ActionEvent(
         String actorName,
@@ -27,7 +27,7 @@ public class ActionEvent implements BattleEvent {
         int targetDefense,
         int damage,
         boolean targetEliminated,
-        List<StatusEffectEvent> statusEffectEvents
+        List<String> statusEffectNotes
     ) {
         this.actorName = actorName;
         this.actionName = actionName;
@@ -38,7 +38,22 @@ public class ActionEvent implements BattleEvent {
         this.targetDefense = targetDefense;
         this.damage = damage;
         this.targetEliminated = targetEliminated;
-        this.statusEffectEvents = List.copyOf(Objects.requireNonNull(statusEffectEvents, "statusEffectEvents"));
+        this.statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
+    }
+
+    public ActionEvent(String actorName, String actionName, String targetName, AttackResolution attackResolution) {
+        this(
+            actorName,
+            actionName,
+            targetName,
+            attackResolution.hpBefore(),
+            attackResolution.hpAfter(),
+            attackResolution.attackUsed(),
+            attackResolution.targetDefense(),
+            attackResolution.damage(),
+            attackResolution.targetEliminated(),
+            attackResolution.statusEffectNotes()
+        );
     }
 
     public String getActorName() {
@@ -77,7 +92,7 @@ public class ActionEvent implements BattleEvent {
         return targetEliminated;
     }
 
-    public List<StatusEffectEvent> getStatusEffectEvents() {
-        return statusEffectEvents;
+    public List<String> getStatusEffectNotes() {
+        return statusEffectNotes;
     }
 }
