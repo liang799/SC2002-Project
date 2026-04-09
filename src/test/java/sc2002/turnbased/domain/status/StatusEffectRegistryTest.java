@@ -57,4 +57,53 @@ class StatusEffectRegistryTest {
         );
         assertEquals(List.of(), warrior.getActiveStatuses());
     }
+
+    @Test
+    void adjustIncomingDamage_WhenEffectsDriveDamageBelowZero_ClampsToZeroAndPreservesNotes() {
+        StatusEffectRegistry registry = TestDependencies.registry();
+        Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
+        Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
+
+        registry.add(owner, new StatusEffect() {
+            private boolean expired;
+
+            @Override
+            public StatusEffectKind kind() {
+                return StatusEffectKind.DEFEND;
+            }
+
+            @Override
+            public String description() {
+                return "NEGATIVE DAMAGE";
+            }
+
+            @Override
+            public DamageAdjustment modifyIncomingDamage(Combatant effectOwner, Combatant effectAttacker, int damage) {
+                expired = true;
+                return new DamageAdjustment(-7, List.of("Damage reduced below zero"));
+            }
+
+            @Override
+            public List<String> onExpire(Combatant effectOwner) {
+                return List.of("Negative damage effect expired");
+            }
+
+            @Override
+            public boolean isExpired() {
+                return expired;
+            }
+        });
+        registry.consumeNotes();
+
+        DamageAdjustment adjustment = registry.adjustIncomingDamage(owner, attacker, 3);
+
+        assertEquals(0, adjustment.damage());
+        assertEquals(
+            List.of(
+                "Damage reduced below zero",
+                "Negative damage effect expired"
+            ),
+            adjustment.notes()
+        );
+    }
 }

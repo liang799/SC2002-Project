@@ -45,6 +45,7 @@ public class StatusEffectRegistry {
                 iterator.remove();
             }
         }
+        damage = Math.max(0, damage);
         return new DamageAdjustment(damage, consumeNotes());
     }
 
