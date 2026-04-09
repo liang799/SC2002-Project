@@ -15,6 +15,9 @@ public class DefaultStatusEffectRegistryFactory implements StatusEffectRegistryF
 
     @Override
     public StatusEffectRegistry create() {
-        return statusEffectRegistrySupplier.get();
+        return Objects.requireNonNull(
+            statusEffectRegistrySupplier.get(),
+            "statusEffectRegistrySupplier returned null StatusEffectRegistry"
+        );
     }
 }
