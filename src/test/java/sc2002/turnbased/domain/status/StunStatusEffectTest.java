@@ -2,7 +2,7 @@ package sc2002.turnbased.domain.status;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Tag;
@@ -13,6 +13,16 @@ import sc2002.turnbased.support.TestCombatantBuilder;
 
 @Tag("unit")
 class StunStatusEffectTest {
+    @Test
+    void constructor_WhenBlockedTurnsRemainingIsZero_ThrowsIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> new StunStatusEffect(0)
+        );
+
+        assertEquals("blockedTurnsRemaining must be positive", exception.getMessage());
+    }
+
     @Test
     void onTurnOpportunity_WhenCurrentAndNextTurnAreBlocked_BlocksExactlyTwoTurnsThenAllowsAction() {
         StunStatusEffect effect = new StunStatusEffect(2);
@@ -33,14 +43,4 @@ class StunStatusEffectTest {
         );
     }
 
-    @Test
-    void onTurnOpportunity_WhenAlreadyExpired_AllowsTurnWithoutNotes() {
-        StunStatusEffect effect = new StunStatusEffect(0);
-        Combatant owner = TestCombatantBuilder.aCombatant().build();
-
-        java.util.Optional<String> resolution = effect.getTurnBlockReason(owner);
-
-        assertTrue(resolution.isEmpty());
-        assertTrue(effect.isExpired());
-    }
 }

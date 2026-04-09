@@ -9,8 +9,8 @@ public class StunStatusEffect implements StatusEffect {
     private int blockedTurnsRemaining;
 
     public StunStatusEffect(int blockedTurnsRemaining) {
-        if (blockedTurnsRemaining < 0) {
-            throw new IllegalArgumentException("blockedTurnsRemaining must not be negative");
+        if (blockedTurnsRemaining <= 0) {
+            throw new IllegalArgumentException("blockedTurnsRemaining must be positive");
         }
         this.blockedTurnsRemaining = blockedTurnsRemaining;
     }
