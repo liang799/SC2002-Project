@@ -34,6 +34,7 @@ import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
+import sc2002.turnbased.domain.status.StatusEffectRegistry;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleEventListener;
 import sc2002.turnbased.engine.BattleSetup;
@@ -353,7 +354,7 @@ public class TurnBasedArenaGui extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             CombatantFactory combatantFactory = CombatantFactories.createDefault(
-                new DefaultStatusEffectRegistryFactory(),
+                new DefaultStatusEffectRegistryFactory(StatusEffectRegistry::new),
                 new BasicAttackAction(),
                 new ShieldBashAction(),
                 new ArcaneBlastAction()
