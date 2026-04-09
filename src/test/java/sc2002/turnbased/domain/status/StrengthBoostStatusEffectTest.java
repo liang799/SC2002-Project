@@ -3,6 +3,7 @@ package sc2002.turnbased.domain.status;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Tag;
@@ -16,6 +17,16 @@ import sc2002.turnbased.support.TestCombatStatsBuilder;
 
 @Tag("unit")
 class StrengthBoostStatusEffectTest {
+    @Test
+    void constructor_WhenRoundsRemainingIsZero_ThrowsIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> new StrengthBoostStatusEffect(15, 0)
+        );
+
+        assertEquals("roundsRemaining must be positive", exception.getMessage());
+    }
+
     @Test
     void modifyStats_WhenRoundsRemain_AddsAttackForConfiguredDuration() {
         CombatStats baseStats = TestCombatStatsBuilder.combatStats()

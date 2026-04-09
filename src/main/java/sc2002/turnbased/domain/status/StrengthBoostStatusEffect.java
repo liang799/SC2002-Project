@@ -10,12 +10,13 @@ public class StrengthBoostStatusEffect implements StatusEffect {
     private final int attackBonus;
     private int roundsRemaining;
 
+    /** Creates an active strength boost; roundsRemaining must start positive. */
     public StrengthBoostStatusEffect(int attackBonus, int roundsRemaining) {
         if (attackBonus <= 0) {
             throw new IllegalArgumentException("attackBonus must be positive");
         }
-        if (roundsRemaining < 0) {
-            throw new IllegalArgumentException("roundsRemaining must not be negative");
+        if (roundsRemaining <= 0) {
+            throw new IllegalArgumentException("roundsRemaining must be positive");
         }
         this.attackBonus = attackBonus;
         this.roundsRemaining = roundsRemaining;
