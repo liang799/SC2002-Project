@@ -8,9 +8,11 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import sc2002.turnbased.domain.CombatStats;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.support.TestCombatantBuilder;
+import sc2002.turnbased.support.TestCombatStatsBuilder;
 import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
@@ -105,5 +107,99 @@ class StatusEffectRegistryTest {
             ),
             adjustment.notes()
         );
+    }
+
+    @Test
+    void activeStatuses_WhenExpiredEffectIsPruned_DoesNotPublishExpiryNotes() {
+        StatusEffectRegistry registry = TestDependencies.registry();
+        Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
+
+        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+
+        assertEquals(List.of(), registry.activeStatuses(owner));
+        assertEquals(List.of(), registry.consumeNotes());
+    }
+
+    @Test
+    void apply_WhenExpiredEffectIsPruned_DoesNotPublishExpiryNotes() {
+        StatusEffectRegistry registry = TestDependencies.registry();
+        Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
+        CombatStats baseStats = TestCombatStatsBuilder.combatStats().build();
+
+        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+
+        CombatStats effectiveStats = registry.apply(owner, baseStats);
+
+        assertEquals(baseStats, effectiveStats);
+        assertEquals(List.of(), registry.consumeNotes());
+        assertEquals(List.of(), registry.activeStatuses(owner));
+    }
+
+    @Test
+    void add_WhenExpiredEffectsArePruned_PublishesExpiryNotesBeforeNewApplyNotes() {
+        StatusEffectRegistry registry = TestDependencies.registry();
+        Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
+
+        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+
+        List<String> notes = registry.add(owner, activeEffect("Fresh status", "Fresh status applied"));
+
+        assertEquals(
+            List.of(
+                "Expired status removed",
+                "Fresh status applied"
+            ),
+            notes
+        );
+        assertEquals(List.of("Fresh status"), registry.activeStatuses(owner));
+        assertEquals(List.of(), registry.consumeNotes());
+    }
+
+    private static StatusEffect expiredEffect(String description, String expiryNote) {
+        return new StatusEffect() {
+            @Override
+            public StatusEffectKind kind() {
+                return StatusEffectKind.DEFEND;
+            }
+
+            @Override
+            public String description() {
+                return description;
+            }
+
+            @Override
+            public List<String> onExpire(Combatant owner) {
+                return List.of(expiryNote);
+            }
+
+            @Override
+            public boolean isExpired() {
+                return true;
+            }
+        };
+    }
+
+    private static StatusEffect activeEffect(String description, String applyNote) {
+        return new StatusEffect() {
+            @Override
+            public StatusEffectKind kind() {
+                return StatusEffectKind.ARCANE_POWER;
+            }
+
+            @Override
+            public String description() {
+                return description;
+            }
+
+            @Override
+            public List<String> onApply(Combatant owner) {
+                return List.of(applyNote);
+            }
+
+            @Override
+            public boolean isExpired() {
+                return false;
+            }
+        };
     }
 }

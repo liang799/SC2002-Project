@@ -16,7 +16,7 @@ public class StatusEffectRegistry {
     public List<String> add(Combatant owner, StatusEffect statusEffect) {
         Combatant effectOwner = Objects.requireNonNull(owner, "owner");
         StatusEffect effectToAdd = Objects.requireNonNull(statusEffect, "statusEffect");
-        pruneExpiredEffects(effectOwner);
+        recordNotes(pruneExpiredEffects(effectOwner));
 
         for (int index = 0; index < effects.size(); index++) {
             StatusEffect existingEffect = effects.get(index);
@@ -108,15 +108,17 @@ public class StatusEffectRegistry {
         return notes;
     }
 
-    private void pruneExpiredEffects(Combatant owner) {
+    private List<String> pruneExpiredEffects(Combatant owner) {
+        List<String> expiryNotes = new ArrayList<>();
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
             if (statusEffect.isExpired()) {
-                recordNotes(statusEffect.onExpire(owner));
+                expiryNotes.addAll(List.copyOf(Objects.requireNonNull(statusEffect.onExpire(owner), "notes")));
                 iterator.remove();
             }
         }
+        return List.copyOf(expiryNotes);
     }
 
     private void recordNotes(List<String> notes) {
