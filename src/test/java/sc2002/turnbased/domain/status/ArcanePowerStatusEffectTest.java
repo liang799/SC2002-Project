@@ -93,7 +93,7 @@ class ArcanePowerStatusEffectTest {
         Combatant owner = TestCombatantBuilder.aCombatant().named("Wizard").build();
 
         assertEquals(
-            List.of("Wizard gains ARCANE POWER +10"),
+            List.of(StatusEffectChange.applied(StatusEffectKind.ARCANE_POWER, 10)),
             effect.onApply(owner)
         );
     }

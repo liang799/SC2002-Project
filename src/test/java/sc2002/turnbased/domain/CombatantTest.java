@@ -8,8 +8,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
+import sc2002.turnbased.domain.status.DamageModifier;
+import sc2002.turnbased.domain.status.DamageModifierType;
 import sc2002.turnbased.domain.status.DefendStatusEffect;
 import sc2002.turnbased.domain.status.SmokeBombStatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectChange;
+import sc2002.turnbased.domain.status.StatusEffectKind;
 import sc2002.turnbased.support.TestCombatantBuilder;
 import sc2002.turnbased.support.TestDependencies;
 
@@ -106,10 +111,16 @@ class CombatantTest {
         assertEquals(100, target.getCurrentHp());
         assertEquals(
             List.of(
-                "Smoke Bomb blocked the attack",
-                "Smoke Bomb expired"
+                new CombatantStatusOutcome(
+                    CombatantId.of("Warrior"),
+                    new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)
+                ),
+                new CombatantStatusOutcome(
+                    CombatantId.of("Warrior"),
+                    StatusEffectChange.expired(StatusEffectKind.SMOKE_BOMB)
+                )
             ),
-            attackResolution.statusEffectNotes()
+            attackResolution.statusEffectOutcomes()
         );
     }
 }

@@ -23,15 +23,15 @@ class StatusEffectRegistryTest {
         Combatant owner = TestCombatantBuilder.aCombatant().named("Owner").build();
 
         registry.add(owner, new StunStatusEffect(1));
-        registry.consumeNotes();
+        registry.consumeOutcomes();
 
         java.util.Optional<String> turnBlockReason = registry.getTurnBlockReason(owner);
 
         assertTrue(turnBlockReason.isPresent());
         assertEquals("STUNNED", turnBlockReason.get());
         assertEquals(
-            List.of("Stun expired"),
-            registry.consumeNotes()
+            List.of(StatusEffectChange.expired(StatusEffectKind.STUN)),
+            registry.consumeOutcomes()
         );
         assertEquals(List.of(), registry.activeStatuses(owner));
     }
@@ -45,23 +45,24 @@ class StatusEffectRegistryTest {
         EnemyCombatant goblin = TestDependencies.goblin("Goblin");
 
         registry.add(warrior, new SmokeBombStatusEffect(1));
-        registry.consumeNotes();
+        registry.consumeOutcomes();
 
         DamageAdjustment adjustment = registry.adjustIncomingDamage(warrior, goblin, 15);
 
         assertEquals(0, adjustment.damage());
         assertEquals(
-            List.of(
-                "Smoke Bomb blocked the attack",
-                "Smoke Bomb expired"
-            ),
-            adjustment.notes()
+            List.of(new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)),
+            adjustment.modifiers()
+        );
+        assertEquals(
+            List.of(StatusEffectChange.expired(StatusEffectKind.SMOKE_BOMB)),
+            registry.consumeOutcomes()
         );
         assertEquals(List.of(), warrior.getActiveStatuses());
     }
 
     @Test
-    void adjustIncomingDamage_WhenEffectsDriveDamageBelowZero_ClampsToZeroAndPreservesNotes() {
+    void adjustIncomingDamage_WhenEffectsDriveDamageBelowZero_ClampsToZeroAndPreservesOutcomes() {
         StatusEffectRegistry registry = TestDependencies.registry();
         Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
         Combatant attacker = TestCombatantBuilder.aCombatant().named("Attacker").build();
@@ -82,12 +83,15 @@ class StatusEffectRegistryTest {
             @Override
             public DamageAdjustment modifyIncomingDamage(Combatant effectOwner, Combatant effectAttacker, int damage) {
                 expired = true;
-                return new DamageAdjustment(-7, List.of("Damage reduced below zero"));
+                return new DamageAdjustment(
+                    -7,
+                    List.of(new DamageModifier(StatusEffectKind.DEFEND, DamageModifierType.REDUCED))
+                );
             }
 
             @Override
-            public List<String> onExpire(Combatant effectOwner) {
-                return List.of("Negative damage effect expired");
+            public List<StatusEffectOutcome> onExpire(Combatant effectOwner) {
+                return List.of(StatusEffectChange.expired(StatusEffectKind.DEFEND));
             }
 
             @Override
@@ -95,17 +99,18 @@ class StatusEffectRegistryTest {
                 return expired;
             }
         });
-        registry.consumeNotes();
+        registry.consumeOutcomes();
 
         DamageAdjustment adjustment = registry.adjustIncomingDamage(owner, attacker, 3);
 
         assertEquals(0, adjustment.damage());
         assertEquals(
-            List.of(
-                "Damage reduced below zero",
-                "Negative damage effect expired"
-            ),
-            adjustment.notes()
+            List.of(new DamageModifier(StatusEffectKind.DEFEND, DamageModifierType.REDUCED)),
+            adjustment.modifiers()
+        );
+        assertEquals(
+            List.of(StatusEffectChange.expired(StatusEffectKind.DEFEND)),
+            registry.consumeOutcomes()
         );
     }
 
@@ -114,10 +119,10 @@ class StatusEffectRegistryTest {
         StatusEffectRegistry registry = TestDependencies.registry();
         Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
 
-        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+        registry.add(owner, expiredEffect("Expired status"));
 
         assertEquals(List.of(), registry.activeStatuses(owner));
-        assertEquals(List.of(), registry.consumeNotes());
+        assertEquals(List.of(), registry.consumeOutcomes());
     }
 
     @Test
@@ -126,12 +131,12 @@ class StatusEffectRegistryTest {
         Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
         CombatStats baseStats = TestCombatStatsBuilder.combatStats().build();
 
-        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+        registry.add(owner, expiredEffect("Expired status"));
 
         CombatStats effectiveStats = registry.apply(owner, baseStats);
 
         assertEquals(baseStats, effectiveStats);
-        assertEquals(List.of(), registry.consumeNotes());
+        assertEquals(List.of(), registry.consumeOutcomes());
         assertEquals(List.of(), registry.activeStatuses(owner));
     }
 
@@ -140,22 +145,22 @@ class StatusEffectRegistryTest {
         StatusEffectRegistry registry = TestDependencies.registry();
         Combatant owner = TestCombatantBuilder.aCombatant(() -> registry).named("Owner").build();
 
-        registry.add(owner, expiredEffect("Expired status", "Expired status removed"));
+        registry.add(owner, expiredEffect("Expired status"));
 
-        List<String> notes = registry.add(owner, activeEffect("Fresh status", "Fresh status applied"));
+        List<StatusEffectOutcome> outcomes = registry.add(owner, activeEffect("Fresh status"));
 
         assertEquals(
             List.of(
-                "Expired status removed",
-                "Fresh status applied"
+                StatusEffectChange.expired(StatusEffectKind.DEFEND),
+                StatusEffectChange.applied(StatusEffectKind.ARCANE_POWER)
             ),
-            notes
+            outcomes
         );
         assertEquals(List.of("Fresh status"), registry.activeStatuses(owner));
-        assertEquals(List.of(), registry.consumeNotes());
+        assertEquals(List.of(), registry.consumeOutcomes());
     }
 
-    private static StatusEffect expiredEffect(String description, String expiryNote) {
+    private static StatusEffect expiredEffect(String description) {
         return new StatusEffect() {
             @Override
             public StatusEffectKind kind() {
@@ -168,8 +173,8 @@ class StatusEffectRegistryTest {
             }
 
             @Override
-            public List<String> onExpire(Combatant owner) {
-                return List.of(expiryNote);
+            public List<StatusEffectOutcome> onExpire(Combatant owner) {
+                return List.of(StatusEffectChange.expired(kind()));
             }
 
             @Override
@@ -179,7 +184,7 @@ class StatusEffectRegistryTest {
         };
     }
 
-    private static StatusEffect activeEffect(String description, String applyNote) {
+    private static StatusEffect activeEffect(String description) {
         return new StatusEffect() {
             @Override
             public StatusEffectKind kind() {
@@ -192,8 +197,8 @@ class StatusEffectRegistryTest {
             }
 
             @Override
-            public List<String> onApply(Combatant owner) {
-                return List.of(applyNote);
+            public List<StatusEffectOutcome> onApply(Combatant owner) {
+                return List.of(StatusEffectChange.applied(kind()));
             }
 
             @Override

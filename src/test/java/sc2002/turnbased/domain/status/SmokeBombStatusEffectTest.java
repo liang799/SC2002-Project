@@ -24,7 +24,7 @@ class SmokeBombStatusEffectTest {
 
         assertAll(
             () -> assertEquals(15, adjustment.damage()),
-            () -> assertEquals(List.of(), adjustment.notes()),
+            () -> assertEquals(List.of(), adjustment.modifiers()),
             () -> assertFalse(effect.isExpired())
         );
     }
@@ -39,7 +39,7 @@ class SmokeBombStatusEffectTest {
 
         assertAll(
             () -> assertEquals(15, adjustment.damage()),
-            () -> assertEquals(List.of(), adjustment.notes()),
+            () -> assertEquals(List.of(), adjustment.modifiers()),
             () -> assertTrue(effect.isExpired())
         );
     }
@@ -54,7 +54,10 @@ class SmokeBombStatusEffectTest {
 
         assertAll(
             () -> assertEquals(0, adjustment.damage()),
-            () -> assertEquals(List.of("Smoke Bomb blocked the attack"), adjustment.notes()),
+            () -> assertEquals(
+                List.of(new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)),
+                adjustment.modifiers()
+            ),
             () -> assertTrue(effect.isExpired())
         );
     }
@@ -69,7 +72,10 @@ class SmokeBombStatusEffectTest {
 
         assertAll(
             () -> assertEquals(0, adjustment.damage()),
-            () -> assertEquals(List.of("Smoke Bomb blocked the attack"), adjustment.notes()),
+            () -> assertEquals(
+                List.of(new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)),
+                adjustment.modifiers()
+            ),
             () -> assertFalse(effect.isExpired())
         );
     }
@@ -89,10 +95,13 @@ class SmokeBombStatusEffectTest {
             () -> assertEquals(0, secondAdjustment.damage()),
             () -> assertEquals(25, thirdAdjustment.damage()),
             () -> assertEquals(
-                List.of("Smoke Bomb blocked the attack", "Smoke Bomb blocked the attack"),
-                List.of(firstAdjustment.notes().get(0), secondAdjustment.notes().get(0))
+                List.of(
+                    new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED),
+                    new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)
+                ),
+                List.of(firstAdjustment.modifiers().get(0), secondAdjustment.modifiers().get(0))
             ),
-            () -> assertEquals(List.of(), thirdAdjustment.notes()),
+            () -> assertEquals(List.of(), thirdAdjustment.modifiers()),
             () -> assertTrue(effect.isExpired())
         );
     }
