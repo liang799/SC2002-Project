@@ -52,7 +52,7 @@ public class ActionEvent implements BattleEvent {
             attackResolution.targetDefense(),
             attackResolution.damage(),
             attackResolution.targetEliminated(),
-            attackResolution.statusEffectNotes()
+            StatusEffectReportMapper.toNotes(attackResolution.statusEffectOutcomes())
         );
     }
 

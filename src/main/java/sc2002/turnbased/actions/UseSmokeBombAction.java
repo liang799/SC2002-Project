@@ -25,7 +25,7 @@ public class UseSmokeBombAction implements BattleAction {
         context.getInventory().use(ItemType.SMOKE_BOMB);
         return List.of(
             new NarrationEvent(actor.getName() + " -> Item -> Smoke Bomb used"),
-            new StatusEffectReportEvent(actor.addStatusEffect(new SmokeBombStatusEffect(2)))
+            StatusEffectReportEvent.fromStatusEffectOutcomes(actor.addStatusEffect(new SmokeBombStatusEffect(2)))
         );
     }
 }

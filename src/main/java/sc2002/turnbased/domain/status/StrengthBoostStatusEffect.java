@@ -33,8 +33,8 @@ public class StrengthBoostStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " gains STRENGTH BOOST +" + attackBonus + " for " + roundsRemaining + " rounds");
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), attackBonus, roundsRemaining));
     }
 
     @Override
@@ -46,7 +46,7 @@ public class StrengthBoostStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onRoundEnd(Combatant owner) {
+    public List<StatusEffectOutcome> onRoundEnd(Combatant owner) {
         if (roundsRemaining > 0) {
             roundsRemaining--;
         }
@@ -54,8 +54,8 @@ public class StrengthBoostStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onExpire(Combatant owner) {
-        return List.of("Strength Boost expired");
+    public List<StatusEffectOutcome> onExpire(Combatant owner) {
+        return List.of(StatusEffectChange.expired(kind()));
     }
 
     @Override

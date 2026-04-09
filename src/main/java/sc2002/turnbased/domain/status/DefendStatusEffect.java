@@ -28,8 +28,8 @@ public class DefendStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " DEF +" + DEFENSE_BONUS + " for " + roundsRemaining + " rounds");
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), DEFENSE_BONUS, roundsRemaining));
     }
 
     @Override
@@ -41,7 +41,7 @@ public class DefendStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onRoundEnd(Combatant owner) {
+    public List<StatusEffectOutcome> onRoundEnd(Combatant owner) {
         if (roundsRemaining > 0) {
             roundsRemaining--;
         }
@@ -49,8 +49,8 @@ public class DefendStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onExpire(Combatant owner) {
-        return List.of("Defend expired");
+    public List<StatusEffectOutcome> onExpire(Combatant owner) {
+        return List.of(StatusEffectChange.expired(kind()));
     }
 
     @Override

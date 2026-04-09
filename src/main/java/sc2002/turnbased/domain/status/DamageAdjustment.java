@@ -3,9 +3,9 @@ package sc2002.turnbased.domain.status;
 import java.util.List;
 import java.util.Objects;
 
-public record DamageAdjustment(int damage, List<String> notes) {
+public record DamageAdjustment(int damage, List<DamageModifier> modifiers) {
     public DamageAdjustment {
-        notes = List.copyOf(Objects.requireNonNull(notes, "notes"));
+        modifiers = List.copyOf(Objects.requireNonNull(modifiers, "modifiers"));
     }
 
     public DamageAdjustment(int damage) {

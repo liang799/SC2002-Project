@@ -11,42 +11,43 @@ import sc2002.turnbased.domain.Combatant;
 
 public class StatusEffectRegistry {
     private final List<StatusEffect> effects = new ArrayList<>();
-    private final List<String> pendingNotes = new ArrayList<>();
+    private final List<StatusEffectOutcome> pendingOutcomes = new ArrayList<>();
 
-    public List<String> add(Combatant owner, StatusEffect statusEffect) {
+    public List<StatusEffectOutcome> add(Combatant owner, StatusEffect statusEffect) {
         Combatant effectOwner = Objects.requireNonNull(owner, "owner");
         StatusEffect effectToAdd = Objects.requireNonNull(statusEffect, "statusEffect");
-        recordNotes(pruneExpiredEffects(effectOwner));
+        recordOutcomes(pruneExpiredEffects(effectOwner));
 
         for (int index = 0; index < effects.size(); index++) {
             StatusEffect existingEffect = effects.get(index);
             Optional<StatusEffect> mergedEffect = merge(existingEffect, effectToAdd);
             if (mergedEffect.isPresent()) {
                 effects.set(index, mergedEffect.get());
-                recordNotes(mergedEffect.get().onApply(effectOwner));
-                return consumeNotes();
+                recordOutcomes(mergedEffect.get().onApply(effectOwner));
+                return consumeOutcomes();
             }
         }
 
         effects.add(effectToAdd);
-        recordNotes(effectToAdd.onApply(effectOwner));
-        return consumeNotes();
+        recordOutcomes(effectToAdd.onApply(effectOwner));
+        return consumeOutcomes();
     }
 
     public DamageAdjustment adjustIncomingDamage(Combatant owner, Combatant attacker, int damage) {
+        List<DamageModifier> modifiers = new ArrayList<>();
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
             DamageAdjustment adjustment = statusEffect.modifyIncomingDamage(owner, attacker, damage);
-            recordNotes(adjustment.notes());
+            modifiers.addAll(adjustment.modifiers());
             damage = adjustment.damage();
             if (statusEffect.isExpired()) {
-                recordNotes(statusEffect.onExpire(owner));
+                recordOutcomes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
         damage = Math.max(0, damage);
-        return new DamageAdjustment(damage, consumeNotes());
+        return new DamageAdjustment(damage, modifiers);
     }
 
     public Optional<String> getTurnBlockReason(Combatant owner) {
@@ -58,24 +59,24 @@ public class StatusEffectRegistry {
                 blockReason = statusEffect.getTurnBlockReason(owner);
             }
             if (statusEffect.isExpired()) {
-                recordNotes(statusEffect.onExpire(owner));
+                recordOutcomes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
         return blockReason;
     }
 
-    public List<String> completeRound(Combatant owner) {
+    public List<StatusEffectOutcome> completeRound(Combatant owner) {
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
-            recordNotes(statusEffect.onRoundEnd(owner));
+            recordOutcomes(statusEffect.onRoundEnd(owner));
             if (statusEffect.isExpired()) {
-                recordNotes(statusEffect.onExpire(owner));
+                recordOutcomes(statusEffect.onExpire(owner));
                 iterator.remove();
             }
         }
-        return consumeNotes();
+        return consumeOutcomes();
     }
 
     public List<String> activeStatuses(Combatant owner) {
@@ -102,27 +103,27 @@ public class StatusEffectRegistry {
         return effectiveStats;
     }
 
-    public List<String> consumeNotes() {
-        List<String> notes = List.copyOf(pendingNotes);
-        pendingNotes.clear();
-        return notes;
+    public List<StatusEffectOutcome> consumeOutcomes() {
+        List<StatusEffectOutcome> outcomes = List.copyOf(pendingOutcomes);
+        pendingOutcomes.clear();
+        return outcomes;
     }
 
-    private List<String> pruneExpiredEffects(Combatant owner) {
-        List<String> expiryNotes = new ArrayList<>();
+    private List<StatusEffectOutcome> pruneExpiredEffects(Combatant owner) {
+        List<StatusEffectOutcome> expiryOutcomes = new ArrayList<>();
         Iterator<StatusEffect> iterator = effects.iterator();
         while (iterator.hasNext()) {
             StatusEffect statusEffect = iterator.next();
             if (statusEffect.isExpired()) {
-                expiryNotes.addAll(List.copyOf(Objects.requireNonNull(statusEffect.onExpire(owner), "notes")));
+                expiryOutcomes.addAll(List.copyOf(Objects.requireNonNull(statusEffect.onExpire(owner), "outcomes")));
                 iterator.remove();
             }
         }
-        return List.copyOf(expiryNotes);
+        return List.copyOf(expiryOutcomes);
     }
 
-    private void recordNotes(List<String> notes) {
-        pendingNotes.addAll(List.copyOf(Objects.requireNonNull(notes, "notes")));
+    private void recordOutcomes(List<? extends StatusEffectOutcome> outcomes) {
+        pendingOutcomes.addAll(List.copyOf(Objects.requireNonNull(outcomes, "outcomes")));
     }
 
     private Optional<StatusEffect> merge(StatusEffect existingEffect, StatusEffect incomingEffect) {

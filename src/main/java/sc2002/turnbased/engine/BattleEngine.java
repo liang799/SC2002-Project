@@ -9,6 +9,7 @@ import sc2002.turnbased.domain.EnemyCombatant;
 import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.CombatantSummary;
 import sc2002.turnbased.report.NarrationEvent;
@@ -98,18 +99,21 @@ public class BattleEngine implements ActionExecutionContext {
         }
 
         java.util.Optional<String> turnBlockReason = actor.getTurnBlockReason();
-        List<String> statusEffectNotes = actor.consumeStatusEffectNotes();
+        List<CombatantStatusOutcome> statusEffectOutcomes = actor.consumeStatusEffectOutcomes();
         if (!actor.isAlive()) {
-            emit(new SkippedTurnEvent(actor.getName(), "ELIMINATED", statusEffectNotes), battleEventListener);
+            emit(
+                SkippedTurnEvent.fromStatusEffectOutcomes(actor.getName(), "ELIMINATED", statusEffectOutcomes),
+                battleEventListener
+            );
             return;
         }
 
         if (turnBlockReason.isPresent()) {
             emit(
-                new SkippedTurnEvent(
+                SkippedTurnEvent.fromStatusEffectOutcomes(
                     actor.getName(),
                     turnBlockReason.get(),
-                    statusEffectNotes
+                    statusEffectOutcomes
                 ),
                 battleEventListener
             );

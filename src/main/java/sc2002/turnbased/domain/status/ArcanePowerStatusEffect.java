@@ -29,8 +29,8 @@ public class ArcanePowerStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " gains ARCANE POWER +" + attackBonus);
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), attackBonus));
     }
 
     @Override

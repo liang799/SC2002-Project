@@ -17,17 +17,17 @@ public interface StatusEffect {
         return Optional.empty();
     }
 
-    default List<String> onApply(Combatant owner) {
+    default List<StatusEffectOutcome> onApply(Combatant owner) {
         Objects.requireNonNull(owner, "owner");
         return List.of();
     }
 
-    default List<String> onExpire(Combatant owner) {
+    default List<StatusEffectOutcome> onExpire(Combatant owner) {
         Objects.requireNonNull(owner, "owner");
         return List.of();
     }
 
-    default List<String> onRoundEnd(Combatant owner) {
+    default List<StatusEffectOutcome> onRoundEnd(Combatant owner) {
         Objects.requireNonNull(owner, "owner");
         return List.of();
     }

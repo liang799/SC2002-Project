@@ -1,11 +1,14 @@
 package sc2002.turnbased.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 import sc2002.turnbased.domain.status.DamageAdjustment;
 import sc2002.turnbased.domain.status.StatusEffect;
+import sc2002.turnbased.domain.status.StatusEffectOutcome;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
 
 public abstract class Combatant {
@@ -91,21 +94,21 @@ public abstract class Combatant {
         hitPoints = hitPoints.heal(amount);
     }
 
-    public List<String> addStatusEffect(StatusEffect statusEffect) {
+    public List<CombatantStatusOutcome> addStatusEffect(StatusEffect statusEffect) {
         Objects.requireNonNull(statusEffect, "statusEffect");
-        return statusEffectRegistry.add(this, statusEffect);
+        return wrapStatusEffectOutcomes(statusEffectRegistry.add(this, statusEffect));
     }
 
     public Optional<String> getTurnBlockReason() {
         return statusEffectRegistry.getTurnBlockReason(this);
     }
 
-    public List<String> consumeStatusEffectNotes() {
-        return statusEffectRegistry.consumeNotes();
+    public List<CombatantStatusOutcome> consumeStatusEffectOutcomes() {
+        return wrapStatusEffectOutcomes(statusEffectRegistry.consumeOutcomes());
     }
 
-    public List<String> completeRound() {
-        return statusEffectRegistry.completeRound(this);
+    public List<CombatantStatusOutcome> completeRound() {
+        return wrapStatusEffectOutcomes(statusEffectRegistry.completeRound(this));
     }
 
     public List<String> getActiveStatuses() {
@@ -117,6 +120,8 @@ public abstract class Combatant {
         DamageAdjustment damageAdjustment = statusEffectRegistry.adjustIncomingDamage(this, attacker, baseDamage);
         int damage = damageAdjustment.damage();
         receiveDamage(damage);
+        List<CombatantStatusOutcome> statusEffectOutcomes = new ArrayList<>(wrapStatusEffectOutcomes(damageAdjustment.modifiers()));
+        statusEffectOutcomes.addAll(wrapStatusEffectOutcomes(statusEffectRegistry.consumeOutcomes()));
 
         return new AttackResolution(
             attackUsed,
@@ -125,11 +130,19 @@ public abstract class Combatant {
             getCurrentHp(),
             damage,
             !isAlive(),
-            damageAdjustment.notes()
+            statusEffectOutcomes
         );
     }
 
     private CombatStats effectiveStats() {
         return statusEffectRegistry.apply(this, baseStats);
+    }
+
+    private List<CombatantStatusOutcome> wrapStatusEffectOutcomes(List<? extends StatusEffectOutcome> outcomes) {
+        return List.copyOf(
+            Objects.requireNonNull(outcomes, "outcomes").stream()
+                .map(outcome -> new CombatantStatusOutcome(combatantId, outcome))
+                .toList()
+        );
     }
 }

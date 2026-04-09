@@ -26,8 +26,8 @@ public class StunStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " STUNNED (" + blockedTurnsRemaining + " turns)");
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), 0, blockedTurnsRemaining));
     }
 
     @Override
@@ -41,8 +41,8 @@ public class StunStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onExpire(Combatant owner) {
-        return List.of("Stun expired");
+    public List<StatusEffectOutcome> onExpire(Combatant owner) {
+        return List.of(StatusEffectChange.expired(kind()));
     }
 
     @Override

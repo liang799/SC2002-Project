@@ -18,7 +18,7 @@ public class ShieldBashAction implements BattleAction {
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         AttackResolution attackResolution = actor.attack(target);
         if (!attackResolution.targetEliminated()) {
-            attackResolution = attackResolution.appendStatusEffectNotes(target.addStatusEffect(new StunStatusEffect(2)));
+            attackResolution = attackResolution.appendStatusEffectOutcomes(target.addStatusEffect(new StunStatusEffect(2)));
         }
         return List.of(new ActionEvent(actor.getName(), getName(), target.getName(), attackResolution));
     }

@@ -25,8 +25,8 @@ public class SmokeBombStatusEffect implements StatusEffect {
     }
 
     @Override
-    public List<String> onApply(Combatant owner) {
-        return List.of(owner.getName() + " gains Smoke Bomb protection for " + chargesRemaining + " enemy attacks");
+    public List<StatusEffectOutcome> onApply(Combatant owner) {
+        return List.of(StatusEffectChange.applied(kind(), 0, chargesRemaining));
     }
 
     @Override
@@ -40,12 +40,12 @@ public class SmokeBombStatusEffect implements StatusEffect {
         }
 
         chargesRemaining--;
-        return new DamageAdjustment(0, List.of("Smoke Bomb blocked the attack"));
+        return new DamageAdjustment(0, List.of(new DamageModifier(kind(), DamageModifierType.BLOCKED)));
     }
 
     @Override
-    public List<String> onExpire(Combatant owner) {
-        return List.of("Smoke Bomb expired");
+    public List<StatusEffectOutcome> onExpire(Combatant owner) {
+        return List.of(StatusEffectChange.expired(kind()));
     }
 
     @Override

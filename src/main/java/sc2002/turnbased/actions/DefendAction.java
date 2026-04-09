@@ -23,7 +23,7 @@ public class DefendAction implements BattleAction {
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         return List.of(
             new NarrationEvent(actor.getName() + " -> Defend"),
-            new StatusEffectReportEvent(actor.addStatusEffect(new DefendStatusEffect(2)))
+            StatusEffectReportEvent.fromStatusEffectOutcomes(actor.addStatusEffect(new DefendStatusEffect(2)))
         );
     }
 }
