@@ -5,14 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import sc2002.turnbased.domain.ItemType;
-import sc2002.turnbased.domain.status.StatusEffectKind;
-import sc2002.turnbased.domain.status.event.ArcanePowerAppliedEvent;
-import sc2002.turnbased.domain.status.event.DefendAppliedEvent;
-import sc2002.turnbased.domain.status.event.SmokeBombActivatedEvent;
-import sc2002.turnbased.domain.status.event.SmokeBombAppliedEvent;
-import sc2002.turnbased.domain.status.event.StatusEffectEvent;
-import sc2002.turnbased.domain.status.event.StatusEffectExpiredEvent;
-import sc2002.turnbased.domain.status.event.StunAppliedEvent;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.CombatantSummary;
@@ -43,7 +35,7 @@ public class BattleConsoleFormatter {
                 continue;
             }
             if (event instanceof StatusEffectReportEvent statusEffectReportEvent) {
-                lines.addAll(formatStatusEffectEvents(statusEffectReportEvent.statusEffectEvents()));
+                lines.addAll(formatStatusEffectNotes(statusEffectReportEvent.statusEffectNotes()));
                 continue;
             }
             if (event instanceof RoundSummaryEvent roundSummaryEvent) {
@@ -77,7 +69,7 @@ public class BattleConsoleFormatter {
             .append(actionEvent.getDamage())
             .append(")");
 
-        List<String> extraNotes = formatStatusEffectEvents(actionEvent.getStatusEffectEvents());
+        List<String> extraNotes = formatStatusEffectNotes(actionEvent.getStatusEffectNotes());
         if (!extraNotes.isEmpty()) {
             builder.append(" | ").append(String.join(" | ", extraNotes));
         }
@@ -98,7 +90,7 @@ public class BattleConsoleFormatter {
             builder.append("Turn skipped");
         }
 
-        List<String> statusNotes = formatStatusEffectEvents(skippedTurnEvent.getStatusEffectEvents());
+        List<String> statusNotes = formatStatusEffectNotes(skippedTurnEvent.getStatusEffectNotes());
         if (!statusNotes.isEmpty()) {
             builder.append(" | ").append(String.join(" | ", statusNotes));
         }
@@ -106,51 +98,8 @@ public class BattleConsoleFormatter {
         return builder.toString();
     }
 
-    private List<String> formatStatusEffectEvents(List<StatusEffectEvent> statusEffectEvents) {
-        List<String> lines = new ArrayList<>();
-        for (StatusEffectEvent statusEffectEvent : statusEffectEvents) {
-            if (statusEffectEvent instanceof SmokeBombActivatedEvent) {
-                lines.add("Smoke Bomb active");
-                continue;
-            }
-            if (statusEffectEvent instanceof SmokeBombAppliedEvent smokeBombAppliedEvent) {
-                lines.add(smokeBombAppliedEvent.ownerName()
-                    + " gains Smoke Bomb protection for "
-                    + smokeBombAppliedEvent.protectedEnemyAttacks()
-                    + " enemy attacks");
-                continue;
-            }
-            if (statusEffectEvent instanceof StunAppliedEvent stunAppliedEvent) {
-                lines.add(stunAppliedEvent.ownerName() + " STUNNED (" + stunAppliedEvent.blockedTurnsRemaining() + " turns)");
-                continue;
-            }
-            if (statusEffectEvent instanceof DefendAppliedEvent defendAppliedEvent) {
-                lines.add(defendAppliedEvent.ownerName()
-                    + " DEF +"
-                    + defendAppliedEvent.defenseBonus()
-                    + " for "
-                    + defendAppliedEvent.roundsRemaining()
-                    + " rounds");
-                continue;
-            }
-            if (statusEffectEvent instanceof ArcanePowerAppliedEvent arcanePowerAppliedEvent) {
-                lines.add(arcanePowerAppliedEvent.ownerName() + " gains ARCANE POWER +" + arcanePowerAppliedEvent.totalAttackBonus());
-                continue;
-            }
-            if (statusEffectEvent instanceof StatusEffectExpiredEvent expiredEvent) {
-                lines.add(formatExpiration(expiredEvent.effectKind()));
-            }
-        }
-        return lines;
-    }
-
-    private String formatExpiration(StatusEffectKind statusEffectKind) {
-        return switch (statusEffectKind) {
-            case ARCANE_POWER -> "Arcane Power expires";
-            case DEFEND -> "Defend expires";
-            case SMOKE_BOMB -> "Smoke Bomb effect expires";
-            case STUN -> "Stun expires";
-        };
+    private List<String> formatStatusEffectNotes(List<String> statusEffectNotes) {
+        return List.copyOf(statusEffectNotes);
     }
 
     private List<String> formatRoundSummary(RoundSummaryEvent roundSummaryEvent) {
