@@ -25,6 +25,19 @@ public record CombatantId(UUID value) {
     }
 
     @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        return other instanceof CombatantId combatantId && value.equals(combatantId.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
+
+    @Override
     public String toString() {
         return value.toString();
     }
