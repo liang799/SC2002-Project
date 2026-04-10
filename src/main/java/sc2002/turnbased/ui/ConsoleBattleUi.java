@@ -5,9 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Inventory;
+import sc2002.turnbased.domain.CombatantFactory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.engine.DifficultyLevel;
@@ -151,7 +150,7 @@ public class ConsoleBattleUi {
         out.println();
     }
 
-    public void showPlayerTurn(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies, Inventory inventory) {
+    public void showPlayerTurn(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies) {
         out.println();
         out.println("Round " + roundNumber + " - " + player.getName() + "'s Turn");
         out.println("Player: HP " + player.getCurrentHp() + "/" + player.getMaxHp()
@@ -159,7 +158,7 @@ public class ConsoleBattleUi {
             + " | DEF " + player.getDefense()
             + " | SPD " + player.getSpeed()
             + " | Cooldown " + player.getSpecialSkillCooldown());
-        out.println("Items: " + formatInventory(inventory));
+        out.println("Items: " + formatInventory(player));
         out.println("Enemies:");
         for (Combatant enemy : livingEnemies) {
             List<String> activeStatuses = enemy.getActiveStatuses();
@@ -234,11 +233,11 @@ public class ConsoleBattleUi {
             + ", SPD " + combatant.getSpeed());
     }
 
-    private String formatInventory(Inventory inventory) {
+    private String formatInventory(PlayerCharacter player) {
         List<String> parts = new ArrayList<>();
         for (ItemType itemType : ItemType.values()) {
-            if (inventory.countOf(itemType) > 0) {
-                parts.add(itemType.getDisplayName() + " x" + inventory.countOf(itemType));
+            if (player.getInventory().countOf(itemType) > 0) {
+                parts.add(itemType.getDisplayName() + " x" + player.getInventory().countOf(itemType));
             }
         }
         if (parts.isEmpty()) {

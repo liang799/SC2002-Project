@@ -307,7 +307,7 @@ public class TurnBasedArenaGui extends JFrame {
         try {
             BattleSetup setup = setupSupplier.get();
             BattleEngine engine = new BattleEngine(setup, new SpeedTurnOrderStrategy());
-            GuiPlayerDecisionProvider decisions = new GuiPlayerDecisionProvider(this, setup.getInventory());
+            GuiPlayerDecisionProvider decisions = new GuiPlayerDecisionProvider(this);
             BattleEventListener listener = event -> SwingUtilities.invokeLater(() -> {
                 for (String line : formatter.format(List.of(event))) {
                     appendLog(line);

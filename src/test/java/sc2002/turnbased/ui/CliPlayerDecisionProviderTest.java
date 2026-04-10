@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.actions.DefendAction;
 import sc2002.turnbased.domain.Combatant;
-import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.engine.PlayerDecision;
 import sc2002.turnbased.engine.TargetReference;
@@ -29,7 +28,7 @@ class CliPlayerDecisionProviderTest {
     void decide_WhenPromptingForPlayerAction_PresentsFourActionTypesAndReturnsSingleSelectedAction() {
         // arrange
         RecordingConsoleBattleUi ui = new RecordingConsoleBattleUi(1);
-        CliPlayerDecisionProvider provider = new CliPlayerDecisionProvider(ui, new Inventory());
+        CliPlayerDecisionProvider provider = new CliPlayerDecisionProvider(ui);
         PlayerCharacter warrior = TestDependencies.warrior();
         List<Combatant> livingEnemies = List.of(TestDependencies.goblin("Goblin"));
 
@@ -65,7 +64,7 @@ class CliPlayerDecisionProviderTest {
         }
 
         @Override
-        public void showPlayerTurn(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies, Inventory inventory) {
+        public void showPlayerTurn(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies) {
             showPlayerTurnCalls++;
         }
 

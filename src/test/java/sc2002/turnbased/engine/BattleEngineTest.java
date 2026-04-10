@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.EnemyCombatant;
-import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.DefendStatusEffect;
 import sc2002.turnbased.domain.status.StatusEffect;
@@ -40,7 +39,7 @@ class BattleEngineTest {
         enemy.addStatusEffect(expiringOnTurnCheckEffect());
 
         BattleEngine battleEngine = new BattleEngine(
-            new BattleSetup(player, List.of(enemy), List.of(), new Inventory()),
+            new BattleSetup(player, List.of(enemy), List.of()),
             new SpeedTurnOrderStrategy()
         );
 
@@ -74,7 +73,7 @@ class BattleEngineTest {
             .build();
 
         BattleEngine battleEngine = new BattleEngine(
-            new BattleSetup(player, List.of(enemy), List.of(), new Inventory()),
+            new BattleSetup(player, List.of(enemy), List.of()),
             new SpeedTurnOrderStrategy()
         );
 

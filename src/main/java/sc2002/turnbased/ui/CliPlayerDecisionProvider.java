@@ -20,17 +20,15 @@ import sc2002.turnbased.engine.PlayerDecisionProvider;
 
 public class CliPlayerDecisionProvider implements PlayerDecisionProvider {
     private final ConsoleBattleUi ui;
-    private final Inventory inventory;
 
-    public CliPlayerDecisionProvider(ConsoleBattleUi ui, Inventory inventory) {
+    public CliPlayerDecisionProvider(ConsoleBattleUi ui) {
         this.ui = ui;
-        this.inventory = inventory;
     }
 
     @Override
     public PlayerDecision decide(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies) {
         while (true) {
-            ui.showPlayerTurn(roundNumber, player, livingEnemies, inventory);
+            ui.showPlayerTurn(roundNumber, player, livingEnemies);
 
             List<String> options = new ArrayList<>();
             options.add("BasicAttack");
@@ -67,6 +65,7 @@ public class CliPlayerDecisionProvider implements PlayerDecisionProvider {
     }
 
     private PlayerDecision promptForItemDecision(PlayerCharacter player, List<Combatant> livingEnemies) {
+        Inventory inventory = player.getInventory();
         List<ItemType> availableItems = new ArrayList<>();
         for (ItemType itemType : ItemType.values()) {
             if (inventory.countOf(itemType) > 0) {

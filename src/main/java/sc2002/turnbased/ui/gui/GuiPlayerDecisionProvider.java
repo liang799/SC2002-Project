@@ -29,11 +29,9 @@ import sc2002.turnbased.engine.PlayerDecisionProvider;
  */
 public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
     private final JFrame owner;
-    private final Inventory inventory;
 
-    public GuiPlayerDecisionProvider(JFrame owner, Inventory inventory) {
+    public GuiPlayerDecisionProvider(JFrame owner) {
         this.owner = owner;
-        this.inventory = inventory;
     }
 
     @Override
@@ -103,6 +101,7 @@ public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
     private PlayerDecision promptItemDecision(PlayerCharacter player, List<Combatant> livingEnemies) {
         AtomicReference<PlayerDecision> result = new AtomicReference<>();
         runOnEdt(() -> {
+            Inventory inventory = player.getInventory();
             List<ItemType> available = new ArrayList<>();
             for (ItemType itemType : ItemType.values()) {
                 if (inventory.countOf(itemType) > 0) {

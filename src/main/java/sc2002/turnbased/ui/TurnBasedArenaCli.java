@@ -76,7 +76,7 @@ public class TurnBasedArenaCli {
             replaySameSettings = false;
 
             BattleSetup battleSetup = setupSupplier.get();
-            PlayerDecisionProvider decisionProvider = new CliPlayerDecisionProvider(ui, battleSetup.getInventory());
+            PlayerDecisionProvider decisionProvider = new CliPlayerDecisionProvider(ui);
             BattleEngine battleEngine = new BattleEngine(battleSetup, turnOrderStrategy);
             BattleEventListener battleEventListener = event -> ui.showBattleLines(formatter.format(List.of(event)));
             battleEngine.runUntilBattleEnds(decisionProvider, battleEventListener);
