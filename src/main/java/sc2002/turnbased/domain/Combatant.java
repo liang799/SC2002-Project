@@ -20,7 +20,7 @@ public abstract class Combatant {
 
     protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats, StatusEffectRegistry statusEffectRegistry) {
         this.name = Objects.requireNonNull(name, "name");
-        this.combatantId = CombatantId.of(name);
+        this.combatantId = CombatantId.generate();
         this.hitPoints = Objects.requireNonNull(baseHitPoints, "baseHitPoints");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
         this.statusEffectRegistry = Objects.requireNonNull(statusEffectRegistry, "statusEffectRegistry");
@@ -141,7 +141,7 @@ public abstract class Combatant {
     private List<CombatantStatusOutcome> wrapStatusEffectOutcomes(List<? extends StatusEffectOutcome> outcomes) {
         return List.copyOf(
             Objects.requireNonNull(outcomes, "outcomes").stream()
-                .map(outcome -> new CombatantStatusOutcome(combatantId, outcome))
+                .map(outcome -> new CombatantStatusOutcome(combatantId, name, outcome))
                 .toList()
         );
     }

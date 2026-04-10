@@ -23,7 +23,7 @@ final class StatusEffectReportMapper {
 
     private static String toNote(CombatantStatusOutcome statusEffectOutcome) {
         Objects.requireNonNull(statusEffectOutcome, "statusEffectOutcome");
-        String combatantName = statusEffectOutcome.combatantId().value();
+        String combatantName = statusEffectOutcome.combatantName();
         StatusEffectOutcome outcome = statusEffectOutcome.outcome();
 
         if (outcome instanceof DamageModifier damageModifier) {
