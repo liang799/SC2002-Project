@@ -32,8 +32,4 @@ public record Stat(int value) {
         Objects.requireNonNull(modifier, "modifier");
         return new Stat(modifier.applyAsInt(value));
     }
-
-    public Stat adjustBy(int amount) {
-        return addFlat(amount);
-    }
 }
