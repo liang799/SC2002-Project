@@ -197,8 +197,8 @@ class CustomGameModeVerifierTest {
         assertAll(
             () -> assertEquals(50, wizardSetup.getPlayer().getAttack()),
             () -> assertEquals(40, warriorSetup.getPlayer().getAttack()),
-            () -> assertEquals(1, wizardSetup.getInventory().countOf(ItemType.POTION)),
-            () -> assertEquals(1, wizardSetup.getInventory().countOf(ItemType.POWER_STONE))
+            () -> assertEquals(1, wizardSetup.getPlayer().getInventory().countOf(ItemType.POTION)),
+            () -> assertEquals(1, wizardSetup.getPlayer().getInventory().countOf(ItemType.POWER_STONE))
         );
     }
 

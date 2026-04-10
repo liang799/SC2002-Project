@@ -15,12 +15,14 @@ public abstract class Combatant {
     private final CombatantId combatantId;
     private final String name;
     private final CombatStats baseStats;
+    private final Inventory inventory;
     private HitPoints hitPoints;
     private final StatusEffectRegistry statusEffectRegistry;
 
     protected Combatant(String name, HitPoints baseHitPoints, CombatStats baseStats, StatusEffectRegistry statusEffectRegistry) {
         this.name = Objects.requireNonNull(name, "name");
         this.combatantId = CombatantId.generate();
+        this.inventory = new Inventory();
         this.hitPoints = Objects.requireNonNull(baseHitPoints, "baseHitPoints");
         this.baseStats = Objects.requireNonNull(baseStats, "baseStats");
         this.statusEffectRegistry = Objects.requireNonNull(statusEffectRegistry, "statusEffectRegistry");
@@ -44,6 +46,10 @@ public abstract class Combatant {
 
     public HitPoints getHitPoints() {
         return hitPoints;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 
     public int getAttack() {

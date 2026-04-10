@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.status.ArcanePowerStatusEffect;
 import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 import sc2002.turnbased.domain.status.DamageModifier;
@@ -83,6 +84,17 @@ class CombatantTest {
         assertEquals(20, defenseBeforeDefend);
         assertEquals(30, defenseDuringDefend);
         assertEquals(20, defenseAfterDefend);
+    }
+
+    @Test
+    void getInventory_WhenCombatantsOwnSeparateInventories_TracksItemsPerCombatant() {
+        PlayerCharacter warrior = TestDependencies.warrior();
+        PlayerCharacter wizard = TestDependencies.wizard();
+
+        warrior.getInventory().add(ItemType.POTION, 1);
+
+        assertEquals(1, warrior.getInventory().countOf(ItemType.POTION));
+        assertEquals(0, wizard.getInventory().countOf(ItemType.POTION));
     }
 
     @Test

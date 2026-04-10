@@ -22,7 +22,7 @@ public class UseSmokeBombAction implements BattleAction {
 
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
-        context.getInventory().use(ItemType.SMOKE_BOMB);
+        actor.getInventory().use(ItemType.SMOKE_BOMB);
         return List.of(
             new NarrationEvent(actor.getName() + " -> Item -> Smoke Bomb used"),
             StatusEffectReportEvent.fromStatusEffectOutcomes(actor.addStatusEffect(new SmokeBombStatusEffect(2)))

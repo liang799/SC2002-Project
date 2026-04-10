@@ -20,7 +20,7 @@ public class UsePotionAction implements BattleAction {
 
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
-        context.getInventory().use(ItemType.POTION);
+        actor.getInventory().use(ItemType.POTION);
         int hpBefore = actor.getCurrentHp();
         actor.heal(100);
         return List.of(new NarrationEvent(

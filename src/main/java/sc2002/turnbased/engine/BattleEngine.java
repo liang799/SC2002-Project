@@ -6,7 +6,6 @@ import java.util.List;
 import sc2002.turnbased.actions.ActionExecutionContext;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.EnemyCombatant;
-import sc2002.turnbased.domain.Inventory;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.domain.status.CombatantStatusOutcome;
@@ -23,7 +22,6 @@ public class BattleEngine implements ActionExecutionContext {
     private final List<Combatant> initialEnemies;
     private final List<Combatant> reserveEnemies;
     private final List<Combatant> spawnedEnemies;
-    private final Inventory inventory;
     private final TurnOrderStrategy turnOrderStrategy;
     private final List<BattleEvent> events = new ArrayList<>();
 
@@ -32,7 +30,6 @@ public class BattleEngine implements ActionExecutionContext {
         this.initialEnemies = new ArrayList<>(battleSetup.getInitialEnemies());
         this.reserveEnemies = new ArrayList<>(battleSetup.getBackupEnemies());
         this.spawnedEnemies = new ArrayList<>(battleSetup.getInitialEnemies());
-        this.inventory = battleSetup.getInventory();
         this.turnOrderStrategy = turnOrderStrategy;
     }
 
@@ -173,11 +170,6 @@ public class BattleEngine implements ActionExecutionContext {
         return turnOrderStrategy.determineOrder(livingEnemies());
     }
 
-    @Override
-    public Inventory getInventory() {
-        return inventory;
-    }
-
     private List<Combatant> livingEnemies() {
         List<Combatant> livingEnemies = new ArrayList<>();
         for (Combatant enemy : spawnedEnemies) {
@@ -228,7 +220,7 @@ public class BattleEngine implements ActionExecutionContext {
             roundNumber,
             toSummary(player),
             enemySummaries,
-            inventory.snapshot(),
+            player.getInventory().snapshot(),
             player.getSpecialSkillCooldown()
         );
     }
@@ -267,8 +259,13 @@ public class BattleEngine implements ActionExecutionContext {
         emit(new NarrationEvent("Victory:"), battleEventListener);
         emit(new NarrationEvent("Remaining HP: " + player.getCurrentHp() + " / " + player.getMaxHp()), battleEventListener);
         emit(new NarrationEvent("Total Rounds: " + roundsPlayed), battleEventListener);
-        for (ItemType itemType : inventory.snapshot().keySet()) {
-            emit(new NarrationEvent("Remaining " + itemType.getDisplayName() + ": " + inventory.countOf(itemType)), battleEventListener);
+        for (ItemType itemType : player.getInventory().snapshot().keySet()) {
+            emit(
+                new NarrationEvent(
+                    "Remaining " + itemType.getDisplayName() + ": " + player.getInventory().countOf(itemType)
+                ),
+                battleEventListener
+            );
         }
         if (player.getAttack() != player.getBaseAttack()) {
             emit(new NarrationEvent("Final " + player.getName() + " ATK: " + player.getAttack()), battleEventListener);

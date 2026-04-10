@@ -30,10 +30,10 @@ public class UsePowerStoneSkillAction implements BattleAction {
 
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
-        context.getInventory().use(ItemType.POWER_STONE);
         if (!(actor instanceof PlayerCharacter player)) {
             throw new IllegalStateException("Power Stone is only supported for player characters");
         }
+        actor.getInventory().use(ItemType.POWER_STONE);
 
         List<BattleEvent> events = new ArrayList<>();
         String intro = actor.getName() + " -> Item -> Power Stone used -> " + player.getSpecialSkillName() + " triggered";

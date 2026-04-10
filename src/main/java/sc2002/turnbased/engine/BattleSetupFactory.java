@@ -21,7 +21,7 @@ public class BattleSetupFactory {
 
     public BattleSetup create(GameConfiguration configuration) {
         PlayerCharacter player = configuration.playerType().createPlayer(combatantFactory);
-        Inventory inventory = createInventory(configuration.selectedItems());
+        populateInventory(player, configuration.selectedItems());
 
         return switch (configuration.difficultyLevel()) {
             case EASY -> new BattleSetup(
@@ -31,8 +31,7 @@ public class BattleSetupFactory {
                     EnemyType.GOBLIN.create("Goblin B", combatantFactory),
                     EnemyType.GOBLIN.create("Goblin C", combatantFactory)
                 ),
-                List.of(),
-                inventory
+                List.of()
             );
             case MEDIUM -> new BattleSetup(
                 player,
@@ -43,8 +42,7 @@ public class BattleSetupFactory {
                 List.of(
                     EnemyType.WOLF.create("Wolf A", combatantFactory),
                     EnemyType.WOLF.create("Wolf B", combatantFactory)
-                ),
-                inventory
+                )
             );
             case HARD -> new BattleSetup(
                 player,
@@ -56,19 +54,18 @@ public class BattleSetupFactory {
                     EnemyType.GOBLIN.create("Goblin C", combatantFactory),
                     EnemyType.WOLF.create("Wolf A", combatantFactory),
                     EnemyType.WOLF.create("Wolf B", combatantFactory)
-                ),
-                inventory
+                )
             );
         };
     }
 
     public BattleSetup createCustom(CustomGameConfiguration config) {
         PlayerCharacter player = config.playerType().createPlayer(combatantFactory);
-        Inventory inventory = createInventory(config.selectedItems());
-        return buildSetup(player, inventory, config.waves());
+        populateInventory(player, config.selectedItems());
+        return buildSetup(player, config.waves());
     }
 
-    private BattleSetup buildSetup(PlayerCharacter player, Inventory inventory, List<WaveSpec> waves) {
+    private BattleSetup buildSetup(PlayerCharacter player, List<WaveSpec> waves) {
         Objects.requireNonNull(waves, "waves");
         if (waves.isEmpty() || waves.size() > 2) {
             throw new IllegalArgumentException("Battle setup requires 1 or 2 waves, got: " + waves.size());
@@ -79,7 +76,7 @@ public class BattleSetupFactory {
         List<Combatant> wave2 = waves.size() > 1
             ? buildWave(waves.get(1), nextLabelByFactory)
             : List.of();
-        return new BattleSetup(player, wave1, wave2, inventory);
+        return new BattleSetup(player, wave1, wave2);
     }
 
     private List<Combatant> buildWave(WaveSpec spec, Map<EnemyFactory, Integer> nextLabelByFactory) {
@@ -105,11 +102,10 @@ public class BattleSetupFactory {
         return enemyFactory.getDisplayName() + " " + (enemyIndex + 1);
     }
 
-    private Inventory createInventory(List<ItemType> selectedItems) {
-        Inventory inventory = new Inventory();
+    private void populateInventory(PlayerCharacter player, List<ItemType> selectedItems) {
+        Inventory inventory = player.getInventory();
         for (ItemType itemType : selectedItems) {
             inventory.add(itemType, 1);
         }
-        return inventory;
     }
 }
