@@ -23,7 +23,7 @@ The current implementation includes:
 
 ## Architecture
 
-The project is organized into the following production packages:
+The project is organized into the following source packages:
 
 - `bootstrap`
   - composition root that wires factories, actions, and registry creation
