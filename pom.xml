@@ -41,6 +41,43 @@
                     <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <executions>
+                    <execution>
+                        <id>cli-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>cli</classifier>
+                            <archive>
+                                <manifest>
+                                    <mainClass>sc2002.turnbased.ui.TurnBasedArenaCli</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>gui-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>gui</classifier>
+                            <archive>
+                                <manifest>
+                                    <mainClass>sc2002.turnbased.ui.gui.TurnBasedArenaGui</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

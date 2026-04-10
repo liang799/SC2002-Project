@@ -1,5 +1,7 @@
 # Mermaid UML Sequence Diagram
 
+> Outdated reference only. This file is no longer maintained.
+
 This sequence diagram now models only the custom battle-flow validation scenario. It keeps the current live CLI architecture, but groups the interaction into readable phases: Wave 1 control, backup spawn, Wave 2 control, and the cooldown-blocked fallback on Round 12.
 
 ```mermaid
