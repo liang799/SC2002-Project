@@ -103,7 +103,7 @@ public class BattleEngine implements ActionExecutionContext {
         if (!actor.isAlive()) {
             emit(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
-                    actor.getName(),
+                    actor,
                     "ELIMINATED",
                     actor.consumeStatusEffectOutcomes()
                 ),
@@ -115,7 +115,7 @@ public class BattleEngine implements ActionExecutionContext {
         if (turnBlockReason.isPresent()) {
             emit(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
-                    actor.getName(),
+                    actor,
                     turnBlockReason.get(),
                     actor.consumeStatusEffectOutcomes()
                 ),
@@ -252,6 +252,7 @@ public class BattleEngine implements ActionExecutionContext {
 
     private CombatantSummary toSummary(Combatant combatant) {
         return new CombatantSummary(
+            combatant.combatantId(),
             combatant.getName(),
             combatant.getCurrentHp(),
             combatant.getMaxHp(),

@@ -23,4 +23,9 @@ public record CombatantId(UUID value) {
         }
         return new CombatantId(UUID.fromString(normalizedValue));
     }
+
+    @Override
+    public String toString() {
+        return value.toString();
+    }
 }

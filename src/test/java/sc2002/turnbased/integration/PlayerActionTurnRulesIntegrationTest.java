@@ -14,6 +14,7 @@ import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.DefendAction;
 import sc2002.turnbased.actions.UsePotionAction;
 import sc2002.turnbased.actions.UseSpecialSkillAction;
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
@@ -48,10 +49,10 @@ class PlayerActionTurnRulesIntegrationTest {
             )
         );
         ScriptedDecisionProvider decisions = new ScriptedDecisionProvider()
-            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), "Goblin A"))
+            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemyNamed(battleSetup, "Goblin A")))
             .addDecision(2, PlayerDecision.untargeted(new DefendAction()))
             .addDecision(3, PlayerDecision.untargeted(new UsePotionAction()))
-            .addDecision(4, PlayerDecision.targeted(new UseSpecialSkillAction(), "Goblin A"));
+            .addDecision(4, PlayerDecision.targeted(new UseSpecialSkillAction(), enemyNamed(battleSetup, "Goblin A")));
         BattleEngine battleEngine = new BattleEngine(battleSetup, new SpeedTurnOrderStrategy());
 
         // act
@@ -98,5 +99,12 @@ class PlayerActionTurnRulesIntegrationTest {
         }
 
         return Optional.empty();
+    }
+
+    private static Combatant enemyNamed(BattleSetup battleSetup, String enemyName) {
+        return battleSetup.getInitialEnemies().stream()
+            .filter(enemy -> enemy.getName().equals(enemyName))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Enemy not found in setup: " + enemyName));
     }
 }

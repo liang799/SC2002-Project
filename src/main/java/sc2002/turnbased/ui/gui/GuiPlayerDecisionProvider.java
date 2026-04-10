@@ -164,7 +164,7 @@ public class GuiPlayerDecisionProvider implements PlayerDecisionProvider {
                 result.set(null);
                 return;
             }
-            result.set(PlayerDecision.targeted(action, livingEnemies.get(idx).getName()));
+            result.set(PlayerDecision.targeted(action, livingEnemies.get(idx)));
         });
         return result.get();
     }

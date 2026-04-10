@@ -47,7 +47,7 @@ class BattleEngineTest {
         List<BattleEvent> events = battleEngine.runRounds(
             1,
             new ScriptedDecisionProvider()
-                .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemy.getName()))
+                .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemy))
         );
 
         ActionEvent playerAttackEvent = events.stream()
@@ -81,7 +81,7 @@ class BattleEngineTest {
         List<BattleEvent> events = battleEngine.runRounds(
             1,
             new ScriptedDecisionProvider()
-                .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemy.getName()))
+                .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemy))
         );
 
         int roundSummaryIndex = firstIndexOf(events, RoundSummaryEvent.class);
