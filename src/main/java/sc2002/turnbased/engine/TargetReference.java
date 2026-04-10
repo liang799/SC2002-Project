@@ -4,15 +4,16 @@ import java.util.List;
 import java.util.Objects;
 
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.CombatantId;
 
-public record TargetReference(TargetType type, String combatantName) {
+public record TargetReference(TargetType type, CombatantId combatantId) {
     public TargetReference {
         Objects.requireNonNull(type, "type");
-        if (type == TargetType.ENEMY && (combatantName == null || combatantName.isBlank())) {
-            throw new IllegalArgumentException("Enemy targets must have a combatant name");
+        if (type == TargetType.ENEMY && combatantId == null) {
+            throw new IllegalArgumentException("Enemy targets must have a combatant id");
         }
-        if (type == TargetType.NONE && combatantName != null) {
-            throw new IllegalArgumentException("No-target references must not carry a combatant name");
+        if (type == TargetType.NONE && combatantId != null) {
+            throw new IllegalArgumentException("No-target references must not carry a combatant id");
         }
     }
 
@@ -20,8 +21,12 @@ public record TargetReference(TargetType type, String combatantName) {
         return new TargetReference(TargetType.NONE, null);
     }
 
-    public static TargetReference enemy(String combatantName) {
-        return new TargetReference(TargetType.ENEMY, combatantName);
+    public static TargetReference enemy(CombatantId combatantId) {
+        return new TargetReference(TargetType.ENEMY, combatantId);
+    }
+
+    public static TargetReference enemy(Combatant combatant) {
+        return enemy(Objects.requireNonNull(combatant, "combatant").combatantId());
     }
 
     public Combatant resolveFrom(List<Combatant> livingEnemies) {
@@ -29,9 +34,9 @@ public record TargetReference(TargetType type, String combatantName) {
             return null;
         }
         return livingEnemies.stream()
-            .filter(enemy -> enemy.getName().equals(combatantName))
+            .filter(enemy -> enemy.combatantId().equals(combatantId))
             .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Unknown enemy target: " + combatantName));
+            .orElseThrow(() -> new IllegalArgumentException("Unknown enemy target: " + combatantId));
     }
 
     public enum TargetType {

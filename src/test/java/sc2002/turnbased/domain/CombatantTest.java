@@ -1,6 +1,7 @@
 package sc2002.turnbased.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.List;
 
@@ -20,6 +21,18 @@ import sc2002.turnbased.support.TestDependencies;
 
 @Tag("unit")
 class CombatantTest {
+    @Test
+    void combatantId_WhenCombatantsShareTheSameName_RemainsUniquePerCombatant() {
+        Combatant firstWarrior = TestCombatantBuilder.aCombatant()
+            .named("Warrior")
+            .build();
+        Combatant secondWarrior = TestCombatantBuilder.aCombatant()
+            .named("Warrior")
+            .build();
+
+        assertNotEquals(firstWarrior.combatantId(), secondWarrior.combatantId());
+    }
+
     @Test
     void receiveDamageAndHeal_WhenHitPointsChange_UpdatesHitPointsValueObject() {
         PlayerCharacter warrior = TestDependencies.warrior();
@@ -112,11 +125,13 @@ class CombatantTest {
         assertEquals(
             List.of(
                 new CombatantStatusOutcome(
-                    CombatantId.of("Warrior"),
+                    target.combatantId(),
+                    target.getName(),
                     new DamageModifier(StatusEffectKind.SMOKE_BOMB, DamageModifierType.BLOCKED)
                 ),
                 new CombatantStatusOutcome(
-                    CombatantId.of("Warrior"),
+                    target.combatantId(),
+                    target.getName(),
                     StatusEffectChange.expired(StatusEffectKind.SMOKE_BOMB)
                 )
             ),

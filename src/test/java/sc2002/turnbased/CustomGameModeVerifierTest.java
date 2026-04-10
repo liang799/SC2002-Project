@@ -279,7 +279,7 @@ class CustomGameModeVerifierTest {
     private static final class AlwaysAttackFirstEnemyProvider implements PlayerDecisionProvider {
         @Override
         public PlayerDecision decide(int roundNumber, PlayerCharacter player, List<Combatant> livingEnemies) {
-            return PlayerDecision.targeted(new BasicAttackAction(), livingEnemies.get(0).getName());
+            return PlayerDecision.targeted(new BasicAttackAction(), livingEnemies.get(0));
         }
     }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.UseSpecialSkillAction;
+import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
@@ -31,9 +32,9 @@ class BattleEngineEasyLevelRoundsIntegrationTest {
         BattleEngine battleEngine = new BattleEngine(battleSetup, new SpeedTurnOrderStrategy());
 
         ScriptedDecisionProvider decisions = new ScriptedDecisionProvider()
-            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), "Goblin A"))
-            .addDecision(2, PlayerDecision.targeted(new UseSpecialSkillAction(), "Goblin A"))
-            .addDecision(3, PlayerDecision.targeted(new BasicAttackAction(), "Goblin A"));
+            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemyNamed(battleSetup, "Goblin A")))
+            .addDecision(2, PlayerDecision.targeted(new UseSpecialSkillAction(), enemyNamed(battleSetup, "Goblin A")))
+            .addDecision(3, PlayerDecision.targeted(new BasicAttackAction(), enemyNamed(battleSetup, "Goblin A")));
 
         List<RoundSummaryEvent> summaries = battleEngine.runRounds(3, decisions).stream()
             .filter(RoundSummaryEvent.class::isInstance)
@@ -56,5 +57,12 @@ class BattleEngineEasyLevelRoundsIntegrationTest {
             enemy("Goblin B", 55),
             enemy("Goblin C", 55)
         );
+    }
+
+    private static Combatant enemyNamed(BattleSetup battleSetup, String enemyName) {
+        return battleSetup.getInitialEnemies().stream()
+            .filter(enemy -> enemy.getName().equals(enemyName))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Enemy not found in setup: " + enemyName));
     }
 }

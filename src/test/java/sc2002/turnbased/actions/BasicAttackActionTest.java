@@ -36,8 +36,10 @@ class BasicAttackActionTest {
         // assert
         assertEquals(45, selectedTarget.getCurrentHp());
         assertEquals(100, otherEnemy.getCurrentHp());
+        assertEquals(attacker.combatantId(), actionEvent.getActorId());
         assertEquals("Warrior", actionEvent.getActorName());
         assertEquals("BasicAttack", actionEvent.getActionName());
+        assertEquals(selectedTarget.combatantId(), actionEvent.getTargetId());
         assertEquals("Goblin", actionEvent.getTargetName());
         assertEquals(25, actionEvent.getDamage());
         assertFalse(actionEvent.isTargetEliminated());

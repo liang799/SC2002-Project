@@ -34,7 +34,7 @@ public class ArcaneBlastAction implements BattleAction {
                 attackResolution = attackResolution.appendStatusEffectOutcomes(actor.addStatusEffect(new ArcanePowerStatusEffect(10)));
             }
 
-            events.add(new ActionEvent(actor.getName(), getName(), enemy.getName(), attackResolution));
+            events.add(new ActionEvent(actor, getName(), enemy, attackResolution));
         }
 
         return events;

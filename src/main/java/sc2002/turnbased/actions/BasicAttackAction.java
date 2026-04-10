@@ -16,6 +16,6 @@ public class BasicAttackAction implements BattleAction {
     @Override
     public List<BattleEvent> execute(ActionExecutionContext context, Combatant actor, Combatant target) {
         AttackResolution attackResolution = actor.attack(target);
-        return List.of(new ActionEvent(actor.getName(), getName(), target.getName(), attackResolution));
+        return List.of(new ActionEvent(actor, getName(), target, attackResolution));
     }
 }

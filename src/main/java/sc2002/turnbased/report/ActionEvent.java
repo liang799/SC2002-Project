@@ -4,10 +4,14 @@ import java.util.List;
 import java.util.Objects;
 
 import sc2002.turnbased.domain.AttackResolution;
+import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.CombatantId;
 
 public class ActionEvent implements BattleEvent {
+    private final CombatantId actorId;
     private final String actorName;
     private final String actionName;
+    private final CombatantId targetId;
     private final String targetName;
     private final int hpBefore;
     private final int hpAfter;
@@ -18,8 +22,10 @@ public class ActionEvent implements BattleEvent {
     private final List<String> statusEffectNotes;
 
     public ActionEvent(
+        CombatantId actorId,
         String actorName,
         String actionName,
+        CombatantId targetId,
         String targetName,
         int hpBefore,
         int hpAfter,
@@ -29,8 +35,10 @@ public class ActionEvent implements BattleEvent {
         boolean targetEliminated,
         List<String> statusEffectNotes
     ) {
+        this.actorId = Objects.requireNonNull(actorId, "actorId");
         this.actorName = actorName;
         this.actionName = actionName;
+        this.targetId = Objects.requireNonNull(targetId, "targetId");
         this.targetName = targetName;
         this.hpBefore = hpBefore;
         this.hpAfter = hpAfter;
@@ -41,11 +49,13 @@ public class ActionEvent implements BattleEvent {
         this.statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
     }
 
-    public ActionEvent(String actorName, String actionName, String targetName, AttackResolution attackResolution) {
+    public ActionEvent(Combatant actor, String actionName, Combatant target, AttackResolution attackResolution) {
         this(
-            actorName,
+            actor.combatantId(),
+            actor.getName(),
             actionName,
-            targetName,
+            target.combatantId(),
+            target.getName(),
             attackResolution.hpBefore(),
             attackResolution.hpAfter(),
             attackResolution.attackUsed(),
@@ -56,12 +66,20 @@ public class ActionEvent implements BattleEvent {
         );
     }
 
+    public CombatantId getActorId() {
+        return actorId;
+    }
+
     public String getActorName() {
         return actorName;
     }
 
     public String getActionName() {
         return actionName;
+    }
+
+    public CombatantId getTargetId() {
+        return targetId;
     }
 
     public String getTargetName() {

@@ -100,6 +100,6 @@ public class CliPlayerDecisionProvider implements PlayerDecisionProvider {
             .map(enemy -> enemy.getName() + " (HP " + enemy.getCurrentHp() + ")")
             .toList();
         int targetSelection = ui.promptForSelection("Choose a target", enemyOptions);
-        return PlayerDecision.targeted(action, livingEnemies.get(targetSelection).getName());
+        return PlayerDecision.targeted(action, livingEnemies.get(targetSelection));
     }
 }

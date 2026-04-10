@@ -261,11 +261,14 @@ class CustomBattleFlowE2ETest {
                 return PlayerDecision.untargeted(action);
             }
 
-            boolean targetExists = livingEnemies.stream().anyMatch(enemy -> enemy.getName().equals(targetName));
-            if (!targetExists) {
+            Combatant target = livingEnemies.stream()
+                .filter(enemy -> enemy.getName().equals(targetName))
+                .findFirst()
+                .orElse(null);
+            if (target == null) {
                 throw new IllegalStateException("Target " + targetName + " was not available for action " + action.getName());
             }
-            return PlayerDecision.targeted(action, targetName);
+            return PlayerDecision.targeted(action, target);
         }
 
         private Map<Integer, PlannedTurn> buildPlan() {
