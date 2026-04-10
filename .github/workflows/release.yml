@@ -42,6 +42,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          SANITIZED_RELEASE_TAG="$(printf '%s' "$RELEASE_TAG" | sed 's/[^A-Za-z0-9._-]/-/g')"
           cli_jar="$(find target -maxdepth 1 -type f -name '*-cli.jar' | head -n 1)"
           gui_jar="$(find target -maxdepth 1 -type f -name '*-gui.jar' | head -n 1)"
 
@@ -49,8 +50,8 @@ jobs:
           test -n "$gui_jar"
 
           mkdir -p dist
-          cp "$cli_jar" "dist/turnbased-arena-cli-${RELEASE_TAG}.jar"
-          cp "$gui_jar" "dist/turnbased-arena-gui-${RELEASE_TAG}.jar"
+          cp "$cli_jar" "dist/turnbased-arena-cli-${SANITIZED_RELEASE_TAG}.jar"
+          cp "$gui_jar" "dist/turnbased-arena-gui-${SANITIZED_RELEASE_TAG}.jar"
           cp "UML Class Diagram/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
           cp "UML Class Diagram/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
 
