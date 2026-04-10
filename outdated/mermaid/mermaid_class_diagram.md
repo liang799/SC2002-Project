@@ -1,5 +1,7 @@
 # Mermaid UML Class Diagram
 
+> Outdated reference only. This file is no longer maintained. Use `UML Class Diagram/plantuml_class_diagram.puml` instead.
+
 This class diagram reflects the current codebase, including the native CLI flow, live battle-event streaming, setup/configuration objects, and the boundary-control-entity structure used by the project.
 
 ```mermaid
