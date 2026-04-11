@@ -1,18 +1,15 @@
 package sc2002.turnbased.e2e;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static sc2002.turnbased.support.BattleRoundAssertions.assertCapturedRound;
-import static sc2002.turnbased.support.ExpectedCombatantState.enemy;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -29,30 +26,40 @@ import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.engine.BattleEngine;
 import sc2002.turnbased.engine.BattleSetup;
-import sc2002.turnbased.engine.DifficultyLevel;
-import sc2002.turnbased.engine.GameConfiguration;
+import sc2002.turnbased.engine.CustomGameConfiguration;
+import sc2002.turnbased.engine.EnemyCount;
+import sc2002.turnbased.engine.EnemyType;
 import sc2002.turnbased.engine.PlayerDecision;
 import sc2002.turnbased.engine.PlayerDecisionProvider;
 import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.engine.SpeedTurnOrderStrategy;
+import sc2002.turnbased.engine.WaveSpec;
 import sc2002.turnbased.report.ActionEvent;
 import sc2002.turnbased.report.BattleEvent;
 import sc2002.turnbased.report.NarrationEvent;
 import sc2002.turnbased.report.SkippedTurnEvent;
+import static sc2002.turnbased.support.BattleRoundAssertions.assertCapturedRound;
 import sc2002.turnbased.support.BattleTestSupport;
 import sc2002.turnbased.support.BattleTestSupport.RoundCapture;
+import static sc2002.turnbased.support.ExpectedCombatantState.enemy;
 import sc2002.turnbased.support.TestDependencies;
 
 @Tag("e2e")
 class CustomBattleFlowE2ETest {
     @Test
-    @DisplayName("Given a medium warrior battle flow, when rounds are run, then the transcript matches the expected outcome")
-    void givenMediumWarriorBattleFlow_WhenRoundsAreRun_ThenTranscriptMatchesExpectedOutcome() {
-        BattleSetup battleSetup = TestDependencies.battleSetupFactory().create(
-            new GameConfiguration(
+    @DisplayName("Given a custom warrior battle flow, when rounds are run, then the transcript matches the expected outcome")
+    void givenCustomWarriorBattleFlow_WhenRoundsAreRun_ThenTranscriptMatchesExpectedOutcome() {
+        BattleSetup battleSetup = TestDependencies.battleSetupFactory().createCustom(
+            new CustomGameConfiguration(
                 PlayerType.WARRIOR,
-                DifficultyLevel.MEDIUM,
-                List.of(ItemType.POTION, ItemType.SMOKE_BOMB)
+                List.of(ItemType.POTION, ItemType.SMOKE_BOMB),
+                List.of(
+                    WaveSpec.of(
+                        EnemyCount.of(EnemyType.GOBLIN, 1),
+                        EnemyCount.of(EnemyType.WOLF, 1)
+                    ),
+                    WaveSpec.of(EnemyCount.of(EnemyType.WOLF, 2))
+                )
             )
         );
         CustomFlowDecisionProvider decisionProvider = new CustomFlowDecisionProvider();
@@ -62,86 +69,86 @@ class CustomBattleFlowE2ETest {
         Map<Integer, RoundCapture> rounds = BattleTestSupport.captureRounds(events);
 
         assertCapturedRound(rounds.get(1), 220, 3, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 1), Set.of(),
-            enemy("Goblin", 55),
-            enemy("Wolf", 5).stunned()
+            enemy("Goblin A", 55),
+            enemy("Wolf A", 5).stunned()
         );
         assertCapturedRound(rounds.get(2), 220, 2, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 55),
-            enemy("Wolf", 5).stunned()
+            enemy("Goblin A", 55),
+            enemy("Wolf A", 5).stunned()
         );
         assertCapturedRound(rounds.get(3), 220, 1, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 55),
-            enemy("Wolf", 0)
+            enemy("Goblin A", 55),
+            enemy("Wolf A", 0)
         );
         assertCapturedRound(rounds.get(4), 215, 0, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
-            enemy("Goblin", 55),
-            enemy("Wolf", 0)
+            enemy("Goblin A", 55),
+            enemy("Wolf A", 0)
         );
         assertCapturedRound(rounds.get(5), 215, 3, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
-            enemy("Goblin", 30).stunned(),
-            enemy("Wolf", 0)
+            enemy("Goblin A", 30).stunned(),
+            enemy("Wolf A", 0)
         );
         assertCapturedRound(rounds.get(6), 215, 2, Map.of(ItemType.POTION, 1, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 5),
-            enemy("Wolf", 0)
+            enemy("Goblin A", 5),
+            enemy("Wolf A", 0)
         );
         assertCapturedRound(rounds.get(7), 245, 1, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 5),
-            enemy("Wolf", 0)
+            enemy("Goblin A", 5),
+            enemy("Wolf A", 0)
         );
         assertCapturedRound(rounds.get(8), 245, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
-            enemy("Wolf A", 40),
-            enemy("Wolf B", 40)
+            enemy("Goblin A", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 40),
+            enemy("Wolf C", 40)
         );
         assertCapturedRound(rounds.get(9), 195, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
-            enemy("Wolf A", 40),
-            enemy("Wolf B", 40)
+            enemy("Goblin A", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 40),
+            enemy("Wolf C", 40)
         );
         assertCapturedRound(rounds.get(10), 165, 3, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of("DEFENDING"),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
-            enemy("Wolf A", 5).stunned(),
-            enemy("Wolf B", 40)
+            enemy("Goblin A", 0),
+            enemy("Wolf A", 0),
+            enemy("Wolf B", 5).stunned(),
+            enemy("Wolf C", 40)
         );
         assertCapturedRound(rounds.get(11), 140, 2, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
+            enemy("Goblin A", 0),
             enemy("Wolf A", 0),
-            enemy("Wolf B", 40)
+            enemy("Wolf B", 0),
+            enemy("Wolf C", 40)
         );
         assertCapturedRound(rounds.get(12), 115, 1, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
+            enemy("Goblin A", 0),
             enemy("Wolf A", 0),
-            enemy("Wolf B", 5)
+            enemy("Wolf B", 0),
+            enemy("Wolf C", 5)
         );
         assertCapturedRound(rounds.get(13), 90, 0, Map.of(ItemType.POTION, 0, ItemType.SMOKE_BOMB, 0), Set.of(),
-            enemy("Goblin", 0),
-            enemy("Wolf", 0),
+            enemy("Goblin A", 0),
             enemy("Wolf A", 0),
-            enemy("Wolf B", 0)
+            enemy("Wolf B", 0),
+            enemy("Wolf C", 0)
         );
 
-        assertAction(rounds.get(2), "Goblin", "Warrior", 0, 20, List.of("Smoke Bomb blocked the attack"));
-        assertAction(rounds.get(3), "Goblin", "Warrior", 0, 20,
+        assertAction(rounds.get(2), "Goblin A", "Warrior", 0, 20, List.of("Smoke Bomb blocked the attack"));
+        assertAction(rounds.get(3), "Goblin A", "Warrior", 0, 20,
             List.of(
                 "Smoke Bomb blocked the attack",
                 "Smoke Bomb expired"
             ));
-        assertAction(rounds.get(4), "Goblin", "Warrior", 5, 30, List.of());
-        assertAction(rounds.get(10), "Wolf A", "Warrior", 15, 30, List.of());
+        assertAction(rounds.get(4), "Goblin A", "Warrior", 5, 30, List.of());
         assertAction(rounds.get(10), "Wolf B", "Warrior", 15, 30, List.of());
+        assertAction(rounds.get(10), "Wolf C", "Warrior", 15, 30, List.of());
 
-        assertSkipped(rounds.get(2), "Wolf", "STUNNED", List.of());
-        assertSkipped(rounds.get(3), "Wolf", "STUNNED", List.of("Stun expired"));
-        assertSkipped(rounds.get(5), "Goblin", "STUNNED", List.of());
-        assertSkipped(rounds.get(6), "Goblin", "STUNNED", List.of("Stun expired"));
+        assertSkipped(rounds.get(2), "Wolf A", "STUNNED", List.of());
+        assertSkipped(rounds.get(3), "Wolf A", "STUNNED", List.of("Stun expired"));
+        assertSkipped(rounds.get(5), "Goblin A", "STUNNED", List.of());
+        assertSkipped(rounds.get(6), "Goblin A", "STUNNED", List.of("Stun expired"));
 
-        assertNarrationContains(rounds.get(8), "Backup Spawn triggered: Wolf A, Wolf B");
+        assertNarrationContains(rounds.get(8), "Backup Spawn triggered: Wolf B, Wolf C");
         assertVictoryNarration(events);
 
         assertEquals(Set.of(12), decisionProvider.getCooldownBlockedRounds());
@@ -273,19 +280,19 @@ class CustomBattleFlowE2ETest {
 
         private Map<Integer, PlannedTurn> buildPlan() {
             Map<Integer, PlannedTurn> plan = new LinkedHashMap<>();
-            plan.put(1, new PlannedTurn(new UseSpecialSkillAction(), "Wolf", null, null));
+            plan.put(1, new PlannedTurn(new UseSpecialSkillAction(), "Wolf A", null, null));
             plan.put(2, new PlannedTurn(new UseSmokeBombAction(), null, null, null));
-            plan.put(3, new PlannedTurn(new BasicAttackAction(), "Wolf", null, null));
+            plan.put(3, new PlannedTurn(new BasicAttackAction(), "Wolf A", null, null));
             plan.put(4, new PlannedTurn(new DefendAction(), null, null, null));
-            plan.put(5, new PlannedTurn(new UseSpecialSkillAction(), "Goblin", null, null));
-            plan.put(6, new PlannedTurn(new BasicAttackAction(), "Goblin", null, null));
+            plan.put(5, new PlannedTurn(new UseSpecialSkillAction(), "Goblin A", null, null));
+            plan.put(6, new PlannedTurn(new BasicAttackAction(), "Goblin A", null, null));
             plan.put(7, new PlannedTurn(new UsePotionAction(), null, null, null));
-            plan.put(8, new PlannedTurn(new BasicAttackAction(), "Goblin", null, null));
+            plan.put(8, new PlannedTurn(new BasicAttackAction(), "Goblin A", null, null));
             plan.put(9, new PlannedTurn(new DefendAction(), null, null, null));
-            plan.put(10, new PlannedTurn(new UseSpecialSkillAction(), "Wolf A", null, null));
-            plan.put(11, new PlannedTurn(new BasicAttackAction(), "Wolf A", null, null));
-            plan.put(12, new PlannedTurn(new UseSpecialSkillAction(), "Wolf B", new BasicAttackAction(), "Wolf B"));
-            plan.put(13, new PlannedTurn(new BasicAttackAction(), "Wolf B", null, null));
+            plan.put(10, new PlannedTurn(new UseSpecialSkillAction(), "Wolf B", null, null));
+            plan.put(11, new PlannedTurn(new BasicAttackAction(), "Wolf B", null, null));
+            plan.put(12, new PlannedTurn(new UseSpecialSkillAction(), "Wolf C", new BasicAttackAction(), "Wolf C"));
+            plan.put(13, new PlannedTurn(new BasicAttackAction(), "Wolf C", null, null));
             return plan;
         }
     }
