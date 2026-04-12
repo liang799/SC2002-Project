@@ -398,18 +398,80 @@ package "engine" {
   }
 
   class BattleEngine <<control>> {
-    - player: PlayerCharacter
-    - initialEnemies: List<Combatant> [1..*]
-    - reserveEnemies: List<Combatant> [0..*]
-    - spawnedEnemies: List<Combatant> [1..*]
+    - battleState: BattleState
     - turnOrderStrategy: TurnOrderStrategy
-    - events: List<BattleEvent> [0..*]
+    - turnProcessor: TurnProcessor
+    - waveManager: WaveManager
+    - roundLifecycle: RoundLifecycle
+    - battleOutcomeReporter: BattleOutcomeReporter
     + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
     + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
     + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
     + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
+  }
+
+  class BattleState <<entity>> {
+    - player: PlayerCharacter
+    - initialEnemies: List<Combatant> [1..*]
+    - reserveEnemies: List<Combatant> [0..*]
+    - spawnedEnemies: List<Combatant> [1..*]
+    ~ player(): PlayerCharacter
+    ~ initialEnemies(): List<Combatant>
+    ~ reserveEnemies(): List<Combatant>
+    ~ spawnedEnemies(): List<Combatant>
+    ~ moveAllReserveToSpawned(): void
+    ~ combatantsAliveAtRoundStart(): List<Combatant>
+    ~ livingEnemies(): List<Combatant>
+    ~ isBattleOver(): boolean
+  }
+
+  class BattleEventPublisher <<control>> {
+    - events: List<BattleEvent> [0..*]
+    ~ emit(battleEvent: BattleEvent, battleEventListener: BattleEventListener): void
+    ~ snapshot(): List<BattleEvent>
+  }
+
+  interface TurnProcessor <<strategy>> {
+    ~ processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultTurnProcessor <<control>> {
+    - player: PlayerCharacter
+    + processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+  }
+
+  interface WaveManager <<strategy>> {
+    ~ spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultWaveManager <<control>> {
+    - initialEnemies: List<Combatant> [1..*]
+    - reserveEnemies: List<Combatant> [0..*]
+    - moveReserveToSpawned: Runnable
+    + spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
+  }
+
+  interface RoundLifecycle <<strategy>> {
+    ~ createRoundSummary(roundNumber: int): RoundSummaryEvent
+    ~ completeRound(emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultRoundLifecycle <<control>> {
+    - player: PlayerCharacter
+    - spawnedEnemies: List<Combatant> [1..*]
+    + createRoundSummary(roundNumber: int): RoundSummaryEvent
+    + completeRound(emit: Consumer<BattleEvent>): void
+  }
+
+  interface BattleOutcomeReporter <<strategy>> {
+    ~ reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultBattleOutcomeReporter <<control>> {
+    - player: PlayerCharacter
+    + reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
   }
 
   class BattleSetup <<entity>> {
@@ -769,14 +831,35 @@ TurnOrderStrategy <|.. SpeedTurnOrderStrategy
 PlayerDecisionProvider <|.. ScriptedDecisionProvider
 PlayerDecisionProvider <|.. CliPlayerDecisionProvider
 PlayerDecisionProvider <|.. GuiPlayerDecisionProvider
-BattleEngine "1" o-- "1" PlayerCharacter : player
-BattleEngine "1" o-- "1..*" Combatant : initialEnemies
-BattleEngine "1" o-- "0..*" Combatant : reserveEnemies
-BattleEngine "1" o-- "1..*" Combatant : spawnedEnemies
-BattleEngine "1" --> "1" TurnOrderStrategy
-BattleEngine "1" *-- "0..*" BattleEvent : events
+TurnProcessor <|.. DefaultTurnProcessor
+WaveManager <|.. DefaultWaveManager
+RoundLifecycle <|.. DefaultRoundLifecycle
+BattleOutcomeReporter <|.. DefaultBattleOutcomeReporter
+BattleEngine "1" *-- "1" BattleState : battleState
+BattleEngine "1" --> "1" TurnOrderStrategy : turnOrderStrategy
+BattleEngine "1" --> "1" TurnProcessor : turnProcessor
+BattleEngine "1" --> "1" WaveManager : waveManager
+BattleEngine "1" --> "1" RoundLifecycle : roundLifecycle
+BattleEngine "1" --> "1" BattleOutcomeReporter : battleOutcomeReporter
+BattleEngine ..> BattleEventPublisher : creates per run
 BattleEngine ..> PlayerDecisionProvider
 BattleEngine ..> BattleEventListener
+BattleState "1" o-- "1" PlayerCharacter : player
+BattleState "1" o-- "1..*" Combatant : initialEnemies
+BattleState "1" o-- "0..*" Combatant : reserveEnemies
+BattleState "1" o-- "1..*" Combatant : spawnedEnemies
+BattleEventPublisher "1" *-- "0..*" BattleEvent : events
+BattleEventPublisher ..> BattleEventListener
+DefaultTurnProcessor "1" --> "1" PlayerCharacter : player
+DefaultTurnProcessor ..> ActionExecutionContext
+DefaultTurnProcessor ..> PlayerDecisionProvider
+DefaultWaveManager "1" o-- "1..*" Combatant : initialEnemies
+DefaultWaveManager "1" o-- "0..*" Combatant : reserveEnemies
+DefaultWaveManager ..> BattleState
+DefaultRoundLifecycle "1" --> "1" PlayerCharacter : player
+DefaultRoundLifecycle "1" o-- "1..*" Combatant : spawnedEnemies
+DefaultRoundLifecycle ..> RoundSummaryEvent
+DefaultBattleOutcomeReporter "1" --> "1" PlayerCharacter : player
 BattleSetup "1" *-- "1" PlayerCharacter : player
 BattleSetup "1" *-- "1..*" Combatant : initialEnemies
 BattleSetup "1" *-- "0..*" Combatant : backupEnemies
