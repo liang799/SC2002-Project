@@ -31,10 +31,17 @@ jobs:
       - name: Build and test
         run: mvn -B verify
 
-      - name: Render PlantUML class diagram
+      - name: Render PlantUML diagrams
         run: |
-          plantuml -tpng "UML Class Diagram/plantuml_class_diagram.puml"
-          plantuml -tsvg "UML Class Diagram/plantuml_class_diagram.puml"
+          set -euo pipefail
+
+          UML_DIR="uml-diagrams"
+          mkdir -p "$UML_DIR/imgs"
+
+          find "$UML_DIR" -maxdepth 1 -type f -name '*.puml' | sort | while IFS= read -r puml_file; do
+            plantuml -tpng -o imgs "$puml_file"
+            plantuml -tsvg -o imgs "$puml_file"
+          done
 
       - name: Collect release assets
         env:
@@ -52,8 +59,8 @@ jobs:
           mkdir -p dist
           cp "$cli_jar" "dist/turnbased-arena-cli-${SANITIZED_RELEASE_TAG}.jar"
           cp "$gui_jar" "dist/turnbased-arena-gui-${SANITIZED_RELEASE_TAG}.jar"
-          cp "UML Class Diagram/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
-          cp "UML Class Diagram/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
+          cp "uml-diagrams/imgs/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
+          cp "uml-diagrams/imgs/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
 
       - name: Create or update GitHub release
         env:
