@@ -25,6 +25,8 @@ class DefaultTurnProcessor implements TurnProcessor {
         ActionExecutionContext actionExecutionContext,
         Consumer<BattleEvent> emit
     ) {
+        Optional<String> turnBlockReason = actor.getTurnBlockReason();
+
         if (!actor.isAlive()) {
             emit.accept(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
@@ -36,7 +38,6 @@ class DefaultTurnProcessor implements TurnProcessor {
             return;
         }
 
-        Optional<String> turnBlockReason = actor.getTurnBlockReason();
         if (turnBlockReason.isPresent()) {
             emit.accept(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
