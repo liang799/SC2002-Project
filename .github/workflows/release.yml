@@ -42,8 +42,8 @@ jobs:
           mkdir -p dist
           cp "$cli_jar" "dist/turnbased-arena-cli-${SANITIZED_RELEASE_TAG}.jar"
           cp "$gui_jar" "dist/turnbased-arena-gui-${SANITIZED_RELEASE_TAG}.jar"
-          cp "uml-diagrams/imgs/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
-          cp "uml-diagrams/imgs/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
+          cp "docs/uml-diagrams/imgs/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
+          cp "docs/uml-diagrams/imgs/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
 
       - name: Create or update GitHub release
         env:

@@ -109,8 +109,8 @@ The maintained UML source of truth is the PlantUML class diagram:
 <!-- BEGIN GENERATED UML CLASS DIAGRAMS -->
 Full-resolution PlantUML outputs are also included:
 
-- [Class diagram PNG](uml-diagrams/imgs/plantuml_class_diagram.png)
-- [Class diagram SVG](uml-diagrams/imgs/plantuml_class_diagram.svg)
+- [Class diagram PNG](docs/uml-diagrams/imgs/plantuml_class_diagram.png)
+- [Class diagram SVG](docs/uml-diagrams/imgs/plantuml_class_diagram.svg)
 <!-- END GENERATED UML CLASS DIAGRAMS -->
 
 Legacy Mermaid diagrams have been moved to an outdated folder and are no longer maintained:
