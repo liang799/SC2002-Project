@@ -23,26 +23,8 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Install PlantUML and Graphviz
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz plantuml
-
       - name: Build and test
         run: mvn -B verify
-
-      - name: Render PlantUML diagrams
-        run: |
-          set -euo pipefail
-
-          UML_DIR="uml-diagrams"
-          export PLANTUML_LIMIT_SIZE=65536
-          mkdir -p "$UML_DIR/imgs"
-
-          find "$UML_DIR" -maxdepth 1 -type f -name '*.puml' | sort | while IFS= read -r puml_file; do
-            plantuml -tpng -o imgs "$puml_file"
-            plantuml -tsvg -o imgs "$puml_file"
-          done
 
       - name: Collect release assets
         env:
