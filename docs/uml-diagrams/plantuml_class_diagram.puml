@@ -8,9 +8,8 @@ skinparam linetype ortho
 hide circle
 
 legend left
-  Generated from the current production source under src/main/java.
-  Tests under src/test/java were scanned but omitted to keep the diagram architectural.
-  JDK and Swing types remain in signatures as referenced types, but are not modeled as standalone classes.
+  SC2002 Project
+  Members: Larry, Neoh, Nestor, Madhavan
 endlegend
 
 package "bootstrap" {
