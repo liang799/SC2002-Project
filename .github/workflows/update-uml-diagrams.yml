@@ -34,6 +34,7 @@ jobs:
           UML_DIR="uml-diagrams"
           IMG_DIR="$UML_DIR/imgs"
           README="README.md"
+          export PLANTUML_LIMIT_SIZE=65536
           BEGIN_MARKER="<!-- BEGIN GENERATED UML CLASS DIAGRAMS -->"
           END_MARKER="<!-- END GENERATED UML CLASS DIAGRAMS -->"
 
@@ -56,12 +57,10 @@ jobs:
 
           cat > "$block_file" <<'BLOCK'
           <!-- BEGIN GENERATED UML CLASS DIAGRAMS -->
-          Rendered PlantUML outputs are also included:
+          Full-resolution PlantUML outputs are also included:
 
           - [Class diagram PNG](uml-diagrams/imgs/plantuml_class_diagram.png)
           - [Class diagram SVG](uml-diagrams/imgs/plantuml_class_diagram.svg)
-
-          ![SC2002 class diagram](uml-diagrams/imgs/plantuml_class_diagram.png)
           <!-- END GENERATED UML CLASS DIAGRAMS -->
           BLOCK
 
