@@ -52,6 +52,26 @@ class DefaultBattleOutcomeReporterTest {
         assertTrue(narrationLines.contains("Total Rounds Survived: 3"));
     }
 
+    @Test
+    void reportOutcome_WhenOnlyReserveEnemiesRemainOnDefeat_UsesTotalRemainingEnemyCount() {
+        PlayerCharacter player = TestDependencies.warrior();
+        player.receiveDamage(player.getCurrentHp());
+        EnemyCombatant reserveEnemy = TestEnemyCombatantBuilder.anEnemyCombatant(new BasicAttackAction())
+            .named("Reserve Wolf")
+            .withHp(40)
+            .build();
+
+        BattleOutcomeReporter reporter = new DefaultBattleOutcomeReporter(player);
+        List<BattleEvent> emittedEvents = new ArrayList<>();
+
+        reporter.reportOutcome(3, List.of(), List.of(reserveEnemy), emittedEvents::add);
+
+        List<String> narrationLines = narrationTexts(emittedEvents);
+        assertTrue(narrationLines.contains("Defeat:"));
+        assertTrue(narrationLines.contains("Enemies remaining: 1"));
+        assertTrue(narrationLines.contains("Total Rounds Survived: 3"));
+    }
+
     private static List<String> narrationTexts(List<BattleEvent> events) {
         List<String> lines = new ArrayList<>();
         for (BattleEvent event : events) {

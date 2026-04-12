@@ -2,6 +2,7 @@ package sc2002.turnbased.engine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,5 +63,40 @@ class DefaultTurnProcessorTest {
         SkippedTurnEvent skippedTurnEvent = assertInstanceOf(SkippedTurnEvent.class, emittedEvents.get(0));
         assertEquals("STUNNED", skippedTurnEvent.getReason());
         assertEquals(stunnedEnemy.getName(), skippedTurnEvent.getCombatantName());
+    }
+
+    @Test
+    void processTurn_WhenPlayerIsTurnBlocked_DoesNotConsumeDecisionOrAdvanceCooldown() {
+        PlayerCharacter player = TestDependencies.warrior();
+        EnemyCombatant enemy = TestEnemyCombatantBuilder.anEnemyCombatant(new BasicAttackAction())
+            .named("Goblin")
+            .withHp(80)
+            .build();
+
+        ActionExecutionContext context = new TestActionExecutionContext(List.of(enemy));
+        player.useSpecialSkill(context, enemy);
+        int cooldownBefore = player.getSpecialSkillCooldown();
+        assertTrue(cooldownBefore > 0);
+
+        player.addStatusEffect(new StunStatusEffect(2));
+        List<String> activeStatusesBefore = player.getActiveStatuses();
+
+        int[] decisionCalls = new int[] {0};
+        PlayerDecisionProvider decisions = (roundNumber, actingPlayer, livingEnemies) -> {
+            decisionCalls[0]++;
+            return PlayerDecision.targeted(new BasicAttackAction(), enemy);
+        };
+
+        TurnProcessor turnProcessor = new DefaultTurnProcessor(player);
+        List<BattleEvent> emittedEvents = new ArrayList<>();
+
+        turnProcessor.processTurn(1, player, decisions, context, emittedEvents::add);
+
+        SkippedTurnEvent skippedTurnEvent = assertInstanceOf(SkippedTurnEvent.class, emittedEvents.get(0));
+        assertEquals("STUNNED", skippedTurnEvent.getReason());
+        assertEquals(player.getName(), skippedTurnEvent.getCombatantName());
+        assertEquals(0, decisionCalls[0]);
+        assertEquals(cooldownBefore, player.getSpecialSkillCooldown());
+        assertEquals(activeStatusesBefore, player.getActiveStatuses());
     }
 }

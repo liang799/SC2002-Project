@@ -1,6 +1,7 @@
 package sc2002.turnbased.engine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import sc2002.turnbased.domain.Combatant;
@@ -24,15 +25,20 @@ class BattleState {
     }
 
     List<Combatant> initialEnemies() {
-        return initialEnemies;
+        return Collections.unmodifiableList(initialEnemies);
     }
 
     List<Combatant> reserveEnemies() {
-        return reserveEnemies;
+        return Collections.unmodifiableList(reserveEnemies);
     }
 
     List<Combatant> spawnedEnemies() {
-        return spawnedEnemies;
+        return Collections.unmodifiableList(spawnedEnemies);
+    }
+
+    void moveAllReserveToSpawned() {
+        spawnedEnemies.addAll(reserveEnemies);
+        reserveEnemies.clear();
     }
 
     List<Combatant> combatantsAliveAtRoundStart() {

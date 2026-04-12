@@ -15,20 +15,14 @@ public class BattleEngine implements ActionExecutionContext {
     private final WaveManager waveManager;
     private final RoundLifecycle roundLifecycle;
     private final BattleOutcomeReporter battleOutcomeReporter;
-    private final BattleEventPublisher battleEventPublisher;
 
     public BattleEngine(BattleSetup battleSetup, TurnOrderStrategy turnOrderStrategy) {
         this.battleState = new BattleState(battleSetup);
         this.turnOrderStrategy = turnOrderStrategy;
         this.turnProcessor = new DefaultTurnProcessor(battleState.player());
-        this.waveManager = new DefaultWaveManager(
-            battleState.initialEnemies(),
-            battleState.reserveEnemies(),
-            battleState.spawnedEnemies()
-        );
+        this.waveManager = new DefaultWaveManager(battleState);
         this.roundLifecycle = new DefaultRoundLifecycle(battleState.player(), battleState.spawnedEnemies());
         this.battleOutcomeReporter = new DefaultBattleOutcomeReporter(battleState.player());
-        this.battleEventPublisher = new BattleEventPublisher();
     }
 
     public List<BattleEvent> runRounds(int roundCount, PlayerDecisionProvider playerDecisionProvider) {
@@ -40,6 +34,7 @@ public class BattleEngine implements ActionExecutionContext {
         PlayerDecisionProvider playerDecisionProvider,
         BattleEventListener battleEventListener
     ) {
+        BattleEventPublisher battleEventPublisher = new BattleEventPublisher();
         Consumer<BattleEvent> emit = event -> battleEventPublisher.emit(event, battleEventListener);
         int roundsPlayed = 0;
         for (int roundNumber = 1; roundNumber <= roundCount; roundNumber++) {

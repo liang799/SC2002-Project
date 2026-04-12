@@ -25,15 +25,6 @@ class DefaultTurnProcessor implements TurnProcessor {
         ActionExecutionContext actionExecutionContext,
         Consumer<BattleEvent> emit
     ) {
-        PlayerDecision decision = null;
-        if (actor == player && actor.isAlive()) {
-            decision = playerDecisionProvider.decide(roundNumber, player, actionExecutionContext.getLivingEnemies());
-        }
-        if (shouldAdvanceCooldown(actor, decision)) {
-            player.advanceRoundState();
-        }
-
-        Optional<String> turnBlockReason = actor.getTurnBlockReason();
         if (!actor.isAlive()) {
             emit.accept(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
@@ -45,6 +36,7 @@ class DefaultTurnProcessor implements TurnProcessor {
             return;
         }
 
+        Optional<String> turnBlockReason = actor.getTurnBlockReason();
         if (turnBlockReason.isPresent()) {
             emit.accept(
                 SkippedTurnEvent.fromStatusEffectOutcomes(
@@ -57,6 +49,14 @@ class DefaultTurnProcessor implements TurnProcessor {
         }
 
         if (actor == player) {
+            PlayerDecision decision = playerDecisionProvider.decide(
+                roundNumber,
+                player,
+                actionExecutionContext.getLivingEnemies()
+            );
+            if (shouldAdvanceCooldown(decision)) {
+                player.advanceRoundState();
+            }
             processPlayerTurn(decision, actionExecutionContext, emit);
             return;
         }
@@ -66,8 +66,8 @@ class DefaultTurnProcessor implements TurnProcessor {
         }
     }
 
-    private boolean shouldAdvanceCooldown(Combatant actor, PlayerDecision decision) {
-        return actor == player && decision != null && decision.action().advancesCooldown();
+    private boolean shouldAdvanceCooldown(PlayerDecision decision) {
+        return decision != null && decision.action().advancesCooldown();
     }
 
     private void processPlayerTurn(

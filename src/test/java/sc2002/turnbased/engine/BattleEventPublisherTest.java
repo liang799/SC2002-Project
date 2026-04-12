@@ -1,6 +1,7 @@
 package sc2002.turnbased.engine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -37,6 +38,6 @@ class BattleEventPublisherTest {
             UnsupportedOperationException.class,
             () -> snapshot.add(new NarrationEvent("Fail"))
         );
-        assertEquals(UnsupportedOperationException.class, exception.getClass());
+        assertNotNull(exception);
     }
 }

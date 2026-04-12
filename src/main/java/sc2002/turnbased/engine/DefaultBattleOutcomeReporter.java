@@ -28,7 +28,8 @@ class DefaultBattleOutcomeReporter implements BattleOutcomeReporter {
             return;
         }
         if (!player.isAlive()) {
-            addDefeatNarration(roundsPlayed, livingEnemies.size(), emit);
+            int totalRemainingEnemies = livingEnemies.size() + reserveEnemies.size();
+            addDefeatNarration(roundsPlayed, totalRemainingEnemies, emit);
         }
     }
 
@@ -36,10 +37,11 @@ class DefaultBattleOutcomeReporter implements BattleOutcomeReporter {
         emit.accept(new NarrationEvent("Victory:"));
         emit.accept(new NarrationEvent("Remaining HP: " + player.getCurrentHp() + " / " + player.getMaxHp()));
         emit.accept(new NarrationEvent("Total Rounds: " + roundsPlayed));
-        for (ItemType itemType : player.getInventory().snapshot().keySet()) {
+        var inventorySnapshot = player.getInventory().snapshot();
+        for (ItemType itemType : inventorySnapshot.keySet()) {
             emit.accept(
                 new NarrationEvent(
-                    "Remaining " + itemType.getDisplayName() + ": " + player.getInventory().countOf(itemType)
+                    "Remaining " + itemType.getDisplayName() + ": " + inventorySnapshot.get(itemType)
                 )
             );
         }

@@ -44,6 +44,38 @@ class BattleEngineEventStreamConsistencyTest {
     }
 
     @Test
+    void runRounds_WhenInvokedTwiceOnSameEngine_EventStreamsDoNotCarryOverBetweenRuns() {
+        PlayerCharacter player = TestDependencies.warrior();
+        EnemyCombatant enemy = TestEnemyCombatantBuilder.anEnemyCombatant(new BasicAttackAction())
+            .named("Training Goblin")
+            .withHp(300)
+            .withAttack(0)
+            .build();
+
+        BattleEngine battleEngine = new BattleEngine(
+            new BattleSetup(player, List.of(enemy), List.of()),
+            new SpeedTurnOrderStrategy()
+        );
+
+        ScriptedDecisionProvider decisions = new ScriptedDecisionProvider()
+            .addDecision(1, PlayerDecision.targeted(new BasicAttackAction(), enemy));
+        List<BattleEvent> observedByListener = new ArrayList<>();
+
+        List<BattleEvent> firstReturnedEvents = battleEngine.runRounds(1, decisions, observedByListener::add);
+        List<BattleEvent> firstObservedByListener = List.copyOf(observedByListener);
+
+        List<BattleEvent> secondReturnedEvents = battleEngine.runRounds(1, decisions, observedByListener::add);
+        List<BattleEvent> secondObservedByListener = List.copyOf(
+            observedByListener.subList(firstObservedByListener.size(), observedByListener.size())
+        );
+
+        assertFalse(firstReturnedEvents.isEmpty());
+        assertFalse(secondReturnedEvents.isEmpty());
+        assertEquals(firstReturnedEvents, firstObservedByListener);
+        assertEquals(secondReturnedEvents, secondObservedByListener);
+    }
+
+    @Test
     void runUntilBattleEnds_WhenListenerIsProvided_ListenerStreamMatchesReturnedEvents() {
         PlayerCharacter player = TestDependencies.warrior();
         EnemyCombatant enemy = TestEnemyCombatantBuilder.anEnemyCombatant(new BasicAttackAction())
