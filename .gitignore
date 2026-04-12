@@ -2,3 +2,4 @@ out/
 target/
 .m2/
 .idea/workspace.xml
+.DS_Store
