@@ -23,18 +23,8 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Install PlantUML and Graphviz
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz plantuml
-
       - name: Build and test
         run: mvn -B verify
-
-      - name: Render PlantUML class diagram
-        run: |
-          plantuml -tpng "UML Class Diagram/plantuml_class_diagram.puml"
-          plantuml -tsvg "UML Class Diagram/plantuml_class_diagram.puml"
 
       - name: Collect release assets
         env:
@@ -52,8 +42,8 @@ jobs:
           mkdir -p dist
           cp "$cli_jar" "dist/turnbased-arena-cli-${SANITIZED_RELEASE_TAG}.jar"
           cp "$gui_jar" "dist/turnbased-arena-gui-${SANITIZED_RELEASE_TAG}.jar"
-          cp "UML Class Diagram/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
-          cp "UML Class Diagram/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
+          cp "uml-diagrams/imgs/plantuml_class_diagram.png" "dist/plantuml_class_diagram.png"
+          cp "uml-diagrams/imgs/plantuml_class_diagram.svg" "dist/plantuml_class_diagram.svg"
 
       - name: Create or update GitHub release
         env:

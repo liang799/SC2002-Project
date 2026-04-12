@@ -104,12 +104,14 @@ The test pyramid is organized as:
 
 The maintained UML source of truth is the PlantUML class diagram:
 
-- `UML Class Diagram/plantuml_class_diagram.puml`
+- `uml-diagrams/plantuml_class_diagram.puml`
 
-Rendered PlantUML outputs are also included:
+<!-- BEGIN GENERATED UML CLASS DIAGRAMS -->
+Full-resolution PlantUML outputs are also included:
 
-- `UML Class Diagram/plantuml_class_diagram.png`
-- `UML Class Diagram/plantuml_class_diagram.svg`
+- [Class diagram PNG](uml-diagrams/imgs/plantuml_class_diagram.png)
+- [Class diagram SVG](uml-diagrams/imgs/plantuml_class_diagram.svg)
+<!-- END GENERATED UML CLASS DIAGRAMS -->
 
 Legacy Mermaid diagrams have been moved to an outdated folder and are no longer maintained:
 
