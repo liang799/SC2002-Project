@@ -113,4 +113,16 @@ class FighterSpriteDtoTest {
         assertEquals(FighterType.WOLF, sprite.type);
         assertEquals(List.of("READY"), sprite.statuses);
     }
+
+    @Test
+    void classifiesPlayerSubtypesFromDtoName() {
+        assertEquals(FighterType.WARRIOR, FighterSpriteDto.fromSummary(
+            new CombatantSummary(CombatantId.generate(), "Warrior", 80, 100, 25, 25, true, List.of()),
+            true
+        ).type);
+        assertEquals(FighterType.WIZARD, FighterSpriteDto.fromSummary(
+            new CombatantSummary(CombatantId.generate(), "Wizard", 60, 80, 30, 30, true, List.of()),
+            true
+        ).type);
+    }
 }
