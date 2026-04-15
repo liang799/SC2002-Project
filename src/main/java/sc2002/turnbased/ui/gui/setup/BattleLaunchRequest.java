@@ -1,8 +1,11 @@
 package sc2002.turnbased.ui.gui.setup;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.engine.BattleSetupFactory;
 import sc2002.turnbased.engine.CustomGameConfiguration;
@@ -28,8 +31,7 @@ public final class BattleLaunchRequest {
         Objects.requireNonNull(configuration, "configuration");
         String intro = "=== Selected: " + configuration.playerType().getDisplayName()
             + " | " + configuration.difficultyLevel().getDisplayName()
-            + " | Items: " + configuration.selectedItems().get(0).getDisplayName()
-            + ", " + configuration.selectedItems().get(1).getDisplayName()
+            + " | Items: " + describeItems(configuration.selectedItems())
             + " ===";
         return new BattleLaunchRequest(factory -> factory.create(configuration), configuration, intro);
     }
@@ -73,14 +75,24 @@ public final class BattleLaunchRequest {
         StringBuilder description = new StringBuilder();
         description.append("=== Custom Mode Configuration ===\n");
         description.append("Player Class: ").append(config.playerType().getDisplayName()).append("\n");
-        description.append("Items: ").append(config.selectedItems().get(0).getDisplayName())
-            .append(", ").append(config.selectedItems().get(1).getDisplayName()).append("\n");
+        description.append("Items: ").append(describeItems(config.selectedItems())).append("\n");
         for (int i = 0; i < config.waves().size(); i++) {
             WaveSpec wave = config.waves().get(i);
             description.append("Wave ").append(i + 1).append(": ")
                 .append(wave.describe()).append(" - ")
-                .append(wave.totalEnemies()).append(" enemies total\n");
+                .append(wave.totalEnemies()).append(" ")
+                .append(wave.totalEnemies() == 1 ? "enemy" : "enemies")
+                .append(" total\n");
         }
         return description.toString();
+    }
+
+    private static String describeItems(List<ItemType> selectedItems) {
+        if (selectedItems.isEmpty()) {
+            return "none";
+        }
+        return selectedItems.stream()
+            .map(ItemType::getDisplayName)
+            .collect(Collectors.joining(", "));
     }
 }

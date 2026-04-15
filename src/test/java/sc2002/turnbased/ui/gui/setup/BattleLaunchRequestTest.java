@@ -59,7 +59,7 @@ class BattleLaunchRequestTest {
 
         assertEquals(configuration, request.replayConfiguration());
         assertTrue(request.intro().contains("Wave 1: 1 Goblin, 2 Wolves - 3 enemies total"));
-        assertTrue(request.intro().contains("Wave 2: 1 Goblin - 1 enemies total"));
+        assertTrue(request.intro().contains("Wave 2: 1 Goblin - 1 enemy total"));
         assertEquals("Warrior", setup.getPlayer().getName());
         assertEquals(3, setup.getInitialEnemies().size());
         assertEquals(1, setup.getBackupEnemies().size());
