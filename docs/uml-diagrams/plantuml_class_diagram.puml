@@ -1065,4 +1065,64 @@ FighterSpriteRenderer "1" *-- "1" FighterSpriteHudRenderer
 BattleCommandPanel --> BattleCommand
 BattleCommandPanel --> BattleMenuState
 
+note right of Combatant
+  Encapsulation:
+  private state changes through
+  behavior methods.
+end note
+
+note top of PlayerCharacter
+  Inheritance:
+  PlayerCharacter and EnemyCombatant
+  specialize Combatant.
+end note
+
+note bottom of Combatant
+  Composition:
+  Combatant owns HitPoints, Inventory,
+  CombatStats, and StatusEffectRegistry.
+end note
+
+note right of BattleAction
+  Polymorphism / OCP:
+  actions share execute(); new actions
+  avoid BattleEngine changes.
+end note
+
+note right of StatusEffect
+  Polymorphism / OCP:
+  StatusEffectRegistry applies effects
+  through StatusEffect hooks.
+end note
+
+note right of BattleEngine
+  Dependency inversion:
+  BattleEngine coordinates through
+  strategy interfaces.
+end note
+
+note bottom of BattleEventPublisher
+  Observer:
+  records events and notifies
+  BattleEventListener.
+end note
+
+note right of BattleSetupFactory
+  Factory:
+  setup and combatant construction
+  are centralized.
+end note
+
+note bottom of ArenaScenePanel
+  SRP:
+  panel handles Swing, model stores state,
+  renderer draws, loop ticks.
+end note
+
+note bottom of TurnBasedArenaGui
+  Boundary-Control:
+  UI delegates battle flow to
+  BattleController and BattleEngine.
+end note
+
 @enduml
