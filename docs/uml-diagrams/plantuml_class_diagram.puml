@@ -57,7 +57,7 @@ package "DOMAIN LAYER - domain entities" {
     + attack(target: Combatant): AttackResolution
     + receiveDamage(damage: int): void
     + heal(amount: int): void
-    + addStatusEffect(effect: StatusEffect): List<CombatantStatusOutcome>
+    + addStatusEffect(statusEffect: StatusEffect): List<CombatantStatusOutcome>
     + completeRound(): List<CombatantStatusOutcome>
   }
 
@@ -98,6 +98,8 @@ package "DOMAIN LAYER - domain entities" {
     - hpAfter: int
     - damage: int
     - targetEliminated: boolean
+    - statusEffectOutcomes: List<CombatantStatusOutcome>
+    + appendStatusEffectOutcomes(additionalOutcomes: List<CombatantStatusOutcome>): AttackResolution
   }
 
   class CombatantId <<record>> <<entity>> {
@@ -164,7 +166,7 @@ package "DOMAIN LAYER - status effects" {
   class StatusEffectRegistry <<entity>> {
     - effects: List<StatusEffect>
     - pendingOutcomes: List<StatusEffectOutcome>
-    + add(owner: Combatant, effect: StatusEffect): List<StatusEffectOutcome>
+    + add(owner: Combatant, statusEffect: StatusEffect): List<StatusEffectOutcome>
     + apply(owner: Combatant, stats: CombatStats): CombatStats
     + adjustIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
     + completeRound(owner: Combatant): List<StatusEffectOutcome>
@@ -798,7 +800,9 @@ BattleEngine ..> PlayerDecisionProvider
 BattleEngine ..> BattleEventListener
 BattleEngine ..> BattleEvent
 BattleState "1" o-- "1" PlayerCharacter
-BattleState "1" o-- "1..*" Combatant : enemies
+BattleState "1" o-- "1..*" Combatant : initialEnemies
+BattleState "1" o-- "0..*" Combatant : reserveEnemies
+BattleState "1" o-- "1..*" Combatant : spawnedEnemies
 TurnProcessor <|.. DefaultTurnProcessor
 WaveManager <|.. DefaultWaveManager
 RoundLifecycle <|.. DefaultRoundLifecycle
