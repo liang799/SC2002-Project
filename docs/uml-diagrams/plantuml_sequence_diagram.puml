@@ -1,27 +1,28 @@
-@startuml sd_SC2002_CustomMode_Walkthrough
-title sd SC2002 Runtime Battle Flow - Custom Mode Walkthrough 
+@startuml
+title sd SC2002 Runtime Battle Flow - Custom Mode Walkthrough
 autonumber
-autoactivate on
+autoactivate off
 skinparam shadowing false
 skinparam ParticipantPadding 20
 skinparam BoxPadding 10
+skinparam dpi 300
 skinparam actorBackgroundColor #DDF3F7
 
-actor "u:User" as U
-boundary "ui:TurnBasedArenaGui" as UI
-control "bc:BattleController" as BC
-control "bsf:BattleSetupFactory" as BSF
-control "be:BattleEngine" as BE
-control "tp:DefaultTurnProcessor" as TP
-control "dp:GuiPlayerDecisionProvider" as DP
-control "blr:BattleLaunchRequest" as BLR
-control "wm:DefaultWaveManager" as WM
-control "tos:SpeedTurnOrderStrategy" as TOS
-entity "wizard:PlayerCharacter" as W
-entity "inv:Inventory" as INV
-entity "GA:Goblin" as GA
-entity "GB:Goblin" as GB
-entity "GC:Goblin" as GC
+actor "u : User" as U
+boundary "ui : TurnBasedArenaGui" as UI
+control "bc : BattleController" as BC
+control "bsf : BattleSetupFactory" as BSF
+control "be : BattleEngine" as BE
+control "tp : DefaultTurnProcessor" as TP
+control "dp : GuiPlayerDecisionProvider" as DP
+control "blr : BattleLaunchRequest" as BLR
+control "wm : DefaultWaveManager" as WM
+control "tos : SpeedTurnOrderStrategy" as TOS
+entity "wizard : PlayerCharacter" as W
+entity "inv : Inventory" as INV
+entity "GA : Goblin" as GA
+entity "GB : Goblin" as GB
+entity "GC : Goblin" as GC
 
 note over BE
 Damage formula: damage = max(0, attackUsed - targetDefense), then status modifiers.
@@ -32,39 +33,39 @@ end note
 
 == Setup ==
 U -> UI : launch GUI app
+activate UI
 UI --> BC : <<create>> BattleController(this, setupFactory)
-UI -> U : show setup panel
-
-U -> UI : select WIZARD
-U -> UI : select POTION, SMOKE_BOMB
-U -> UI : configure Wave 1 (Goblin x1)
-U -> UI : configure Wave 2 (Goblin x2)
-UI -> BLR : custom(CustomGameConfiguration)
-BLR --> UI : BattleLaunchRequest
+deactivate UI
+activate BC
+ref over U, UI
+Configure custom setup:
+choose WIZARD, items, and wave layout.
+end ref
 U -> UI : click Start Battle
+activate UI
 UI -> BC : startBattle(BattleLaunchRequest)
+deactivate UI
 
-BC -> UI : clearBattleLog()
-BC -> UI : setSetupControlsEnabled(false)
-BC -> UI : showBattleLoading()
-BC -> BLR : createSetup(BSF)
-BLR -> BSF : createCustom(CustomGameConfiguration)
+ref over BC, UI
+Prepare battle UI state
+(clear log, lock setup controls, show loading).
+end ref
 
-BSF -> W : createPlayer(WIZARD)
-BSF -> INV : populateInventory(POTION=1, SMOKE_BOMB=1)
-create GA
-BSF --> GA : <<create>> createEnemy(GOBLIN, "Goblin A")
-create GB
-BSF --> GB : <<create>> createEnemy(GOBLIN, "Goblin B") [reserve]
-create GC
-BSF --> GC : <<create>> createEnemy(GOBLIN, "Goblin C") [reserve]
-BSF --> BLR : BattleSetup
-BLR --> BC : BattleSetup
+ref over BC, BLR, BSF
+Build BattleSetup from custom configuration.
+end ref
+
+ref over BSF, W, INV, GA, GB, GC
+Instantiate player, inventory, and combatants.
+end ref
 
 BC -> UI : showBattleLoaded(BattleSetup)
+activate UI
+deactivate UI
 BC --> DP : <<create>> GuiPlayerDecisionProvider(this)
 BC --> BE : <<create>> BattleEngine(BattleSetup, SpeedTurnOrderStrategy)
 BC -> BE : runUntilBattleEnds(DP, battleEventListener)
+activate BE
 
 note over DP,BC
 GUI runtime decision flow:
@@ -75,25 +76,45 @@ end note
 == Round 1 ==
 group Round 1
   BE -> TOS : determineOrder([GA, W])
+  activate TOS
   TOS --> BE : [GA, W]
+  deactivate TOS
 
   BE -> TP : processTurn(round=1, actor=GA, DP, context, emit)
+  activate TP
   TP -> GA : takeTurn(context, target=W)
+  activate GA
   GA -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GA : AttackResolution(damage=25, hpAfter=175)
+  deactivate W
   GA --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=175)
+  deactivate GA
+  deactivate TP
 
   BE -> TP : processTurn(round=1, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(1, W, [GA])
+  activate DP
   DP -> UI : showPlayerTurn(1)
+  activate UI
   UI -> U : choose SpecialSkill(Arcane Blast)
+  activate U
   UI --> DP : PlayerDecision(UseSpecialSkillAction)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(UseSpecialSkillAction)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 0 to 0)
+  activate W
   TP -> W : useSpecialSkill(context, target=none)
   W -> GA : attack(target=GA, attackPower=50)
+  activate GA
   GA --> W : AttackResolution(damage=35, hpAfter=20)
+  deactivate GA
   W --> TP : ActionEvent(Arcane Blast, damage=35, goblinAHp=20)
+  deactivate W
+  deactivate TP
 
   note over BE
   End R1: Wizard 175/200, Goblin A 20, Potion 1, Smoke Bomb 1, CD 3.
@@ -103,29 +124,50 @@ end
 == Round 2 ==
 group Round 2
   BE -> TP : processTurn(round=2, actor=GA, DP, context, emit)
+  activate TP
   TP -> GA : takeTurn(context, target=W)
+  activate GA
   GA -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GA : AttackResolution(damage=25, hpAfter=150)
+  deactivate W
   GA --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=150)
+  deactivate GA
+  deactivate TP
 
   BE -> TP : processTurn(round=2, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(2, W, [GA])
+  activate DP
   DP -> UI : showPlayerTurn(2)
-  UI -> U : press SpecialSkill (CD 3) -> cooldown message, then choose BasicAttack target=GA
+  activate UI
+  UI -> U : attempt SpecialSkill (CD 3)
+  activate U
+  UI -> U : cooldown message, then choose BasicAttack target=GA
   UI --> DP : PlayerDecision(BasicAttackAction, GA)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(BasicAttackAction, GA)
+  deactivate DP
   note over DP
   Scenario step: SpecialSkill is attempted during cooldown,
   cooldown feedback is shown, then BasicAttack is selected.
   end note
   TP -> W : advanceRoundState(cooldown 3 to 2)
+  activate W
   TP -> W : execute BasicAttackAction(GA)
   W -> GA : attack(target=GA, attackPower=50)
+  activate GA
   GA --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  deactivate GA
   W --> TP : ActionEvent(BasicAttack, damage=35, goblinAHp=0)
+  deactivate W
+  deactivate TP
 
   BE -> WM : spawnBackupIfNeeded(emit)
+  activate WM
   WM --> BE : NarrationEvent(Backup Spawn triggered: Goblin B, Goblin C)
+  deactivate WM
 
   note over BE
   End R2: Wizard 150/200, Goblin A 0, Goblin B 55, Goblin C 55, CD 2.
@@ -135,30 +177,56 @@ end
 == Round 3 ==
 group Round 3
   BE -> TOS : determineOrder([GB, GC, W])
+  activate TOS
   TOS --> BE : [GB, GC, W]
+  deactivate TOS
 
   BE -> TP : processTurn(round=3, actor=GB, DP, context, emit)
+  activate TP
   TP -> GB : takeTurn(context, target=W)
+  activate GB
   GB -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GB : AttackResolution(damage=25, hpAfter=125)
+  deactivate W
   GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=125)
+  deactivate GB
+  deactivate TP
 
   BE -> TP : processTurn(round=3, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=25, hpAfter=100)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=100)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=3, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(3, W, [GB, GC])
+  activate DP
   DP -> UI : showPlayerTurn(3)
+  activate UI
   UI -> U : choose Item(Smoke Bomb)
+  activate U
   UI --> DP : PlayerDecision(UseSmokeBombAction)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(UseSmokeBombAction)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 2 to 1)
+  activate W
   TP -> INV : use(SMOKE_BOMB)
+  activate INV
+  deactivate INV
   TP -> W : addStatusEffect(SmokeBombStatusEffect(2))
   W --> TP : NarrationEvent(Smoke Bomb used)
+  deactivate W
+  deactivate TP
 
   note over BE
   End R3: Wizard 100/200, Goblin B 55, Goblin C 55, Potion 1, Smoke Bomb 0, CD 1.
@@ -168,26 +236,48 @@ end
 == Round 4 ==
 group Round 4
   BE -> TP : processTurn(round=4, actor=GB, DP, context, emit)
+  activate TP
   TP -> GB : takeTurn(context, target=W)
+  activate GB
   GB -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GB : AttackResolution(damage=0, hpAfter=100, note=Smoke Bomb blocked the attack)
+  deactivate W
   GB --> TP : ActionEvent(BasicAttack, damage=0, wizardHp=100)
+  deactivate GB
+  deactivate TP
 
   BE -> TP : processTurn(round=4, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=0, hpAfter=100, note=Smoke Bomb blocked the attack)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=0, wizardHp=100, note=Smoke Bomb expired)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=4, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(4, W, [GB, GC])
+  activate DP
   DP -> UI : showPlayerTurn(4)
+  activate UI
   UI -> U : choose Defend
+  activate U
   UI --> DP : PlayerDecision(DefendAction)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(DefendAction)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 1 to 0)
+  activate W
   TP -> W : addStatusEffect(DefendStatusEffect(2))
   W --> TP : StatusEffectOutcome(DEF +10, duration=2 rounds)
+  deactivate W
+  deactivate TP
 
   note over BE
   End R4: Wizard 100/200, Goblin B 55, Goblin C 55, DEFENDING, CD 0.
@@ -197,27 +287,51 @@ end
 == Round 5 ==
 group Round 5
   BE -> TP : processTurn(round=5, actor=GB, DP, context, emit)
+  activate TP
   TP -> GB : takeTurn(context, target=W)
+  activate GB
   GB -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GB : AttackResolution(damage=15, hpAfter=85, defenseApplied=20)
+  deactivate W
   GB --> TP : ActionEvent(BasicAttack, damage=15, wizardHp=85)
+  deactivate GB
+  deactivate TP
 
   BE -> TP : processTurn(round=5, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=15, hpAfter=70, defenseApplied=20)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=15, wizardHp=70)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=5, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(5, W, [GB, GC])
+  activate DP
   DP -> UI : showPlayerTurn(5)
+  activate UI
   UI -> U : choose Item(Potion)
+  activate U
   UI --> DP : PlayerDecision(UsePotionAction)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(UsePotionAction)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 0 to 0)
+  activate W
   TP -> INV : use(POTION)
+  activate INV
+  deactivate INV
   TP -> W : heal(amount=100)
   W --> TP : NarrationEvent(Wizard -> Item -> Potion used: HP: 70 -> 170 (+100))
+  deactivate W
+  deactivate TP
 
   note over BE
   End R5: Wizard 170/200, Goblin B 55, Goblin C 55, Potion 0, Smoke Bomb 0, CD 0.
@@ -227,30 +341,56 @@ end
 == Round 6 ==
 group Round 6
   BE -> TP : processTurn(round=6, actor=GB, DP, context, emit)
+  activate TP
   TP -> GB : takeTurn(context, target=W)
+  activate GB
   GB -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GB : AttackResolution(damage=25, hpAfter=145)
+  deactivate W
   GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=145)
+  deactivate GB
+  deactivate TP
 
   BE -> TP : processTurn(round=6, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=25, hpAfter=120)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=120)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=6, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(6, W, [GB, GC])
+  activate DP
   DP -> UI : showPlayerTurn(6)
+  activate UI
   UI -> U : choose SpecialSkill(Arcane Blast)
+  activate U
   UI --> DP : PlayerDecision(UseSpecialSkillAction)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(UseSpecialSkillAction)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 0 to 0)
+  activate W
   TP -> W : useSpecialSkill(context, target=none)
   W -> GB : attack(target=GB, attackPower=50)
+  activate GB
   GB --> W : AttackResolution(damage=35, hpAfter=20)
+  deactivate GB
   W -> GC : attack(target=GC, attackPower=50)
+  activate GC
   GC --> W : AttackResolution(damage=35, hpAfter=20)
+  deactivate GC
   W --> TP : ActionEvent(Arcane Blast, goblinBHp=20, goblinCHp=20)
+  deactivate W
+  deactivate TP
 
   note over BE
   End R6: Wizard 120/200, Goblin B 20, Goblin C 20, CD 3.
@@ -260,28 +400,52 @@ end
 == Round 7 ==
 group Round 7
   BE -> TP : processTurn(round=7, actor=GB, DP, context, emit)
+  activate TP
   TP -> GB : takeTurn(context, target=W)
+  activate GB
   GB -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GB : AttackResolution(damage=25, hpAfter=95)
+  deactivate W
   GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=95)
+  deactivate GB
+  deactivate TP
 
   BE -> TP : processTurn(round=7, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=25, hpAfter=70)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=70)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=7, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(7, W, [GB, GC])
+  activate DP
   DP -> UI : showPlayerTurn(7)
+  activate UI
   UI -> U : choose BasicAttack, target=GB
+  activate U
   UI --> DP : PlayerDecision(BasicAttackAction, GB)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(BasicAttackAction, GB)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 3 to 2)
+  activate W
   TP -> W : execute BasicAttackAction(GB)
   W -> GB : attack(target=GB, attackPower=50)
+  activate GB
   GB --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  deactivate GB
   W --> TP : ActionEvent(BasicAttack, damage=35, goblinBHp=0)
+  deactivate W
+  deactivate TP
 
   note over BE
   End R7: Wizard 70/200, Goblin B 0, Goblin C 20, CD 2.
@@ -291,22 +455,40 @@ end
 == Round 8 ==
 group Round 8
   BE -> TP : processTurn(round=8, actor=GC, DP, context, emit)
+  activate TP
   TP -> GC : takeTurn(context, target=W)
+  activate GC
   GC -> W : attack(target=W, attackPower=35)
+  activate W
   W --> GC : AttackResolution(damage=25, hpAfter=45)
+  deactivate W
   GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=45)
+  deactivate GC
+  deactivate TP
 
   BE -> TP : processTurn(round=8, actor=W, DP, context, emit)
+  activate TP
   TP -> DP : decide(8, W, [GC])
+  activate DP
   DP -> UI : showPlayerTurn(8)
+  activate UI
   UI -> U : choose BasicAttack, target=GC
+  activate U
   UI --> DP : PlayerDecision(BasicAttackAction, GC)
+  deactivate U
+  deactivate UI
   DP --> TP : PlayerDecision(BasicAttackAction, GC)
+  deactivate DP
   TP -> W : advanceRoundState(cooldown 2 to 1)
+  activate W
   TP -> W : execute BasicAttackAction(GC)
   W -> GC : attack(target=GC, attackPower=50)
+  activate GC
   GC --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  deactivate GC
   W --> TP : ActionEvent(BasicAttack, damage=35, goblinCHp=0)
+  deactivate W
+  deactivate TP
 
   BE --> BC : NarrationEvent(Victory:)
   BE --> BC : NarrationEvent(Remaining HP: 45 / 200)
@@ -314,18 +496,31 @@ group Round 8
   BE --> BC : NarrationEvent(Remaining Potion: 0)
   BE --> BC : NarrationEvent(Remaining Smoke Bomb: 0)
   BC -> UI : showBattleEvent(event, battleMessage, transcriptLines)
+  activate UI
   UI -> U : print final transcript lines
+  activate U
+  deactivate U
+  deactivate UI
 
   note over BE
   End R8: Victory with high-coverage gameplay flow.
   end note
 end
 
-== Post game ==
-BC -> UI : askPostGameChoice()
-UI -> U : promptPostGameChoice(Replay, New Setup, Exit)
-U --> UI : Exit
-UI --> BC : PostGameChoice(EXIT)
-BC -> UI : exitGame()
+deactivate BE
 
+== Post-game ==
+BC -> UI : askPostGameChoice()
+activate UI
+UI -> U : promptPostGameChoice(Replay, New Setup, Exit)
+activate U
+U --> UI : Exit
+deactivate U
+UI --> BC : PostGameChoice(EXIT)
+deactivate UI
+BC -> UI : exitGame()
+activate UI
+deactivate UI
+deactivate BC
+@enduml
 @enduml
