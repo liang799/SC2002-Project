@@ -1,31 +1,17 @@
 package sc2002.turnbased.ui.gui.view;
 
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Polygon;
-import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Path2D;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.swing.AbstractAction;
@@ -33,50 +19,23 @@ import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
-import javax.swing.Timer;
 
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatantId;
 import sc2002.turnbased.domain.PlayerCharacter;
 import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.report.BattleEvent;
-import sc2002.turnbased.report.CombatantSummary;
-import sc2002.turnbased.report.NarrationEvent;
-import sc2002.turnbased.report.RoundStartEvent;
-import sc2002.turnbased.report.RoundSummaryEvent;
-import sc2002.turnbased.report.SkippedTurnEvent;
-import sc2002.turnbased.report.StatusEffectReportEvent;
 
 /**
- * Paints the battle as a playable 2D arena while the engine remains the rules source of truth.
+ * Swing shell for the playable arena. Scene state, ticking, and rendering live in collaborators.
  */
 public class ArenaScenePanel extends JPanel {
     private static final int PREFERRED_WIDTH = 940;
     private static final int PREFERRED_HEIGHT = 560;
-    private static final long ACTION_ANIMATION_NANOS = 520_000_000L;
-    private static final long FLOATING_TEXT_NANOS = 1_000_000_000L;
-    private static final double PLAYER_SPEED = 210.0;
 
-    private final Map<CombatantId, FighterSpriteDto> sprites = new LinkedHashMap<>();
-    private final List<CombatantId> enemyOrder = new ArrayList<>();
-    private final Set<String> pressedDirections = new HashSet<>();
-    private final List<FloatingText> floatingTexts = new ArrayList<>();
-    private final FighterSpriteRenderer fighterRenderer = new FighterSpriteRenderer();
-
-    private CombatantId playerId;
-    private CombatantId selectedEnemyId;
-    private CombatantId actionActorId;
-    private CombatantId actionTargetId;
-    private long actionStartedAt;
-    private long lastTickAt;
-    private int roundNumber;
-    private String banner = "Configure a battle, then enter the arena.";
-    private String hint = "Move with WASD or arrows. Click enemies to target them.";
-    private boolean acceptingPlayerTurn;
-    private boolean battleActive;
-    private Timer tickTimer;
-    private Consumer<String> targetSelectionListener = targetLabel -> {
-    };
+    private final ArenaSceneModel model = new ArenaSceneModel();
+    private final ArenaSceneRenderer renderer = new ArenaSceneRenderer();
+    private final ArenaSceneLoop sceneLoop = new ArenaSceneLoop(this::onTick);
 
     public ArenaScenePanel() {
         setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
@@ -91,285 +50,57 @@ public class ArenaScenePanel extends JPanel {
     @Override
     public void addNotify() {
         super.addNotify();
-        startTickTimer();
+        sceneLoop.start();
     }
 
     @Override
     public void removeNotify() {
-        stopTickTimer();
+        sceneLoop.stop();
         super.removeNotify();
     }
 
     public void setTargetSelectionListener(Consumer<String> targetSelectionListener) {
-        this.targetSelectionListener = Objects.requireNonNull(targetSelectionListener, "targetSelectionListener");
+        model.setTargetSelectionListener(targetSelectionListener);
     }
 
     public void showSetupPreview() {
-        pressedDirections.clear();
-        sprites.clear();
-        enemyOrder.clear();
-        playerId = null;
-        selectedEnemyId = null;
-        actionActorId = null;
-        actionTargetId = null;
-        roundNumber = 0;
-        acceptingPlayerTurn = false;
-        battleActive = false;
-        banner = "Configure a battle, then enter the arena.";
-        hint = "WASD or arrows move your hero. Click enemies, then use the action bar.";
+        model.showSetupPreview();
         repaint();
     }
 
     public void startBattle(BattleSetup setup) {
-        Objects.requireNonNull(setup, "setup");
-        pressedDirections.clear();
-        sprites.clear();
-        enemyOrder.clear();
-        floatingTexts.clear();
-        actionActorId = null;
-        actionTargetId = null;
-        roundNumber = 0;
-        acceptingPlayerTurn = false;
-        battleActive = true;
-
-        FighterSpriteDto player = FighterSpriteDto.fromCombatant(setup.getPlayer(), true);
-        player.x = getArenaWidth() * 0.18;
-        player.y = floorBottom() - 42;
-        sprites.put(player.id, player);
-        playerId = player.id;
-
-        for (Combatant enemy : setup.getInitialEnemies()) {
-            ensureEnemySprite(enemy);
-        }
-        chooseDefaultTarget();
-        layoutEnemies();
-        banner = "Battle started. Position your hero and pick a target.";
-        hint = "Movement is live during combat. The engine resolves attacks from your chosen command.";
+        model.startBattle(Objects.requireNonNull(setup, "setup"), arenaWidth(), arenaHeight());
         requestFocusInWindow();
         repaint();
     }
 
     public void showPlayerTurn(int currentRound, PlayerCharacter player, List<Combatant> livingEnemies) {
-        roundNumber = currentRound;
-        acceptingPlayerTurn = true;
-        battleActive = true;
-        updatePlayer(player);
-        for (Combatant enemy : livingEnemies) {
-            ensureEnemySprite(enemy);
-        }
-        chooseDefaultTarget();
-        layoutEnemies();
-        banner = "Round " + currentRound + ": choose your action.";
-        hint = "Click an enemy to target. Use the 1-4 battle menu, Q/E to cycle targets, and Esc to go back.";
+        model.showPlayerTurn(currentRound, player, livingEnemies, arenaWidth(), arenaHeight());
         requestFocusInWindow();
         repaint();
     }
 
     public void completePlayerTurn(String actionName) {
-        acceptingPlayerTurn = false;
-        banner = actionName + " queued.";
-        hint = "Battle is resolving. You can keep moving while enemies take their turns.";
+        model.completePlayerTurn(actionName);
         repaint();
     }
 
     public CombatantId getSelectedEnemyId() {
-        if (selectedEnemyId != null) {
-            FighterSpriteDto selected = sprites.get(selectedEnemyId);
-            if (selected != null && selected.alive && !selected.player) {
-                return selectedEnemyId;
-            }
-        }
-        chooseDefaultTarget();
-        return selectedEnemyId;
+        return model.selectedEnemyId();
     }
 
     public String getSelectedEnemyLabel() {
-        CombatantId targetId = getSelectedEnemyId();
-        FighterSpriteDto target = targetId == null ? null : sprites.get(targetId);
-        if (target == null) {
-            return "No target";
-        }
-        return target.name + " HP " + target.hp + "/" + target.maxHp;
+        return model.selectedEnemyLabel();
     }
 
     public void selectNextEnemy(int direction) {
-        List<CombatantId> living = livingEnemyIds();
-        if (living.isEmpty()) {
-            selectedEnemyId = null;
-            repaint();
-            return;
-        }
-        int index = living.indexOf(selectedEnemyId);
-        if (index < 0) {
-            index = 0;
-        } else {
-            index = Math.floorMod(index + direction, living.size());
-        }
-        selectedEnemyId = living.get(index);
-        notifyTargetSelection();
+        model.selectNextEnemy(direction);
         repaint();
     }
 
     public void applyBattleEvent(BattleEvent event) {
-        Objects.requireNonNull(event, "event");
-        long now = System.nanoTime();
-        if (event instanceof sc2002.turnbased.report.ActionEvent actionEvent) {
-            applyActionEvent(actionEvent, now);
-        } else if (event instanceof RoundStartEvent roundStartEvent) {
-            roundNumber = roundStartEvent.getRoundNumber();
-            banner = "Round " + roundNumber;
-        } else if (event instanceof RoundSummaryEvent roundSummaryEvent) {
-            applyRoundSummary(roundSummaryEvent);
-        } else if (event instanceof NarrationEvent narrationEvent) {
-            banner = narrationEvent.getText();
-            if (banner.startsWith("Victory") || banner.startsWith("Defeat")) {
-                acceptingPlayerTurn = false;
-                battleActive = false;
-            }
-        } else if (event instanceof SkippedTurnEvent skippedTurnEvent) {
-            FighterSpriteDto skipped = sprites.get(skippedTurnEvent.getCombatantId());
-            if (skipped != null) {
-                skipped.pulseUntil = now + 520_000_000L;
-            }
-            banner = skippedTurnEvent.getCombatantName() + " cannot act: " + skippedTurnEvent.getReason();
-        } else if (event instanceof StatusEffectReportEvent statusEvent && !statusEvent.statusEffectNotes().isEmpty()) {
-            banner = String.join("  |  ", statusEvent.statusEffectNotes());
-        }
-        chooseDefaultTarget();
-        layoutEnemies();
+        model.applyBattleEvent(event, arenaWidth(), arenaHeight());
         repaint();
-    }
-
-    private void applyActionEvent(sc2002.turnbased.report.ActionEvent event, long now) {
-        FighterSpriteDto target = sprites.get(event.getTargetId());
-        FighterSpriteDto actor = sprites.get(event.getActorId());
-        if (target != null) {
-            target.hp = event.getHpAfter();
-            target.alive = !event.isTargetEliminated();
-            target.hurtUntil = now + 500_000_000L;
-            String damageText = event.getDamage() > 0 ? "-" + event.getDamage() : "Blocked";
-            floatingTexts.add(new FloatingText(damageText, target.x, target.y - 74, now, event.getDamage() > 0));
-            if (event.isTargetEliminated()) {
-                floatingTexts.add(new FloatingText("KO", target.x, target.y - 104, now, true));
-            }
-        }
-        if (actor != null) {
-            actor.pulseUntil = now + 520_000_000L;
-        }
-        actionActorId = event.getActorId();
-        actionTargetId = event.getTargetId();
-        actionStartedAt = now;
-        banner = event.getActorName() + " -> " + event.getActionName() + " -> " + event.getTargetName();
-    }
-
-    private void applyRoundSummary(RoundSummaryEvent event) {
-        roundNumber = event.getRoundNumber();
-        updatePlayer(event.getPlayerSummary());
-        for (CombatantSummary enemySummary : event.getEnemySummaries()) {
-            ensureEnemySprite(enemySummary);
-        }
-        banner = "Round " + roundNumber + " summary";
-    }
-
-    private void updatePlayer(Combatant combatant) {
-        FighterSpriteDto sprite = sprites.computeIfAbsent(
-            combatant.combatantId(),
-            id -> FighterSpriteDto.fromCombatant(combatant, true)
-        );
-        double oldX = sprite.x == 0 ? getArenaWidth() * 0.18 : sprite.x;
-        double oldY = sprite.y == 0 ? floorBottom() - 42 : sprite.y;
-        sprite.updateFrom(combatant);
-        sprite.x = oldX;
-        sprite.y = oldY;
-        sprite.setPlayer(true);
-        playerId = sprite.id;
-    }
-
-    private void updatePlayer(CombatantSummary summary) {
-        FighterSpriteDto sprite = sprites.computeIfAbsent(
-            summary.getCombatantId(),
-            id -> FighterSpriteDto.fromSummary(summary, true)
-        );
-        double oldX = sprite.x == 0 ? getArenaWidth() * 0.18 : sprite.x;
-        double oldY = sprite.y == 0 ? floorBottom() - 42 : sprite.y;
-        sprite.updateFrom(summary);
-        sprite.x = oldX;
-        sprite.y = oldY;
-        sprite.setPlayer(true);
-        playerId = sprite.id;
-    }
-
-    private void ensureEnemySprite(Combatant combatant) {
-        FighterSpriteDto sprite = sprites.computeIfAbsent(
-            combatant.combatantId(),
-            id -> FighterSpriteDto.fromCombatant(combatant, false)
-        );
-        sprite.updateFrom(combatant);
-        sprite.setPlayer(false);
-        if (!enemyOrder.contains(sprite.id)) {
-            enemyOrder.add(sprite.id);
-        }
-    }
-
-    private void ensureEnemySprite(CombatantSummary summary) {
-        FighterSpriteDto sprite = sprites.computeIfAbsent(
-            summary.getCombatantId(),
-            id -> FighterSpriteDto.fromSummary(summary, false)
-        );
-        sprite.updateFrom(summary);
-        sprite.setPlayer(false);
-        if (!enemyOrder.contains(sprite.id)) {
-            enemyOrder.add(sprite.id);
-        }
-    }
-
-    private void chooseDefaultTarget() {
-        if (selectedEnemyId != null) {
-            FighterSpriteDto selected = sprites.get(selectedEnemyId);
-            if (selected != null && selected.alive && !selected.player) {
-                return;
-            }
-        }
-        List<CombatantId> living = livingEnemyIds();
-        CombatantId previousTarget = selectedEnemyId;
-        selectedEnemyId = living.isEmpty() ? null : living.get(0);
-        if (!Objects.equals(previousTarget, selectedEnemyId)) {
-            notifyTargetSelection();
-        }
-    }
-
-    private void notifyTargetSelection() {
-        targetSelectionListener.accept(getSelectedEnemyLabel());
-    }
-
-    private List<CombatantId> livingEnemyIds() {
-        List<CombatantId> living = new ArrayList<>();
-        for (CombatantId id : enemyOrder) {
-            FighterSpriteDto sprite = sprites.get(id);
-            if (sprite != null && sprite.alive && !sprite.player) {
-                living.add(id);
-            }
-        }
-        return living;
-    }
-
-    private void layoutEnemies() {
-        int livingSlot = 0;
-        double width = getArenaWidth();
-        double top = floorTop() + 38;
-        double bottom = floorBottom() - 42;
-        double rowGap = Math.max(62, Math.min(92, (bottom - top) / 3.0));
-        for (CombatantId id : enemyOrder) {
-            FighterSpriteDto sprite = sprites.get(id);
-            if (sprite == null || !sprite.alive) {
-                continue;
-            }
-            int column = livingSlot % 2;
-            int row = livingSlot / 2;
-            sprite.x = width - 138 - column * 126;
-            sprite.y = Math.min(bottom, top + row * rowGap);
-            livingSlot++;
-        }
     }
 
     private void installMovementBindings() {
@@ -390,14 +121,14 @@ public class ArenaScenePanel extends JPanel {
         actionMap.put("pressed." + keyCode + "." + direction, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                pressedDirections.add(direction);
+                model.setDirectionPressed(direction, true);
             }
         });
         inputMap.put(KeyStroke.getKeyStroke(keyCode, 0, true), "released." + keyCode + "." + direction);
         actionMap.put("released." + keyCode + "." + direction, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                pressedDirections.remove(direction);
+                model.setDirectionPressed(direction, false);
             }
         });
     }
@@ -406,10 +137,7 @@ public class ArenaScenePanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                CombatantId clicked = enemyAt(e.getPoint());
-                if (clicked != null) {
-                    selectedEnemyId = clicked;
-                    notifyTargetSelection();
+                if (model.selectEnemyAt(e.getPoint())) {
                     repaint();
                 }
                 requestFocusInWindow();
@@ -421,296 +149,30 @@ public class ArenaScenePanel extends JPanel {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                layoutEnemies();
+                model.relayout(arenaWidth(), arenaHeight());
                 repaint();
             }
         });
     }
 
-    private CombatantId enemyAt(Point point) {
-        for (int i = enemyOrder.size() - 1; i >= 0; i--) {
-            FighterSpriteDto sprite = sprites.get(enemyOrder.get(i));
-            if (sprite != null && sprite.alive && sprite.bounds().contains(point)) {
-                return sprite.id;
-            }
-        }
-        return null;
-    }
-
-    private void onTick(ActionEvent event) {
-        long now = System.nanoTime();
-        if (lastTickAt == 0) {
-            lastTickAt = now;
-        }
-        double deltaSeconds = Math.min(0.05, (now - lastTickAt) / 1_000_000_000.0);
-        lastTickAt = now;
-        movePlayer(deltaSeconds);
-        updateActionAnimation(now);
-        updateFloatingTexts(now);
+    private void onTick() {
+        model.tick(arenaWidth(), arenaHeight());
         repaint();
-    }
-
-    private void startTickTimer() {
-        if (tickTimer != null) {
-            return;
-        }
-        tickTimer = new Timer(16, this::onTick);
-        tickTimer.start();
-    }
-
-    private void stopTickTimer() {
-        if (tickTimer != null) {
-            tickTimer.stop();
-            tickTimer = null;
-        }
-    }
-
-    private void movePlayer(double deltaSeconds) {
-        FighterSpriteDto player = playerId == null ? null : sprites.get(playerId);
-        if (player == null || !player.alive || !battleActive) {
-            return;
-        }
-        player.x = clamp(player.x, 76, getArenaWidth() * 0.47);
-        player.y = clamp(player.y, floorTop() + 58, floorBottom() - 34);
-        double dx = 0;
-        double dy = 0;
-        if (pressedDirections.contains("left")) {
-            dx -= 1;
-        }
-        if (pressedDirections.contains("right")) {
-            dx += 1;
-        }
-        if (pressedDirections.contains("up")) {
-            dy -= 1;
-        }
-        if (pressedDirections.contains("down")) {
-            dy += 1;
-        }
-        if (dx == 0 && dy == 0) {
-            player.walkPhase *= 0.88;
-            return;
-        }
-        double length = Math.hypot(dx, dy);
-        player.x = clamp(player.x + dx / length * PLAYER_SPEED * deltaSeconds, 76, getArenaWidth() * 0.47);
-        player.y = clamp(player.y + dy / length * PLAYER_SPEED * deltaSeconds, floorTop() + 58, floorBottom() - 34);
-        player.walkPhase += deltaSeconds * 10.0;
-    }
-
-    private void updateActionAnimation(long now) {
-        for (FighterSpriteDto sprite : sprites.values()) {
-            sprite.offsetX = 0;
-            sprite.offsetY = 0;
-        }
-        if (actionActorId == null || actionTargetId == null) {
-            return;
-        }
-        long elapsed = now - actionStartedAt;
-        if (elapsed > ACTION_ANIMATION_NANOS) {
-            actionActorId = null;
-            actionTargetId = null;
-            return;
-        }
-        FighterSpriteDto actor = sprites.get(actionActorId);
-        FighterSpriteDto target = sprites.get(actionTargetId);
-        if (actor == null || target == null) {
-            return;
-        }
-        double progress = elapsed / (double) ACTION_ANIMATION_NANOS;
-        double lunge = Math.sin(Math.PI * progress) * 34;
-        double dx = Math.signum(target.x - actor.x);
-        actor.offsetX = dx * lunge;
-        actor.offsetY = -Math.sin(Math.PI * progress) * 8;
-        if (progress > 0.35 && progress < 0.72) {
-            target.offsetX = Math.sin(progress * 46) * 7;
-            target.offsetY = Math.cos(progress * 32) * 3;
-        }
-    }
-
-    private void updateFloatingTexts(long now) {
-        Iterator<FloatingText> iterator = floatingTexts.iterator();
-        while (iterator.hasNext()) {
-            FloatingText text = iterator.next();
-            if (now - text.createdAt > FLOATING_TEXT_NANOS) {
-                iterator.remove();
-            }
-        }
     }
 
     @Override
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
         Graphics2D g = (Graphics2D) graphics.create();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        drawBackground(g);
-        drawTargetPath(g);
-        drawSprites(g);
-        drawFloatingTexts(g, System.nanoTime());
-        drawOverlay(g);
+        renderer.render(g, model, arenaWidth(), arenaHeight());
         g.dispose();
     }
 
-    private void drawBackground(Graphics2D g) {
-        int width = getWidth();
-        int height = getHeight();
-        g.setPaint(new GradientPaint(0, 0, new Color(34, 107, 124), 0, height, new Color(232, 86, 76)));
-        g.fillRect(0, 0, width, height);
-
-        g.setColor(new Color(255, 210, 99, 185));
-        g.fillOval(width - 178, 48, 86, 86);
-
-        drawMountain(g, -40, floorTop() - 160, 270, new Color(60, 102, 91));
-        drawMountain(g, 190, floorTop() - 145, 270, new Color(55, 84, 93));
-        drawMountain(g, 470, floorTop() - 152, 300, new Color(63, 105, 81));
-        drawForest(g);
-        drawRuins(g);
-
-        int floorTop = floorTop();
-        g.setPaint(new GradientPaint(0, floorTop, new Color(58, 69, 58), 0, height, new Color(34, 48, 45)));
-        g.fillRect(0, floorTop, width, height - floorTop);
-
-        g.setColor(new Color(88, 116, 91, 140));
-        for (int x = -40; x < width + 90; x += 86) {
-            g.fillRoundRect(x, floorTop + 22, 58, 18, 8, 8);
-            g.fillRoundRect(x + 28, floorTop + 116, 74, 22, 8, 8);
-        }
-        g.setColor(new Color(18, 29, 31, 90));
-        for (int y = floorTop + 30; y < height; y += 48) {
-            g.drawLine(0, y, width, y - 26);
-        }
-    }
-
-    private void drawMountain(Graphics2D g, int x, int baseY, int size, Color color) {
-        Polygon mountain = new Polygon();
-        mountain.addPoint(x, baseY + size);
-        mountain.addPoint(x + size / 2, baseY);
-        mountain.addPoint(x + size, baseY + size);
-        g.setColor(color);
-        g.fillPolygon(mountain);
-        g.setColor(new Color(235, 238, 214, 88));
-        Polygon cap = new Polygon();
-        cap.addPoint(x + size / 2, baseY);
-        cap.addPoint(x + size / 2 - 32, baseY + 70);
-        cap.addPoint(x + size / 2 + 12, baseY + 48);
-        cap.addPoint(x + size / 2 + 42, baseY + 86);
-        g.fillPolygon(cap);
-    }
-
-    private void drawForest(Graphics2D g) {
-        int horizon = floorTop() - 40;
-        for (int x = -20; x < getWidth() + 60; x += 42) {
-            int height = 54 + Math.floorMod(x * 13, 48);
-            g.setColor(new Color(34, 78, 57, 180));
-            Path2D tree = new Path2D.Double();
-            tree.moveTo(x, horizon);
-            tree.lineTo(x + 20, horizon - height);
-            tree.lineTo(x + 42, horizon);
-            tree.closePath();
-            g.fill(tree);
-            g.setColor(new Color(50, 63, 48, 190));
-            g.fillRect(x + 18, horizon - 10, 8, 18);
-        }
-    }
-
-    private void drawRuins(Graphics2D g) {
-        int base = floorTop() - 26;
-        g.setColor(new Color(74, 77, 72, 155));
-        for (int x = 44; x < getWidth(); x += 245) {
-            g.fillRect(x, base - 94, 26, 94);
-            g.fillRect(x + 76, base - 118, 28, 118);
-            g.fillRect(x - 10, base - 120, 128, 18);
-            g.setColor(new Color(120, 58, 58, 150));
-            g.fillRect(x + 24, base - 108, 50, 12);
-            g.setColor(new Color(74, 77, 72, 155));
-        }
-    }
-
-    private void drawTargetPath(Graphics2D g) {
-        FighterSpriteDto player = playerId == null ? null : sprites.get(playerId);
-        FighterSpriteDto target = selectedEnemyId == null ? null : sprites.get(selectedEnemyId);
-        if (player == null || target == null || !target.alive) {
-            return;
-        }
-        g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, new float[] { 8f, 9f }, 0));
-        g.setColor(acceptingPlayerTurn ? new Color(255, 230, 120, 120) : new Color(210, 230, 220, 65));
-        g.drawLine((int) player.drawX(), (int) (player.drawY() - 46), (int) target.drawX(), (int) (target.drawY() - 42));
-        g.setStroke(new BasicStroke(1f));
-    }
-
-    private void drawSprites(Graphics2D g) {
-        List<FighterSpriteDto> ordered = new ArrayList<>(sprites.values());
-        ordered.sort((a, b) -> Double.compare(a.drawY(), b.drawY()));
-        for (FighterSpriteDto sprite : ordered) {
-            fighterRenderer.render(g, sprite, selectedEnemyId);
-        }
-    }
-
-    private void drawFloatingTexts(Graphics2D g, long now) {
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-        for (FloatingText text : floatingTexts) {
-            double progress = (now - text.createdAt) / (double) FLOATING_TEXT_NANOS;
-            float alpha = (float) Math.max(0, 1.0 - progress);
-            int y = (int) (text.y - progress * 46);
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-            g.setColor(text.damage ? new Color(255, 87, 76) : new Color(155, 235, 222));
-            g.drawString(text.text, (int) text.x - g.getFontMetrics().stringWidth(text.text) / 2, y);
-        }
-        g.setComposite(AlphaComposite.SrcOver);
-    }
-
-    private void drawOverlay(Graphics2D g) {
-        int width = getWidth();
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-        g.setColor(new Color(12, 18, 19, 172));
-        g.fillRoundRect(18, 18, Math.min(width - 36, 640), 72, 8, 8);
-        g.setColor(new Color(244, 248, 233));
-        String round = roundNumber > 0 ? "Round " + roundNumber + "  |  " : "";
-        g.drawString(fitText(g, round + banner, Math.min(width - 84, 580)), 34, 48);
-        g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-        g.setColor(new Color(205, 232, 219));
-        g.drawString(fitText(g, hint, Math.min(width - 84, 580)), 34, 74);
-
-        if (acceptingPlayerTurn) {
-            g.setColor(new Color(255, 220, 87, 210));
-            g.fillRoundRect(width - 202, 22, 178, 34, 8, 8);
-            g.setColor(new Color(26, 32, 31));
-            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-            g.drawString("Your move", width - 136, 44);
-        }
-    }
-
-    private int floorTop() {
-        return (int) (getArenaHeight() * 0.55);
-    }
-
-    private int floorBottom() {
-        return getArenaHeight() - 36;
-    }
-
-    private int getArenaWidth() {
+    private int arenaWidth() {
         return getWidth() > 0 ? getWidth() : PREFERRED_WIDTH;
     }
 
-    private int getArenaHeight() {
+    private int arenaHeight() {
         return getHeight() > 0 ? getHeight() : PREFERRED_HEIGHT;
-    }
-
-    private static double clamp(double value, double min, double max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
-    private static String fitText(Graphics2D g, String text, int maxWidth) {
-        if (g.getFontMetrics().stringWidth(text) <= maxWidth) {
-            return text;
-        }
-        String ellipsis = "...";
-        int end = text.length();
-        while (end > 0 && g.getFontMetrics().stringWidth(text.substring(0, end) + ellipsis) > maxWidth) {
-            end--;
-        }
-        return text.substring(0, end) + ellipsis;
-    }
-
-    private record FloatingText(String text, double x, double y, long createdAt, boolean damage) {
     }
 }
