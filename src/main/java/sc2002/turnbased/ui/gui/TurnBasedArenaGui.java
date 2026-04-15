@@ -188,6 +188,7 @@ public class TurnBasedArenaGui extends JFrame implements BattleView {
 
     @Override
     public void exitGame() {
+        controller.shutdown();
         System.exit(0);
     }
 
