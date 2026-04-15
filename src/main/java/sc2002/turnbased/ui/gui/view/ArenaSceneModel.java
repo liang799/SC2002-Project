@@ -299,8 +299,8 @@ final class ArenaSceneModel {
             combatant.combatantId(),
             id -> FighterSpriteDto.fromCombatant(combatant, true)
         );
-        double oldX = sprite.x == 0 ? arenaWidth * 0.18 : sprite.x;
-        double oldY = sprite.y == 0 ? floorBottom(arenaHeight) - 42 : sprite.y;
+        double oldX = Double.isNaN(sprite.x) ? arenaWidth * 0.18 : sprite.x;
+        double oldY = Double.isNaN(sprite.y) ? floorBottom(arenaHeight) - 42 : sprite.y;
         sprite.updateFrom(combatant);
         sprite.x = oldX;
         sprite.y = oldY;
@@ -313,8 +313,8 @@ final class ArenaSceneModel {
             summary.getCombatantId(),
             id -> FighterSpriteDto.fromSummary(summary, true)
         );
-        double oldX = sprite.x == 0 ? arenaWidth * 0.18 : sprite.x;
-        double oldY = sprite.y == 0 ? floorBottom(arenaHeight) - 42 : sprite.y;
+        double oldX = Double.isNaN(sprite.x) ? arenaWidth * 0.18 : sprite.x;
+        double oldY = Double.isNaN(sprite.y) ? floorBottom(arenaHeight) - 42 : sprite.y;
         sprite.updateFrom(summary);
         sprite.x = oldX;
         sprite.y = oldY;

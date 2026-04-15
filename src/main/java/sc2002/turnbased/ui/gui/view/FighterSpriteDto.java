@@ -52,6 +52,8 @@ public final class FighterSpriteDto {
         this.baseAttack = baseAttack;
         this.alive = alive;
         this.statuses = List.copyOf(statuses);
+        this.x = Double.NaN;
+        this.y = Double.NaN;
     }
 
     public static FighterSpriteDto fromCombatant(Combatant combatant, boolean player) {
