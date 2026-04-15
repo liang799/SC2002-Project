@@ -5,7 +5,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -18,7 +17,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,6 +61,7 @@ public class ArenaScenePanel extends JPanel {
     private final List<CombatantId> enemyOrder = new ArrayList<>();
     private final Set<String> pressedDirections = new HashSet<>();
     private final List<FloatingText> floatingTexts = new ArrayList<>();
+    private final FighterSpriteRenderer fighterRenderer = new FighterSpriteRenderer();
 
     private CombatantId playerId;
     private CombatantId selectedEnemyId;
@@ -642,190 +641,7 @@ public class ArenaScenePanel extends JPanel {
         List<FighterSpriteDto> ordered = new ArrayList<>(sprites.values());
         ordered.sort((a, b) -> Double.compare(a.drawY(), b.drawY()));
         for (FighterSpriteDto sprite : ordered) {
-            drawSprite(g, sprite);
-        }
-    }
-
-    private void drawSprite(Graphics2D g, FighterSpriteDto sprite) {
-        Graphics2D copy = (Graphics2D) g.create();
-        double x = sprite.drawX();
-        double y = sprite.drawY();
-        copy.translate(x, y);
-        if (!sprite.alive) {
-            copy.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.52f));
-            copy.rotate(sprite.player ? -0.25 : 0.32);
-            copy.translate(0, 24);
-        }
-
-        copy.setColor(new Color(0, 0, 0, sprite.alive ? 72 : 42));
-        copy.fill(new Ellipse2D.Double(-36, -8, 72, 18));
-
-        if (sprite.id.equals(selectedEnemyId) && sprite.alive) {
-            copy.setStroke(new BasicStroke(3f));
-            copy.setColor(new Color(255, 229, 87, 210));
-            copy.draw(new Ellipse2D.Double(-44, -15, 88, 28));
-            copy.setColor(new Color(255, 84, 74, 130));
-            copy.draw(new Ellipse2D.Double(-52, -21, 104, 40));
-        }
-
-        switch (sprite.type) {
-            case PLAYER -> drawPlayerSprite(copy, sprite);
-            case WOLF -> drawWolfSprite(copy, sprite);
-            case GOBLIN, UNKNOWN -> drawGoblinSprite(copy, sprite);
-        }
-
-        copy.dispose();
-        drawHealthBar(g, sprite, (int) x, (int) y);
-    }
-
-    private void drawPlayerSprite(Graphics2D g, FighterSpriteDto sprite) {
-        boolean wizard = sprite.name.toLowerCase().contains("wizard");
-        double bob = Math.sin(sprite.walkPhase) * 3.0;
-        if (wizard) {
-            g.setColor(new Color(54, 54, 76));
-            g.fillRoundRect(-19, (int) (-68 + bob), 38, 62, 18, 18);
-            g.setColor(new Color(212, 66, 78));
-            g.fillRoundRect(-14, (int) (-56 + bob), 28, 46, 14, 14);
-            g.setColor(new Color(246, 218, 174));
-            g.fillOval(-13, (int) (-88 + bob), 26, 26);
-            g.setColor(new Color(47, 43, 65));
-            g.fillArc(-18, (int) (-96 + bob), 36, 35, 0, 180);
-            g.setStroke(new BasicStroke(4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.setColor(new Color(104, 68, 45));
-            g.drawLine(22, (int) (-75 + bob), 35, (int) (-13 + bob));
-            g.setColor(new Color(105, 231, 214, 220));
-            g.fillOval(27, (int) (-88 + bob), 15, 15);
-        } else {
-            g.setColor(new Color(74, 83, 92));
-            g.fillRoundRect(-18, (int) (-65 + bob), 36, 50, 12, 12);
-            g.setColor(new Color(184, 199, 196));
-            g.fillRoundRect(-13, (int) (-62 + bob), 26, 42, 10, 10);
-            g.setColor(new Color(241, 207, 164));
-            g.fillOval(-13, (int) (-89 + bob), 26, 26);
-            g.setColor(new Color(69, 75, 80));
-            g.fillArc(-16, (int) (-96 + bob), 32, 31, 0, 180);
-            g.setColor(new Color(67, 112, 126));
-            g.fillOval(-37, (int) (-58 + bob), 25, 35);
-            g.setColor(new Color(222, 227, 213));
-            g.drawOval(-37, (int) (-58 + bob), 25, 35);
-            g.setStroke(new BasicStroke(4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.setColor(new Color(218, 226, 218));
-            g.drawLine(22, (int) (-66 + bob), 39, (int) (-103 + bob));
-            g.setColor(new Color(105, 68, 42));
-            g.drawLine(20, (int) (-65 + bob), 26, (int) (-43 + bob));
-        }
-        g.setColor(new Color(35, 35, 34));
-        g.fillRoundRect(-17, -20, 11, 22, 6, 6);
-        g.fillRoundRect(6, -20, 11, 22, 6, 6);
-        drawPulse(g, sprite);
-    }
-
-    private void drawGoblinSprite(Graphics2D g, FighterSpriteDto sprite) {
-        g.setColor(new Color(56, 137, 80));
-        g.fillOval(-21, -76, 42, 38);
-        Path2D leftEar = new Path2D.Double();
-        leftEar.moveTo(-18, -63);
-        leftEar.lineTo(-42, -73);
-        leftEar.lineTo(-22, -51);
-        leftEar.closePath();
-        Path2D rightEar = new Path2D.Double();
-        rightEar.moveTo(18, -63);
-        rightEar.lineTo(42, -73);
-        rightEar.lineTo(22, -51);
-        rightEar.closePath();
-        g.fill(leftEar);
-        g.fill(rightEar);
-        g.setColor(new Color(72, 98, 61));
-        g.fillRoundRect(-17, -42, 34, 35, 12, 12);
-        g.setColor(new Color(125, 68, 49));
-        g.fillRect(-18, -28, 36, 9);
-        g.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.setColor(new Color(92, 58, 36));
-        g.drawLine(25, -42, 38, -88);
-        g.setColor(new Color(42, 53, 42));
-        g.fillOval(-9, -64, 5, 5);
-        g.fillOval(6, -64, 5, 5);
-        g.setColor(new Color(38, 52, 39));
-        g.drawArc(-8, -57, 16, 10, 200, 140);
-        drawPulse(g, sprite);
-    }
-
-    private void drawWolfSprite(Graphics2D g, FighterSpriteDto sprite) {
-        g.setColor(new Color(82, 91, 94));
-        g.fillRoundRect(-34, -55, 62, 32, 24, 24);
-        g.setColor(new Color(116, 130, 128));
-        g.fillOval(13, -72, 38, 34);
-        Path2D snout = new Path2D.Double();
-        snout.moveTo(42, -57);
-        snout.lineTo(66, -50);
-        snout.lineTo(42, -43);
-        snout.closePath();
-        g.fill(snout);
-        g.setColor(new Color(68, 75, 78));
-        Path2D ear = new Path2D.Double();
-        ear.moveTo(22, -69);
-        ear.lineTo(28, -94);
-        ear.lineTo(41, -68);
-        ear.closePath();
-        g.fill(ear);
-        g.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.drawLine(-30, -48, -54, -70);
-        g.setColor(new Color(37, 43, 45));
-        g.fillOval(38, -60, 5, 5);
-        g.fillOval(58, -52, 6, 5);
-        g.setColor(new Color(61, 67, 70));
-        g.fillRoundRect(-24, -29, 8, 27, 5, 5);
-        g.fillRoundRect(13, -29, 8, 27, 5, 5);
-        drawPulse(g, sprite);
-    }
-
-    private void drawPulse(Graphics2D g, FighterSpriteDto sprite) {
-        long now = System.nanoTime();
-        if (sprite.pulseUntil <= now && sprite.hurtUntil <= now) {
-            return;
-        }
-        float alpha = sprite.hurtUntil > now ? 0.28f : 0.18f;
-        Color color = sprite.hurtUntil > now ? new Color(255, 70, 61) : new Color(108, 232, 215);
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-        g.setColor(color);
-        g.fillOval(-48, -105, 96, 102);
-        g.setComposite(AlphaComposite.SrcOver);
-    }
-
-    private void drawHealthBar(Graphics2D g, FighterSpriteDto sprite, int centerX, int baseY) {
-        int barWidth = sprite.player ? 118 : 96;
-        int x = centerX - barWidth / 2;
-        int y = baseY - (sprite.player ? 126 : 112);
-        double ratio = sprite.maxHp == 0 ? 0 : Math.max(0, sprite.hp / (double) sprite.maxHp);
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        FontMetrics metrics = g.getFontMetrics();
-        String label = sprite.name;
-        int labelX = centerX - metrics.stringWidth(label) / 2;
-        g.setColor(new Color(14, 18, 20, 175));
-        g.fillRoundRect(labelX - 6, y - 18, metrics.stringWidth(label) + 12, 17, 8, 8);
-        g.setColor(Color.WHITE);
-        g.drawString(label, labelX, y - 5);
-
-        g.setColor(new Color(17, 22, 22, 205));
-        g.fillRoundRect(x, y, barWidth, 12, 7, 7);
-        Color fill = ratio > 0.55 ? new Color(91, 212, 114) : ratio > 0.25 ? new Color(239, 192, 72) : new Color(225, 70, 66);
-        g.setColor(fill);
-        g.fillRoundRect(x + 2, y + 2, Math.max(0, (int) ((barWidth - 4) * ratio)), 8, 6, 6);
-        g.setColor(new Color(236, 241, 226, 160));
-        g.drawRoundRect(x, y, barWidth, 12, 7, 7);
-        g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-        String hp = sprite.hp + "/" + sprite.maxHp;
-        g.setColor(new Color(240, 244, 233));
-        g.drawString(hp, centerX - g.getFontMetrics().stringWidth(hp) / 2, y + 10);
-
-        if (!sprite.statuses.isEmpty()) {
-            String statuses = String.join(", ", sprite.statuses);
-            int statusY = y + 27;
-            g.setColor(new Color(20, 27, 26, 168));
-            int textWidth = g.getFontMetrics().stringWidth(statuses);
-            g.fillRoundRect(centerX - textWidth / 2 - 5, statusY - 12, textWidth + 10, 16, 8, 8);
-            g.setColor(new Color(176, 235, 217));
-            g.drawString(statuses, centerX - textWidth / 2, statusY);
+            fighterRenderer.render(g, sprite, selectedEnemyId);
         }
     }
 
