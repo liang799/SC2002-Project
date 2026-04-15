@@ -143,6 +143,10 @@ public final class BattleController {
             model.clearActivePlayerTurn();
             view.showCommandResolving(playerCommand.actionName());
             view.appendLog(">> " + playerCommand.actionName() + playerCommand.targetLabel());
+        } else {
+            view.appendLog("Warning: could not queue command "
+                + playerCommand.actionName()
+                + playerCommand.targetLabel());
         }
     }
 
