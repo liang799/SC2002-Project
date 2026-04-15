@@ -23,6 +23,9 @@ public final class SwingThread {
             if (cause instanceof RuntimeException runtimeException) {
                 throw runtimeException;
             }
+            if (cause instanceof Error error) {
+                throw error;
+            }
             throw new IllegalStateException(cause);
         }
     }
