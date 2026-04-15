@@ -1,5 +1,5 @@
 @startuml
-title SC2002 Turn-Based Combat Arena - Production Class Diagram
+title SC2002 Turn-Based Combat Arena - Focused Class Diagram
 
 left to right direction
 skinparam classAttributeIconSize 0
@@ -7,18 +7,32 @@ skinparam packageStyle rectangle
 skinparam linetype ortho
 hide circle
 
-legend left
-  SC2002 Project
-  Members: Larry, Neoh, Nestor, Madhavan
-endlegend
-
-package "bootstrap" {
-  class CombatantFactories <<factory>> <<utility>> {
-    {static} +createDefault(statusEffectRegistryFactory: StatusEffectRegistryFactory, basicAttackAction: BattleAction, shieldBashAction: BattleAction, arcaneBlastAction: BattleAction): CombatantFactory
-  }
+skinparam class {
+  BackgroundColor<<entity>> #E8F4EA
+  BackgroundColor<<control>> #EAF0FF
+  BackgroundColor<<boundary>> #FFF4D6
+  BackgroundColor<<strategy>> #F3E8FF
+  BackgroundColor<<factory>> #F0F0F0
+  BackgroundColor<<event>> #FDECEC
+  BorderColor #333333
+  ArrowColor #333333
 }
 
-package "domain" {
+legend right
+  Focus: Entity classes, essential Control classes,
+  Boundary classes, and enumeration types.
+
+  UML notation:
+  <|-- inheritance
+  <|.. interface implementation
+  *-- composition / strong ownership
+  o-- aggregation / collection reference
+  --> association or dependency
+
+  OO annotations are attached as notes.
+endlegend
+
+package "domain (Entity)" {
   abstract class Combatant <<entity>> {
     - combatantId: CombatantId
     - name: String
@@ -29,34 +43,21 @@ package "domain" {
     + combatantId(): CombatantId
     + getName(): String
     + getCurrentHp(): int
-    + getMaxHp(): int
-    + getHitPoints(): HitPoints
-    + getInventory(): Inventory
     + getAttack(): int
-    + getBaseAttack(): int
     + getDefense(): int
     + getSpeed(): int
     + isAlive(): boolean
     + attack(target: Combatant): AttackResolution
-    + attack(target: Combatant, attackPower: int): AttackResolution
-    + getStat(statType: StatType): int
     + receiveDamage(damage: int): void
     + heal(amount: int): void
-    + addStatusEffect(statusEffect: StatusEffect): List<CombatantStatusOutcome>
-    + getTurnBlockReason(): Optional<String>
-    + consumeStatusEffectOutcomes(): List<CombatantStatusOutcome>
+    + addStatusEffect(effect: StatusEffect): List<CombatantStatusOutcome>
     + completeRound(): List<CombatantStatusOutcome>
-    + getActiveStatuses(): List<String>
   }
 
   class PlayerCharacter <<entity>> {
     - specialSkill: SpecialSkill
-    + specialSkillTargetingMode(): TargetingMode
-    + getSpecialSkillCooldown(): int
     + canUseSpecialSkill(): boolean
     + useSpecialSkill(context: ActionExecutionContext, target: Combatant): List<BattleEvent>
-    + useSpecialSkillWithoutCooldown(context: ActionExecutionContext, target: Combatant): List<BattleEvent>
-    + getSpecialSkillName(): String
     + advanceRoundState(): void
   }
 
@@ -66,7 +67,7 @@ package "domain" {
   }
 
   class Inventory <<entity>> {
-    - itemCounts: Map<ItemType, Integer> [0..*]
+    - itemCounts: Map<ItemType, Integer>
     + add(itemType: ItemType, count: int): void
     + countOf(itemType: ItemType): int
     + use(itemType: ItemType): void
@@ -77,104 +78,55 @@ package "domain" {
     - action: BattleAction
     - cooldownTurns: int
     - cooldownRemaining: int
-    + actionName(): String
-    + targetingMode(actor: Combatant): TargetingMode
     + isAvailable(): boolean
-    + cooldownRemaining(): int
     + use(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-    + useWithoutTriggeringCooldown(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
     + advanceCooldown(): void
     + triggerCooldown(): void
   }
 
-  interface CombatantFactory <<factory>> {
-    + createPlayer(playerType: PlayerType): PlayerCharacter
-    + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
-  }
-
-  class DefaultCombatantFactory <<factory>> {
-    - statusEffectRegistryFactory: StatusEffectRegistryFactory
-    - playerCreators: Map<PlayerType, PlayerCharacterCreator>
-    - enemyCreators: Map<EnemyType, EnemyCombatantCreator>
-    + createPlayer(playerType: PlayerType): PlayerCharacter
-    + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
-  }
-
-  interface PlayerCharacterCreator <<factory>> {
-    + create(statusEffectRegistry: StatusEffectRegistry): PlayerCharacter
-  }
-
-  interface EnemyCombatantCreator <<factory>> {
-    + create(name: String, statusEffectRegistry: StatusEffectRegistry): EnemyCombatant
-  }
-
-  interface SpecialSkillFactory <<factory>> {
-    + create(): SpecialSkill
-  }
-
-  class DefaultSpecialSkillFactory <<factory>> {
-    - action: BattleAction
-    - cooldownTurns: int
-    + create(): SpecialSkill
-  }
-
-  class AttackResolution <<record>> {
+  class AttackResolution <<record>> <<entity>> {
     - attackUsed: int
     - targetDefense: int
     - hpBefore: int
     - hpAfter: int
     - damage: int
     - targetEliminated: boolean
-    - statusEffectOutcomes: List<CombatantStatusOutcome> [0..*]
-    + appendStatusEffectOutcomes(additionalOutcomes: List<CombatantStatusOutcome>): AttackResolution
   }
 
-  class CombatStats <<record>> {
+  class CombatantId <<record>> <<entity>> {
+    - value: UUID
+    {static} + generate(): CombatantId
+  }
+
+  class CombatStats <<record>> <<entity>> {
     - attack: Stat
     - defense: Stat
     - speed: Stat
-    + stat(statType: StatType): Stat
     + valueOf(statType: StatType): int
-    + withStat(type: StatType, updatedStat: Stat): CombatStats
     + addFlat(type: StatType, amount: int): CombatStats
     + multiplyBy(type: StatType, factor: double): CombatStats
-    + clampMinimum(type: StatType, minimum: int): CombatStats
-    + modify(type: StatType, modifier: UnaryOperator<Stat>): CombatStats
   }
 
-  class CombatantId <<record>> {
-    - value: UUID
-    {static} + generate(): CombatantId
-    {static} + of(value: UUID): CombatantId
-    {static} + of(value: String): CombatantId
-  }
-
-  class HitPoints <<record>> {
+  class HitPoints <<record>> <<entity>> {
     - current: int
     - max: int
     {static} + full(maxHp: int): HitPoints
     + takeDamage(damage: int): HitPoints
     + heal(amount: int): HitPoints
     + isDead(): boolean
-    + getHealthPercentage(): double
   }
 
-  class Stat <<record>> {
+  class Stat <<record>> <<entity>> {
     - value: int
     + addFlat(amount: int): Stat
     + multiplyBy(factor: double): Stat
     + clampMinimum(minimum: int): Stat
-    + modify(modifier: IntUnaryOperator): Stat
   }
 
   enum ItemType {
     POTION
     POWER_STONE
     SMOKE_BOMB
-    - displayName: String
-    - description: String
-    + getDisplayName(): String
-    + getDescription(): String
   }
 
   enum StatType {
@@ -184,14 +136,14 @@ package "domain" {
   }
 }
 
-package "domain.status" {
+package "domain.status (Entity + Strategy)" {
   interface StatusEffect <<strategy>> {
     + kind(): StatusEffectKind
     + description(): String
     + mergeWith(other: StatusEffect): Optional<StatusEffect>
     + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + onExpire(owner: Combatant): List<StatusEffectOutcome>
     + onRoundEnd(owner: Combatant): List<StatusEffectOutcome>
+    + onExpire(owner: Combatant): List<StatusEffectOutcome>
     + modifyStats(stats: CombatStats): CombatStats
     + modifyIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
     + getTurnBlockReason(owner: Combatant): Optional<String>
@@ -199,56 +151,52 @@ package "domain.status" {
   }
 
   class StatusEffectRegistry <<entity>> {
-    - effects: List<StatusEffect> [0..*]
-    - pendingOutcomes: List<StatusEffectOutcome> [0..*]
-    + add(owner: Combatant, statusEffect: StatusEffect): List<StatusEffectOutcome>
+    - effects: List<StatusEffect>
+    - pendingOutcomes: List<StatusEffectOutcome>
+    + add(owner: Combatant, effect: StatusEffect): List<StatusEffectOutcome>
+    + apply(owner: Combatant, stats: CombatStats): CombatStats
     + adjustIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
-    + getTurnBlockReason(owner: Combatant): Optional<String>
     + completeRound(owner: Combatant): List<StatusEffectOutcome>
     + activeStatuses(owner: Combatant): List<String>
-    + apply(owner: Combatant, stats: CombatStats): CombatStats
-    + consumeOutcomes(): List<StatusEffectOutcome>
   }
 
-  interface StatusEffectRegistryFactory <<factory>> {
-    + create(): StatusEffectRegistry
-  }
+  class ArcanePowerStatusEffect <<entity>>
+  class DefendStatusEffect <<entity>>
+  class StrengthBoostStatusEffect <<entity>>
+  class SmokeBombStatusEffect <<entity>>
+  class StunStatusEffect <<entity>>
 
-  class DefaultStatusEffectRegistryFactory <<factory>> {
-    - statusEffectRegistrySupplier: Supplier<StatusEffectRegistry>
-    + create(): StatusEffectRegistry
-  }
+  interface StatusEffectOutcome
 
-  interface StatusEffectOutcome {
-    + source(): StatusEffectKind
-  }
-
-  class CombatantStatusOutcome <<record>> {
+  class CombatantStatusOutcome <<record>> <<entity>> {
     - combatantId: CombatantId
     - combatantName: String
     - outcome: StatusEffectOutcome
   }
 
-  class DamageAdjustment <<record>> {
+  class DamageAdjustment <<record>> <<entity>> {
     - damage: int
-    - modifiers: List<DamageModifier> [0..*]
-    {static} + unchanged(damage: int): DamageAdjustment
+    - modifiers: List<DamageModifier>
   }
 
-  class DamageModifier <<record>> {
+  class DamageModifier <<record>> <<entity>> {
     - source: StatusEffectKind
     - type: DamageModifierType
   }
 
-  class StatusEffectChange <<record>> {
+  class StatusEffectChange <<record>> <<entity>> {
     - source: StatusEffectKind
     - type: StatusEffectChangeType
     - magnitude: int
     - duration: int
-    {static} + applied(source: StatusEffectKind): StatusEffectChange
-    {static} + applied(source: StatusEffectKind, magnitude: int): StatusEffectChange
-    {static} + applied(source: StatusEffectKind, magnitude: int, duration: int): StatusEffectChange
-    {static} + expired(source: StatusEffectKind): StatusEffectChange
+  }
+
+  enum StatusEffectKind {
+    ARCANE_POWER
+    DEFEND
+    SMOKE_BOMB
+    STRENGTH_BOOST
+    STUN
   }
 
   enum DamageModifierType {
@@ -261,70 +209,9 @@ package "domain.status" {
     APPLIED
     EXPIRED
   }
-
-  enum StatusEffectKind {
-    ARCANE_POWER
-    DEFEND
-    SMOKE_BOMB
-    STRENGTH_BOOST
-    STUN
-  }
-
-  class ArcanePowerStatusEffect {
-    - attackBonus: int
-    + kind(): StatusEffectKind
-    + description(): String
-    + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + modifyStats(stats: CombatStats): CombatStats
-    + mergeWith(other: StatusEffect): Optional<StatusEffect>
-    + isExpired(): boolean
-  }
-
-  class DefendStatusEffect {
-    - roundsRemaining: int
-    + kind(): StatusEffectKind
-    + description(): String
-    + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + modifyStats(stats: CombatStats): CombatStats
-    + onRoundEnd(owner: Combatant): List<StatusEffectOutcome>
-    + onExpire(owner: Combatant): List<StatusEffectOutcome>
-    + isExpired(): boolean
-  }
-
-  class StrengthBoostStatusEffect {
-    - attackBonus: int
-    - roundsRemaining: int
-    + kind(): StatusEffectKind
-    + description(): String
-    + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + modifyStats(stats: CombatStats): CombatStats
-    + onRoundEnd(owner: Combatant): List<StatusEffectOutcome>
-    + onExpire(owner: Combatant): List<StatusEffectOutcome>
-    + isExpired(): boolean
-  }
-
-  class SmokeBombStatusEffect {
-    - chargesRemaining: int
-    + kind(): StatusEffectKind
-    + description(): String
-    + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + modifyIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
-    + onExpire(owner: Combatant): List<StatusEffectOutcome>
-    + isExpired(): boolean
-  }
-
-  class StunStatusEffect {
-    - blockedTurnsRemaining: int
-    + kind(): StatusEffectKind
-    + description(): String
-    + onApply(owner: Combatant): List<StatusEffectOutcome>
-    + getTurnBlockReason(owner: Combatant): Optional<String>
-    + onExpire(owner: Combatant): List<StatusEffectOutcome>
-    + isExpired(): boolean
-  }
 }
 
-package "actions" {
+package "actions (Strategy)" {
   interface ActionExecutionContext {
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
@@ -337,65 +224,22 @@ package "actions" {
     + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
   }
 
+  class BasicAttackAction <<strategy>>
+  class DefendAction <<strategy>>
+  class ShieldBashAction <<strategy>>
+  class ArcaneBlastAction <<strategy>>
+  class UsePotionAction <<strategy>>
+  class UseSmokeBombAction <<strategy>>
+  class UseSpecialSkillAction <<strategy>>
+  class UsePowerStoneSkillAction <<strategy>>
+
   enum TargetingMode {
     NONE
     SINGLE_ENEMY
   }
-
-  class BasicAttackAction {
-    + getName(): String
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class DefendAction {
-    + getName(): String
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class ShieldBashAction {
-    + getName(): String
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class ArcaneBlastAction {
-    + getName(): String
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class UsePotionAction {
-    + getName(): String
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class UseSmokeBombAction {
-    + getName(): String
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class UseSpecialSkillAction {
-    + getName(): String
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
-
-  class UsePowerStoneSkillAction {
-    + getName(): String
-    + advancesCooldown(): boolean
-    + targetingMode(actor: Combatant): TargetingMode
-    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
-  }
 }
 
-package "engine" {
-  interface BattleEventListener <<observer>> {
-    {static} +NO_OP: BattleEventListener
-    + onEvent(event: BattleEvent): void
-  }
-
+package "engine (Control + Supporting Entity)" {
   class BattleEngine <<control>> {
     - battleState: BattleState
     - turnOrderStrategy: TurnOrderStrategy
@@ -403,276 +247,163 @@ package "engine" {
     - waveManager: WaveManager
     - roundLifecycle: RoundLifecycle
     - battleOutcomeReporter: BattleOutcomeReporter
-    + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
-    + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
-    + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
-    + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
+    + runRounds(roundCount: int, provider: PlayerDecisionProvider): List<BattleEvent>
+    + runUntilBattleEnds(provider: PlayerDecisionProvider): List<BattleEvent>
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
   }
 
   class BattleState <<entity>> {
     - player: PlayerCharacter
-    - initialEnemies: List<Combatant> [1..*]
-    - reserveEnemies: List<Combatant> [0..*]
-    - spawnedEnemies: List<Combatant> [1..*]
-    ~ player(): PlayerCharacter
-    ~ initialEnemies(): List<Combatant>
-    ~ reserveEnemies(): List<Combatant>
-    ~ spawnedEnemies(): List<Combatant>
-    ~ moveAllReserveToSpawned(): void
-    ~ combatantsAliveAtRoundStart(): List<Combatant>
+    - initialEnemies: List<Combatant>
+    - reserveEnemies: List<Combatant>
+    - spawnedEnemies: List<Combatant>
     ~ livingEnemies(): List<Combatant>
     ~ isBattleOver(): boolean
   }
 
-  class BattleEventPublisher <<control>> {
-    - events: List<BattleEvent> [0..*]
-    ~ emit(battleEvent: BattleEvent, battleEventListener: BattleEventListener): void
-    ~ snapshot(): List<BattleEvent>
-  }
+  interface TurnProcessor <<strategy>>
+  class DefaultTurnProcessor <<control>>
 
-  interface TurnProcessor <<strategy>> {
-    ~ processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
-  }
+  interface WaveManager <<strategy>>
+  class DefaultWaveManager <<control>>
 
-  class DefaultTurnProcessor <<control>> {
-    - player: PlayerCharacter
-    + processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
-  }
+  interface RoundLifecycle <<strategy>>
+  class DefaultRoundLifecycle <<control>>
 
-  interface WaveManager <<strategy>> {
-    ~ spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
-  }
-
-  class DefaultWaveManager <<control>> {
-    - initialEnemies: List<Combatant> [1..*]
-    - reserveEnemies: List<Combatant> [0..*]
-    - moveReserveToSpawned: Runnable
-    + spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
-  }
-
-  interface RoundLifecycle <<strategy>> {
-    ~ createRoundSummary(roundNumber: int): RoundSummaryEvent
-    ~ completeRound(emit: Consumer<BattleEvent>): void
-  }
-
-  class DefaultRoundLifecycle <<control>> {
-    - player: PlayerCharacter
-    - spawnedEnemies: List<Combatant> [1..*]
-    + createRoundSummary(roundNumber: int): RoundSummaryEvent
-    + completeRound(emit: Consumer<BattleEvent>): void
-  }
-
-  interface BattleOutcomeReporter <<strategy>> {
-    ~ reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
-  }
-
-  class DefaultBattleOutcomeReporter <<control>> {
-    - player: PlayerCharacter
-    + reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
-  }
-
-  class BattleSetup <<entity>> {
-    - player: PlayerCharacter
-    - initialEnemies: List<Combatant> [1..*]
-    - backupEnemies: List<Combatant> [0..*]
-    + getPlayer(): PlayerCharacter
-    + getInitialEnemies(): List<Combatant>
-    + getBackupEnemies(): List<Combatant>
-  }
-
-  class BattleSetupFactory <<factory>> {
-    - combatantFactory: CombatantFactory
-    + create(configuration: GameConfiguration): BattleSetup
-    + createCustom(config: CustomGameConfiguration): BattleSetup
-  }
+  interface BattleOutcomeReporter <<strategy>>
+  class DefaultBattleOutcomeReporter <<control>>
 
   interface TurnOrderStrategy <<strategy>> {
     + determineOrder(combatants: List<Combatant>): List<Combatant>
   }
 
-  class SpeedTurnOrderStrategy <<strategy>> {
-    + determineOrder(combatants: List<Combatant>): List<Combatant>
-  }
+  class SpeedTurnOrderStrategy <<strategy>>
 
   interface PlayerDecisionProvider <<strategy>> {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  class ScriptedDecisionProvider <<strategy>> {
-    - decisionsByRound: Map<Integer, PlayerDecision> [0..*]
-    + addDecision(roundNumber: int, playerDecision: PlayerDecision): ScriptedDecisionProvider
-    + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
+  class ScriptedDecisionProvider <<control>>
+
+  interface BattleEventListener <<observer>> {
+    + onEvent(event: BattleEvent): void
   }
 
-  class ScenarioScript <<entity>> {
-    - name: String
-    - battleSetup: BattleSetup
-    - decisionProvider: PlayerDecisionProvider
-    - roundCount: int
-    + getName(): String
-    + getBattleSetup(): BattleSetup
-    + getDecisionProvider(): PlayerDecisionProvider
-    + getRoundCount(): int
+  class BattleSetupFactory <<control>> <<factory>> {
+    - combatantFactory: CombatantFactory
+    + create(configuration: GameConfiguration): BattleSetup
+    + createCustom(config: CustomGameConfiguration): BattleSetup
   }
 
-  class AppendixAScenarios <<utility>> {
-    {static} +all(): List<ScenarioScript>
-    {static} +easyWarrior(): ScenarioScript
-    {static} +mediumWarrior(): ScenarioScript
-    {static} +mediumWizard(): ScenarioScript
+  class BattleSetup <<entity>> {
+    - player: PlayerCharacter
+    - initialEnemies: List<Combatant>
+    - backupEnemies: List<Combatant>
   }
 
-  class EasyLevelSetup <<utility>> {
-    {static} +createWarriorPotionSmokeBombSetup(): BattleSetup
-  }
-
-  class MediumLevelSetup <<utility>> {
-    {static} +createWarriorPowerStonePotionSetup(): BattleSetup
-    {static} +createWizardPowerStonePotionSetup(): BattleSetup
-  }
-
-  class HardLevelSetup <<utility>> {
-    {static} +create(player: PlayerCharacter, inventory: Inventory): BattleSetup
-  }
-
-  class GameConfiguration <<record>> {
+  class GameConfiguration <<record>> <<entity>> {
     - playerType: PlayerType
     - difficultyLevel: DifficultyLevel
-    - selectedItems: List<ItemType> [2]
+    - selectedItems: List<ItemType>
   }
 
-  class CustomGameConfiguration <<record>> {
+  class CustomGameConfiguration <<record>> <<entity>> {
     - playerType: PlayerType
-    - selectedItems: List<ItemType> [2]
-    - waves: List<WaveSpec> [1..2]
+    - selectedItems: List<ItemType>
+    - waves: List<WaveSpec>
   }
 
-  class PlayerDecision <<record>> {
+  class PlayerDecision <<record>> <<entity>> {
     - action: BattleAction
     - targetReference: TargetReference
-    {static} +targeted(action: BattleAction, target: Combatant): PlayerDecision
-    {static} +targeted(action: BattleAction, targetId: CombatantId): PlayerDecision
-    {static} +untargeted(action: BattleAction): PlayerDecision
   }
 
-  class TargetReference <<record>> {
+  class TargetReference <<record>> <<entity>> {
     - type: TargetType
-    - combatantId: CombatantId [0..1]
-    {static} +none(): TargetReference
-    {static} +enemy(combatantId: CombatantId): TargetReference
-    {static} +enemy(combatant: Combatant): TargetReference
-    +resolveFrom(livingEnemies: List<Combatant>): Combatant
+    - combatantId: CombatantId
+    + resolveFrom(livingEnemies: List<Combatant>): Combatant
   }
 
-  enum TargetType <<nested>> {
+  enum TargetType {
     NONE
     ENEMY
   }
 
-  class WaveSpec <<record>> {
-    - enemyCounts: List<EnemyCount> [1..*]
-    {static} +of(enemyCounts: EnemyCount...): WaveSpec
-    +totalEnemies(): int
-    +countOf(enemyFactory: EnemyFactory): int
-    +describe(): String
+  class WaveSpec <<record>> <<entity>> {
+    - enemyCounts: List<EnemyCount>
+    + totalEnemies(): int
   }
 
-  class EnemyCount <<record>> {
+  class EnemyCount <<record>> <<entity>> {
     - enemyFactory: EnemyFactory
     - count: int
-    {static} +of(enemyFactory: EnemyFactory, count: int): EnemyCount
-    +describe(): String
   }
 
   interface EnemyFactory <<factory>> {
-    + getDisplayName(): String
-    + getPluralDisplayName(): String
-    + getMaxPerWave(): int
     + create(name: String, combatantFactory: CombatantFactory): EnemyCombatant
-    + formatCount(count: int): String
   }
 
   enum EnemyType <<factory>> {
     GOBLIN
     WOLF
-    - displayName: String
-    - pluralDisplayName: String
-    - maxPerWave: int
-    - configurationPrompt: String
-    - baseHitPoints: HitPoints
-    - baseStats: CombatStats
-    + getDisplayName(): String
-    + getPluralDisplayName(): String
-    + getMaxPerWave(): int
-    + getConfigurationPrompt(): String
-    + getBaseHitPoints(): HitPoints
-    + getBaseStats(): CombatStats
-    + create(name: String, combatantFactory: CombatantFactory): EnemyCombatant
   }
 
   enum PlayerType <<factory>> {
     WARRIOR
     WIZARD
-    - displayName: String
-    - specialSkillName: String
-    - baseHitPoints: HitPoints
-    - baseStats: CombatStats
-    + getDisplayName(): String
-    + getSpecialSkillName(): String
-    + getBaseHitPoints(): HitPoints
-    + getBaseStats(): CombatStats
-    + createPlayer(combatantFactory: CombatantFactory): PlayerCharacter
   }
 
   enum DifficultyLevel {
     EASY
     MEDIUM
     HARD
-    - displayName: String
-    - initialSpawnDescription: String
-    - backupSpawnDescription: String
-    - initialEnemyCount: int
-    - backupEnemyCount: int
-    + getDisplayName(): String
-    + getInitialSpawnDescription(): String
-    + getBackupSpawnDescription(): String
-    + getInitialEnemyCount(): int
-    + getBackupEnemyCount(): int
-    + getTotalEnemyCount(): int
   }
 }
 
-package "report" {
-  interface BattleEvent
-
-  class ActionEvent <<event>> {
-    - actorId: CombatantId
-    - actorName: String
-    - actionName: String
-    - targetId: CombatantId
-    - targetName: String
-    - hpBefore: int
-    - hpAfter: int
-    - attackerAttack: int
-    - targetDefense: int
-    - damage: int
-    - targetEliminated: boolean
-    - statusEffectNotes: List<String> [0..*]
+package "factory / bootstrap (Control)" {
+  interface CombatantFactory <<factory>> {
+    + createPlayer(playerType: PlayerType): PlayerCharacter
+    + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
   }
 
-  class NarrationEvent <<event>> {
-    - text: String
-    + getText(): String
+  class DefaultCombatantFactory <<factory>> <<control>> {
+    - statusEffectRegistryFactory: StatusEffectRegistryFactory
+    - playerCreators: Map<PlayerType, PlayerCharacterCreator>
+    - enemyCreators: Map<EnemyType, EnemyCombatantCreator>
   }
 
-  class RoundStartEvent <<event>> {
-    - roundNumber: int
-    + getRoundNumber(): int
+  interface PlayerCharacterCreator <<factory>>
+  interface EnemyCombatantCreator <<factory>>
+
+  interface SpecialSkillFactory <<factory>> {
+    + create(): SpecialSkill
   }
 
-  class CombatantSummary <<value object>> {
+  class DefaultSpecialSkillFactory <<factory>> <<control>>
+
+  interface StatusEffectRegistryFactory <<factory>> {
+    + create(): StatusEffectRegistry
+  }
+
+  class DefaultStatusEffectRegistryFactory <<factory>> <<control>>
+
+  class CombatantFactories <<factory>> <<control>> {
+    {static} + createDefault(...): CombatantFactory
+  }
+}
+
+package "report (Events)" {
+  interface BattleEvent <<event>>
+
+  class ActionEvent <<event>>
+  class RoundStartEvent <<event>>
+  class RoundSummaryEvent <<event>>
+  class SkippedTurnEvent <<event>>
+  class StatusEffectReportEvent <<event>>
+  class NarrationEvent <<event>>
+
+  class CombatantSummary <<record>> <<entity>> {
     - combatantId: CombatantId
     - name: String
     - currentHp: int
@@ -680,49 +411,25 @@ package "report" {
     - currentAttack: int
     - baseAttack: int
     - alive: boolean
-    - activeStatuses: List<String> [0..*]
-  }
-
-  class RoundSummaryEvent <<event>> {
-    - roundNumber: int
-    - playerSummary: CombatantSummary
-    - enemySummaries: List<CombatantSummary> [0..*]
-    - inventorySnapshot: Map<ItemType, Integer> [0..*]
-    - specialSkillCooldown: int
-  }
-
-  class SkippedTurnEvent <<event>> {
-    - combatantId: CombatantId
-    - combatantName: String
-    - reason: String
-    - statusEffectNotes: List<String> [0..*]
-  }
-
-  class StatusEffectReportEvent <<record>> <<event>> {
-    - statusEffectNotes: List<String> [0..*]
-    {static} +fromStatusEffectOutcomes(statusEffectOutcomes: List<CombatantStatusOutcome>): StatusEffectReportEvent
-  }
-
-  class StatusEffectReportMapper <<utility>> {
-    {static} ~toNotes(statusEffectOutcomes: List<CombatantStatusOutcome>): List<String>
+    - activeStatuses: List<String>
   }
 }
 
-package "ui" {
+package "ui (Boundary)" {
+  class TurnBasedArenaCli <<boundary>> {
+    - ui: ConsoleBattleUi
+    - battleSetupFactory: BattleSetupFactory
+    - formatter: BattleConsoleFormatter
+    - turnOrderStrategy: TurnOrderStrategy
+    + run(): void
+  }
+
   class ConsoleBattleUi <<boundary>> {
-    - combatantFactory: CombatantFactory
-    + showLoadingScreen(): void
     + promptForPlayerType(): PlayerType
     + promptForDifficultyOrCustom(): DifficultyLevel
-    + promptForWaveCount(): int
     + promptForWaveSpec(waveNumber: int): WaveSpec
     + promptForItems(itemCount: int): List<ItemType>
-    + showConfigurationSummary(configuration: GameConfiguration): void
-    + showPlayerTurn(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): void
-    + promptForSelection(prompt: String, options: List<String>): int
-    + showMessage(message: String): void
     + showBattleTranscript(lines: List<String>): void
-    + showBattleLines(lines: List<String>): void
     + promptPostGameChoice(): PostGameChoice
   }
 
@@ -735,19 +442,6 @@ package "ui" {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  class TurnBasedArenaCli <<boundary>> {
-    - ui: ConsoleBattleUi
-    - battleSetupFactory: BattleSetupFactory
-    - formatter: BattleConsoleFormatter
-    - turnOrderStrategy: TurnOrderStrategy
-    + run(): void
-    {static} +main(args: String[]): void
-  }
-
-  class EasyRoundsDemo <<boundary>> {
-    {static} +main(args: String[]): void
-  }
-
   enum PostGameChoice {
     REPLAY
     NEW_GAME
@@ -755,349 +449,88 @@ package "ui" {
   }
 }
 
-package "ui.gui" {
+package "ui.gui (Boundary + Control)" {
   class TurnBasedArenaGui <<boundary>> {
-    - log: JTextArea
+    - controller: BattleController
+    - setupPanel: BattleSetupPanel
     - arenaScene: ArenaScenePanel
     - commandPanel: BattleCommandPanel
-    - setupPanel: BattleSetupPanel
-    - controller: BattleController
-    + TurnBasedArenaGui(setupFactory: BattleSetupFactory)
+  }
+
+  interface BattleView <<boundary>> {
     + showSetupPreview(): void
     + showBattleLoaded(setup: BattleSetup): void
-    + showBattleEvent(event: BattleEvent, battleMessage: String, transcriptLines: List<String>): void
+    + showBattleEvent(event: BattleEvent, message: String, transcriptLines: List<String>): void
     + showPlayerTurn(turn: PlayerTurnRequest): void
     + selectedEnemyId(): CombatantId
-    + selectNextEnemy(direction: int): void
-    + askPostGameChoice(): PostGameChoice
-    + exitGame(): void
-    {static} +main(args: String[]): void
   }
 
-  package "controller" {
-    class BattleController <<controller>> {
-      - view: BattleView
-      - model: BattleSessionModel
-      - playbackController: BattlePlaybackController
-      - commandResolver: PlayerCommandResolver
-      - setupFactory: BattleSetupFactory
-      - consoleFormatter: BattleConsoleFormatter
-      - dialogueFormatter: BattleDialogueFormatter
-      - battleExecutor: ExecutorService
-      + startBattle(request: BattleLaunchRequest): void
-      ~awaitPlayerDecision(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
-      + handleCommand(command: BattleCommandPanel.Command): void
-      + shutdown(): void
-    }
+  class BattleSetupPanel <<boundary>>
+  class ArenaScenePanel <<boundary>>
+  class BattleCommandPanel <<boundary>>
 
-    class GuiPlayerDecisionProvider <<adapter>> {
-      - controller: BattleController
-      + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
-    }
+  enum BattleCommand as "BattleCommandPanel.Command" {
+    BASIC_ATTACK
+    DEFEND
+    POTION
+    SPECIAL_SKILL
+    POWER_STONE
+    SMOKE_BOMB
+    PREVIOUS_TARGET
+    NEXT_TARGET
   }
 
-  package "command" {
-    class PlayerCommandResolver <<service>> {
-      + resolve(command: BattleCommandPanel.Command, turn: PlayerTurnRequest, selectedTarget: CombatantId): Optional<ResolvedPlayerCommand>
-      - createAction(command: BattleCommandPanel.Command): BattleAction
-      - isActionAvailable(command: BattleCommandPanel.Command, player: PlayerCharacter): boolean
-      - findLivingEnemy(turn: PlayerTurnRequest, selectedTarget: CombatantId): Combatant
-    }
+  enum GuiPostGameChoice as "gui.PostGameChoice" {
+    REPLAY
+    NEW_SETUP
+    EXIT
   }
 
-  package "model" {
-    class BattleSessionModel <<model>> {
-      - battleRunning: boolean
-      - activePlayerTurn: PlayerTurnRequest
-      - queuedPlayerTurn: PlayerTurnRequest
-      - queuedPostGameConfig: PostGameConfig
-      + beginBattle(): boolean
-      + finishBattle(): void
-      + stopBattle(): void
-      + clearQueuedPlaybackState(): void
-      + activePlayerTurn(): Optional<PlayerTurnRequest>
-      + clearActivePlayerTurn(): void
-      + queuePlayerTurn(turn: PlayerTurnRequest): void
-      + takeQueuedPlayerTurn(): Optional<PlayerTurnRequest>
-      + queuePostGame(configuration: PostGameConfig): void
-      + takeQueuedPostGameConfig(): Optional<PostGameConfig>
-    }
-
-    class PlayerTurnRequest <<record>> {
-      - roundNumber: int
-      - player: PlayerCharacter
-      - livingEnemies: List<Combatant>
-      - responseQueue: BlockingQueue<PlayerDecision>
-    }
-
-    class ResolvedPlayerCommand <<record>> {
-      - decision: PlayerDecision
-      - actionName: String
-      - targetLabel: String
-    }
+  class BattleController <<control>> {
+    - view: BattleView
+    - model: BattleSessionModel
+    - playbackController: BattlePlaybackController
+    - commandResolver: PlayerCommandResolver
+    - setupFactory: BattleSetupFactory
+    + startBattle(request: BattleLaunchRequest): void
+    + handleCommand(command: BattleCommandPanel.Command): void
   }
 
-  package "playback" {
-    class BattlePlaybackController <<controller>> {
-      - events: Queue<BattleEvent>
-      - dialogueFormatter: BattleDialogueFormatter
-      - eventPlayer: Consumer<BattleEvent>
-      - drainedCallback: Runnable
-      - playbackTimer: Timer
-      - active: boolean
-      + enqueue(event: BattleEvent): void
-      + playNextIfIdle(): void
-      + reset(): void
-    }
-
-    class BattleDialogueFormatter <<formatter>> {
-      + format(event: BattleEvent): String
-      + playbackDelayMillis(event: BattleEvent): int
-    }
+  class GuiPlayerDecisionProvider <<control>> {
+    - controller: BattleController
+    + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  package "setup" {
-    class BattleLaunchRequest <<request>> {
-      - setupCreator: Function<BattleSetupFactory, BattleSetup>
-      - replayConfiguration: PostGameConfig
-      - intro: String
-      {static} +preset(configuration: GameConfiguration): BattleLaunchRequest
-      {static} +custom(configuration: CustomGameConfiguration): BattleLaunchRequest
-      {static} +replay(configuration: PostGameConfig): BattleLaunchRequest
-      + createSetup(setupFactory: BattleSetupFactory): BattleSetup
-      + replayConfiguration(): PostGameConfig
-      + intro(): String
-    }
-
-    interface PostGameConfig <<sealed>> {
-      {static} +preset(configuration: GameConfiguration): PostGameConfig
-      {static} +custom(configuration: CustomGameConfiguration): PostGameConfig
-    }
-
-    class PostGameConfigPreset as "PostGameConfig.Preset" <<record>> {
-      - configuration: GameConfiguration
-    }
-
-    class PostGameConfigCustom as "PostGameConfig.Custom" <<record>> {
-      - configuration: CustomGameConfiguration
-    }
+  class PlayerCommandResolver <<control>> {
+    + resolve(command: BattleCommandPanel.Command, turn: PlayerTurnRequest, selectedTarget: CombatantId): Optional<ResolvedPlayerCommand>
   }
 
-  package "util" {
-    class SwingThread <<utility>> {
-      {static} +runAndWait(task: Runnable): void
-    }
-  }
-
-  package "view" {
-    interface BattleView <<view>> {
-      + showSetupPreview(): void
-      + setSetupControlsEnabled(enabled: boolean): void
-      + clearBattleLog(): void
-      + appendLog(line: String): void
-      + showBattleLoading(): void
-      + showBattleLoaded(setup: BattleSetup): void
-      + showBattleEvent(event: BattleEvent, battleMessage: String, transcriptLines: List<String>): void
-      + showPlayerTurn(turn: PlayerTurnRequest): void
-      + showCommandResolving(actionName: String): void
-      + showBattleComplete(): void
-      + showBattleError(message: String): void
-      + selectedEnemyId(): CombatantId
-      + selectNextEnemy(direction: int): void
-      + askPostGameChoice(): PostGameChoice
-      + exitGame(): void
-    }
-
-    class BattleSetupPanel <<view>> {
-      - startListener: Consumer<BattleLaunchRequest>
-      - layoutChangedListener: Runnable
-      - battleRunning: boolean
-      + setSetupControlsEnabled(enabled: boolean): void
-    }
-
-    class BattleCommandPanel <<view>> {
-      - promptLabel: JLabel
-      - statsLabel: JLabel
-      - targetLabel: JLabel
-      - optionButtons: JButton[4]
-      - commandListener: Consumer<Command>
-      - menuState: MenuState
-      - messageTimer: Timer
-      + setCommandListener(commandListener: Consumer<Command>): void
-      + setIdle(message: String): void
-      + showTurn(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>, selectedTargetLabel: String): void
-      + updateTarget(selectedTargetLabel: String): void
-      + setResolving(actionName: String): void
-      + showBattleMessage(message: String): void
-      + showBattleComplete(): void
-    }
-
-    enum BattleCommandPanelCommand as "BattleCommandPanel.Command" {
-      BASIC_ATTACK
-      DEFEND
-      POTION
-      SPECIAL_SKILL
-      POWER_STONE
-      SMOKE_BOMB
-      PREVIOUS_TARGET
-      NEXT_TARGET
-    }
-
-    class ArenaScenePanel <<view>> {
-      - model: ArenaSceneModel
-      - renderer: ArenaSceneRenderer
-      - sceneLoop: ArenaSceneLoop
-      + setTargetSelectionListener(targetSelectionListener: Consumer<String>): void
-      + showSetupPreview(): void
-      + startBattle(setup: BattleSetup): void
-      + showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>): void
-      + completePlayerTurn(actionName: String): void
-      + getSelectedEnemyId(): CombatantId
-      + getSelectedEnemyLabel(): String
-      + selectNextEnemy(direction: int): void
-      + applyBattleEvent(event: BattleEvent): void
-    }
-
-    class ArenaSceneModel <<model>> {
-      - sprites: Map<CombatantId, FighterSpriteDto>
-      - enemyOrder: List<CombatantId>
-      - pressedDirections: Set<String>
-      - floatingTexts: List<FloatingText>
-      - playerId: CombatantId
-      - selectedEnemyId: CombatantId
-      - banner: String
-      - hint: String
-      - acceptingPlayerTurn: boolean
-      - battleActive: boolean
-      ~showSetupPreview(): void
-      ~startBattle(setup: BattleSetup, arenaWidth: int, arenaHeight: int): void
-      ~showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>, arenaWidth: int, arenaHeight: int): void
-      ~completePlayerTurn(actionName: String): void
-      ~selectedEnemyId(): CombatantId
-      ~selectedEnemyLabel(): String
-      ~selectNextEnemy(direction: int): void
-      ~selectEnemyAt(point: Point): boolean
-      ~applyBattleEvent(event: BattleEvent, arenaWidth: int, arenaHeight: int): void
-      ~tick(arenaWidth: int, arenaHeight: int): void
-      ~spritesByDrawOrder(): List<FighterSpriteDto>
-    }
-
-    class ArenaSceneModelFloatingText as "ArenaSceneModel.FloatingText" <<record>> {
-      - text: String
-      - x: double
-      - y: double
-      - createdAt: long
-      - damage: boolean
-    }
-
-    class ArenaSceneLoop <<timer>> {
-      - tickCallback: Runnable
-      - tickTimer: Timer
-      ~start(): void
-      ~stop(): void
-    }
-
-    class ArenaSceneRenderer <<renderer>> {
-      - fighterRenderer: FighterSpriteRenderer
-      ~render(g: Graphics2D, model: ArenaSceneModel, width: int, height: int, now: long): void
-    }
-
-    class FighterSpriteDto <<dto>> {
-      + id: CombatantId
-      + player: boolean
-      + type: FighterType
-      + name: String
-      + hp: int
-      + maxHp: int
-      + attack: int
-      + baseAttack: int
-      + alive: boolean
-      + statuses: List<String>
-      + x: double
-      + y: double
-      + offsetX: double
-      + offsetY: double
-      + walkPhase: double
-      + hurtUntil: long
-      + pulseUntil: long
-      {static} +fromCombatant(combatant: Combatant, player: boolean): FighterSpriteDto
-      {static} +fromSummary(summary: CombatantSummary, player: boolean): FighterSpriteDto
-      + updateFrom(combatant: Combatant): void
-      + updateFrom(summary: CombatantSummary): void
-      + setPlayer(player: boolean): void
-      + drawX(): double
-      + drawY(): double
-      + bounds(): Shape
-    }
-
-    enum FighterType {
-      WARRIOR
-      WIZARD
-      GOBLIN
-      WOLF
-      UNKNOWN
-    }
-
-    class FighterSpriteRenderer <<renderer>> {
-      - bodyRenderers: Map<FighterType, FighterBodyRenderer>
-      - effectRenderer: FighterSpriteEffectRenderer
-      - hudRenderer: FighterSpriteHudRenderer
-      + render(g: Graphics2D, sprite: FighterSpriteDto, selectedEnemyId: CombatantId): void
-      ~bodyRendererFor(sprite: FighterSpriteDto): FighterBodyRenderer
-    }
-
-    interface FighterBodyRenderer <<strategy>> {
-      ~renderBody(g: Graphics2D, sprite: FighterSpriteDto): void
-    }
-
-    class WarriorBodyRenderer <<renderer>>
-    class WizardBodyRenderer <<renderer>>
-    class GoblinBodyRenderer <<renderer>>
-    class WolfBodyRenderer <<renderer>>
-    class UnknownFighterBodyRenderer <<renderer>>
-
-    class FighterSpriteEffectRenderer <<renderer>> {
-      ~renderPulse(g: Graphics2D, sprite: FighterSpriteDto): void
-    }
-
-    class FighterSpriteHudRenderer <<renderer>> {
-      ~render(g: Graphics2D, sprite: FighterSpriteDto, centerX: int, baseY: int): void
-      {static} ~healthRatio(sprite: FighterSpriteDto): double
-    }
-
-    enum GuiPostGameChoice as "PostGameChoice" {
-      REPLAY
-      NEW_SETUP
-      EXIT
-    }
-  }
+  class BattleSessionModel <<entity>>
+  class BattlePlaybackController <<control>>
+  class BattleDialogueFormatter <<control>>
+  class BattleLaunchRequest <<entity>>
+  class PlayerTurnRequest <<record>> <<entity>>
+  class ResolvedPlayerCommand <<record>> <<entity>>
 }
 
+' Domain inheritance and composition
 Combatant <|-- PlayerCharacter
 Combatant <|-- EnemyCombatant
-Combatant "1" *-- "1" CombatantId : combatantId
-Combatant "1" *-- "1" HitPoints : hitPoints
+Combatant "1" *-- "1" CombatantId : id
+Combatant "1" *-- "1" HitPoints : hp
 Combatant "1" *-- "1" Inventory : inventory
 Combatant "1" *-- "1" CombatStats : baseStats
-Combatant "1" *-- "1" StatusEffectRegistry : statusEffectRegistry
+Combatant "1" *-- "1" StatusEffectRegistry : status effects
 PlayerCharacter "1" *-- "1" SpecialSkill : specialSkill
 EnemyCombatant "1" --> "1" BattleAction : turnAction
 SpecialSkill "1" --> "1" BattleAction : action
-CombatStats "1" *-- "1" Stat : attack
-CombatStats "1" *-- "1" Stat : defense
-CombatStats "1" *-- "1" Stat : speed
+CombatStats "1" *-- "3" Stat : attack/defense/speed
+CombatStats --> StatType
+Inventory --> ItemType
+AttackResolution --> CombatantStatusOutcome
 
-CombatantFactory <|.. DefaultCombatantFactory
-SpecialSkillFactory <|.. DefaultSpecialSkillFactory
-StatusEffectRegistryFactory <|.. DefaultStatusEffectRegistryFactory
-DefaultCombatantFactory "1" --> "1" StatusEffectRegistryFactory
-DefaultCombatantFactory "1" o-- "1..*" PlayerCharacterCreator : playerCreators
-DefaultCombatantFactory "1" o-- "1..*" EnemyCombatantCreator : enemyCreators
-DefaultSpecialSkillFactory "1" --> "1" BattleAction : action
-CombatantFactories ..> DefaultCombatantFactory
-CombatantFactories ..> DefaultSpecialSkillFactory
-
-StatusEffectRegistry "1" *-- "0..*" StatusEffect : activeEffects
+' Status effect model
+StatusEffectRegistry "1" *-- "0..*" StatusEffect : active effects
 StatusEffect <|.. ArcanePowerStatusEffect
 StatusEffect <|.. DefendStatusEffect
 StatusEffect <|.. StrengthBoostStatusEffect
@@ -1105,15 +538,15 @@ StatusEffect <|.. SmokeBombStatusEffect
 StatusEffect <|.. StunStatusEffect
 StatusEffectOutcome <|.. DamageModifier
 StatusEffectOutcome <|.. StatusEffectChange
-AttackResolution "1" *-- "0..*" CombatantStatusOutcome : statusEffectOutcomes
-CombatantStatusOutcome "1" *-- "1" CombatantId : combatantId
-CombatantStatusOutcome "1" *-- "1" StatusEffectOutcome : outcome
-DamageAdjustment "1" *-- "0..*" DamageModifier : modifiers
-DamageModifier "1" *-- "1" StatusEffectKind : source
-DamageModifier "1" *-- "1" DamageModifierType : type
-StatusEffectChange "1" *-- "1" StatusEffectKind : source
-StatusEffectChange "1" *-- "1" StatusEffectChangeType : type
+CombatantStatusOutcome "1" *-- "1" CombatantId
+CombatantStatusOutcome "1" *-- "1" StatusEffectOutcome
+DamageAdjustment "1" *-- "0..*" DamageModifier
+DamageModifier --> StatusEffectKind
+DamageModifier --> DamageModifierType
+StatusEffectChange --> StatusEffectKind
+StatusEffectChange --> StatusEffectChangeType
 
+' Action polymorphism
 BattleAction <|.. BasicAttackAction
 BattleAction <|.. DefendAction
 BattleAction <|.. ShieldBashAction
@@ -1122,232 +555,168 @@ BattleAction <|.. UsePotionAction
 BattleAction <|.. UseSmokeBombAction
 BattleAction <|.. UseSpecialSkillAction
 BattleAction <|.. UsePowerStoneSkillAction
+BattleAction --> TargetingMode
 ActionExecutionContext <|.. BattleEngine
-UseSpecialSkillAction ..> PlayerCharacter
-UsePowerStoneSkillAction ..> PlayerCharacter
 DefendAction ..> DefendStatusEffect
 ShieldBashAction ..> StunStatusEffect
 ArcaneBlastAction ..> ArcanePowerStatusEffect
 UseSmokeBombAction ..> SmokeBombStatusEffect
+UseSpecialSkillAction ..> PlayerCharacter
+UsePowerStoneSkillAction ..> PlayerCharacter
 
-EnemyFactory <|.. EnemyType
-TurnOrderStrategy <|.. SpeedTurnOrderStrategy
-PlayerDecisionProvider <|.. ScriptedDecisionProvider
-PlayerDecisionProvider <|.. CliPlayerDecisionProvider
-PlayerDecisionProvider <|.. GuiPlayerDecisionProvider
+' Engine control and setup
+BattleEngine "1" *-- "1" BattleState
+BattleEngine "1" --> "1" TurnOrderStrategy
+BattleEngine "1" --> "1" TurnProcessor
+BattleEngine "1" --> "1" WaveManager
+BattleEngine "1" --> "1" RoundLifecycle
+BattleEngine "1" --> "1" BattleOutcomeReporter
+BattleEngine ..> PlayerDecisionProvider
+BattleEngine ..> BattleEventListener
+BattleEngine ..> BattleEvent
+BattleState "1" o-- "1" PlayerCharacter
+BattleState "1" o-- "1..*" Combatant : enemies
 TurnProcessor <|.. DefaultTurnProcessor
 WaveManager <|.. DefaultWaveManager
 RoundLifecycle <|.. DefaultRoundLifecycle
 BattleOutcomeReporter <|.. DefaultBattleOutcomeReporter
-BattleEngine "1" *-- "1" BattleState : battleState
-BattleEngine "1" --> "1" TurnOrderStrategy : turnOrderStrategy
-BattleEngine "1" --> "1" TurnProcessor : turnProcessor
-BattleEngine "1" --> "1" WaveManager : waveManager
-BattleEngine "1" --> "1" RoundLifecycle : roundLifecycle
-BattleEngine "1" --> "1" BattleOutcomeReporter : battleOutcomeReporter
-BattleEngine ..> BattleEventPublisher : creates per run
-BattleEngine ..> PlayerDecisionProvider
-BattleEngine ..> BattleEventListener
-BattleState "1" o-- "1" PlayerCharacter : player
-BattleState "1" o-- "1..*" Combatant : initialEnemies
-BattleState "1" o-- "0..*" Combatant : reserveEnemies
-BattleState "1" o-- "1..*" Combatant : spawnedEnemies
-BattleEventPublisher "1" *-- "0..*" BattleEvent : events
-BattleEventPublisher ..> BattleEventListener
-DefaultTurnProcessor "1" --> "1" PlayerCharacter : player
-DefaultTurnProcessor ..> ActionExecutionContext
-DefaultTurnProcessor ..> PlayerDecisionProvider
-DefaultWaveManager "1" o-- "1..*" Combatant : initialEnemies
-DefaultWaveManager "1" o-- "0..*" Combatant : reserveEnemies
-DefaultWaveManager ..> BattleState
-DefaultRoundLifecycle "1" --> "1" PlayerCharacter : player
-DefaultRoundLifecycle "1" o-- "1..*" Combatant : spawnedEnemies
-DefaultRoundLifecycle ..> RoundSummaryEvent
-DefaultBattleOutcomeReporter "1" --> "1" PlayerCharacter : player
-BattleSetup "1" *-- "1" PlayerCharacter : player
-BattleSetup "1" *-- "1..*" Combatant : initialEnemies
-BattleSetup "1" *-- "0..*" Combatant : backupEnemies
-BattleSetupFactory "1" --> "1" CombatantFactory
-GameConfiguration "1" *-- "1" PlayerType : playerType
-GameConfiguration "1" *-- "1" DifficultyLevel : difficultyLevel
-GameConfiguration "1" --> "2" ItemType : selectedItems
-CustomGameConfiguration "1" *-- "1" PlayerType : playerType
-CustomGameConfiguration "1" --> "2" ItemType : selectedItems
-CustomGameConfiguration "1" *-- "1..2" WaveSpec : waves
-PlayerDecision "1" *-- "1" BattleAction : action
-PlayerDecision "1" *-- "1" TargetReference : targetReference
-TargetReference "1" *-- "1" TargetType : type
-TargetReference "1" *-- "0..1" CombatantId : combatantId
-WaveSpec "1" *-- "1..*" EnemyCount : enemyCounts
-EnemyCount "1" --> "1" EnemyFactory : enemyFactory
-EnemyType "1" *-- "1" HitPoints : baseHitPoints
-EnemyType "1" *-- "1" CombatStats : baseStats
-PlayerType "1" *-- "1" HitPoints : baseHitPoints
-PlayerType "1" *-- "1" CombatStats : baseStats
-ScenarioScript "1" *-- "1" BattleSetup : battleSetup
-ScenarioScript "1" --> "1" PlayerDecisionProvider : decisionProvider
-AppendixAScenarios ..> ScenarioScript
-AppendixAScenarios ..> ScriptedDecisionProvider
-AppendixAScenarios ..> EasyLevelSetup
-AppendixAScenarios ..> MediumLevelSetup
-EasyLevelSetup ..> BattleSetupFactory
-MediumLevelSetup ..> BattleSetupFactory
-HardLevelSetup ..> BattleSetupFactory
+TurnOrderStrategy <|.. SpeedTurnOrderStrategy
+PlayerDecisionProvider <|.. ScriptedDecisionProvider
+PlayerDecisionProvider <|.. CliPlayerDecisionProvider
+PlayerDecisionProvider <|.. GuiPlayerDecisionProvider
 
+BattleSetupFactory --> CombatantFactory
+BattleSetup "1" *-- "1" PlayerCharacter
+BattleSetup "1" *-- "1..*" Combatant : initial enemies
+BattleSetup "1" *-- "0..*" Combatant : backup enemies
+GameConfiguration --> PlayerType
+GameConfiguration --> DifficultyLevel
+GameConfiguration --> ItemType
+CustomGameConfiguration --> PlayerType
+CustomGameConfiguration --> ItemType
+CustomGameConfiguration "1" *-- "1..2" WaveSpec
+WaveSpec "1" *-- "1..*" EnemyCount
+EnemyCount --> EnemyFactory
+EnemyFactory <|.. EnemyType
+PlayerDecision --> BattleAction
+PlayerDecision *-- TargetReference
+TargetReference --> TargetType
+TargetReference --> CombatantId
+
+' Factory construction
+CombatantFactory <|.. DefaultCombatantFactory
+SpecialSkillFactory <|.. DefaultSpecialSkillFactory
+StatusEffectRegistryFactory <|.. DefaultStatusEffectRegistryFactory
+DefaultCombatantFactory --> StatusEffectRegistryFactory
+DefaultCombatantFactory o-- PlayerCharacterCreator
+DefaultCombatantFactory o-- EnemyCombatantCreator
+DefaultSpecialSkillFactory --> BattleAction
+CombatantFactories ..> DefaultCombatantFactory
+CombatantFactories ..> DefaultSpecialSkillFactory
+
+' Events and boundary interaction
 BattleEvent <|.. ActionEvent
-BattleEvent <|.. NarrationEvent
 BattleEvent <|.. RoundStartEvent
 BattleEvent <|.. RoundSummaryEvent
 BattleEvent <|.. SkippedTurnEvent
 BattleEvent <|.. StatusEffectReportEvent
-ActionEvent "1" *-- "1" CombatantId : actorId
-ActionEvent "1" *-- "1" CombatantId : targetId
-RoundSummaryEvent "1" *-- "1" CombatantSummary : playerSummary
-RoundSummaryEvent "1" *-- "0..*" CombatantSummary : enemySummaries
+BattleEvent <|.. NarrationEvent
+RoundSummaryEvent "1" *-- "1" CombatantSummary : player summary
+RoundSummaryEvent "1" *-- "0..*" CombatantSummary : enemy summaries
+ActionEvent --> CombatantId
 StatusEffectReportEvent ..> CombatantStatusOutcome
-StatusEffectReportMapper ..> CombatantStatusOutcome
 
-ConsoleBattleUi "1" --> "1" CombatantFactory
-CliPlayerDecisionProvider "1" --> "1" ConsoleBattleUi : ui
-BattleConsoleFormatter ..> BattleEvent : formats
-TurnBasedArenaCli "1" *-- "1" ConsoleBattleUi : ui
-TurnBasedArenaCli "1" *-- "1" BattleSetupFactory : battleSetupFactory
-TurnBasedArenaCli "1" *-- "1" BattleConsoleFormatter : formatter
-TurnBasedArenaCli "1" *-- "1" TurnOrderStrategy : turnOrderStrategy
+TurnBasedArenaCli "1" *-- "1" ConsoleBattleUi
+TurnBasedArenaCli "1" *-- "1" BattleConsoleFormatter
+TurnBasedArenaCli "1" --> "1" BattleSetupFactory
+TurnBasedArenaCli "1" --> "1" TurnOrderStrategy
 TurnBasedArenaCli ..> BattleEngine
 TurnBasedArenaCli ..> CliPlayerDecisionProvider
-TurnBasedArenaCli ..> PostGameChoice
-EasyRoundsDemo ..> AppendixAScenarios
-EasyRoundsDemo ..> BattleConsoleFormatter
-EasyRoundsDemo ..> BattleEngine
+ConsoleBattleUi --> PlayerType
+ConsoleBattleUi --> DifficultyLevel
+ConsoleBattleUi --> ItemType
+ConsoleBattleUi --> WaveSpec
+ConsoleBattleUi --> PostGameChoice
+BattleConsoleFormatter ..> BattleEvent
+CliPlayerDecisionProvider --> ConsoleBattleUi
 
 TurnBasedArenaGui ..|> BattleView
-TurnBasedArenaGui "1" *-- "1" BattleController : controller
-TurnBasedArenaGui "1" *-- "1" ArenaScenePanel : arenaScene
-TurnBasedArenaGui "1" *-- "1" BattleCommandPanel : commandPanel
-TurnBasedArenaGui "1" *-- "1" BattleSetupPanel : setupPanel
-TurnBasedArenaGui ..> BattleSetupFactory
-TurnBasedArenaGui ..> PlayerTurnRequest
+TurnBasedArenaGui "1" *-- "1" BattleController
+TurnBasedArenaGui "1" *-- "1" BattleSetupPanel
+TurnBasedArenaGui "1" *-- "1" ArenaScenePanel
+TurnBasedArenaGui "1" *-- "1" BattleCommandPanel
 TurnBasedArenaGui ..> GuiPostGameChoice
-
-BattleController "1" --> "1" BattleView : view
-BattleController "1" *-- "1" BattleSessionModel : model
-BattleController "1" *-- "1" BattlePlaybackController : playbackController
-BattleController "1" *-- "1" PlayerCommandResolver : commandResolver
-BattleController "1" --> "1" BattleSetupFactory : setupFactory
-BattleController "1" *-- "1" BattleConsoleFormatter : consoleFormatter
-BattleController "1" *-- "1" BattleDialogueFormatter : dialogueFormatter
+BattleController --> BattleView
+BattleController *-- BattleSessionModel
+BattleController *-- BattlePlaybackController
+BattleController *-- PlayerCommandResolver
+BattleController --> BattleSetupFactory
 BattleController ..> BattleEngine
 BattleController ..> BattleLaunchRequest
-BattleController ..> GuiPlayerDecisionProvider
 BattleController ..> PlayerTurnRequest
 BattleController ..> ResolvedPlayerCommand
-BattleController ..> PostGameConfig
-BattleController ..> SwingThread
-BattleController ..> BattleCommandPanelCommand
-BattleController ..> GuiPostGameChoice
-
-GuiPlayerDecisionProvider ..> BattleController
-GuiPlayerDecisionProvider ..> PlayerDecision
-GuiPlayerDecisionProvider ..> PlayerDecisionProvider
-
-PlayerCommandResolver ..> BattleCommandPanelCommand
-PlayerCommandResolver ..> PlayerTurnRequest
-PlayerCommandResolver ..> ResolvedPlayerCommand
-PlayerCommandResolver ..> PlayerDecision
-PlayerCommandResolver ..> BattleAction
-PlayerCommandResolver ..> CombatantId
-
-BattleSessionModel o-- PlayerTurnRequest : active/queued turn
-BattleSessionModel o-- PostGameConfig : post-game replay config
-PlayerTurnRequest --> PlayerCharacter : player
-PlayerTurnRequest --> Combatant : living enemies
-PlayerTurnRequest --> PlayerDecision : response queue
-ResolvedPlayerCommand --> PlayerDecision : decision
-
-BattlePlaybackController o-- BattleEvent : queued events
-BattlePlaybackController --> BattleDialogueFormatter : delay/format policy
-BattlePlaybackController --> BattleController : drained callback
-BattleDialogueFormatter ..> BattleEvent
-
-BattleLaunchRequest --> BattleSetupFactory : creates setup through
-BattleLaunchRequest --> BattleSetup : returns
-BattleLaunchRequest --> GameConfiguration
-BattleLaunchRequest --> CustomGameConfiguration
-BattleLaunchRequest --> PostGameConfig
-PostGameConfig <|.. PostGameConfigPreset
-PostGameConfig <|.. PostGameConfigCustom
-PostGameConfigPreset --> GameConfiguration
-PostGameConfigCustom --> CustomGameConfiguration
-
-BattleView ..> PlayerTurnRequest
+BattleController ..> BattleCommand
 BattleView ..> BattleSetup
 BattleView ..> BattleEvent
+BattleView ..> PlayerTurnRequest
 BattleView ..> CombatantId
 BattleView ..> GuiPostGameChoice
 BattleSetupPanel ..> BattleLaunchRequest
-BattleSetupPanel ..> GameConfiguration
-BattleSetupPanel ..> CustomGameConfiguration
-BattleCommandPanel ..> BattleCommandPanelCommand
-BattleCommandPanel ..> PlayerCharacter
-BattleCommandPanel ..> Combatant
-
-ArenaScenePanel "1" *-- "1" ArenaSceneModel : model
-ArenaScenePanel "1" *-- "1" ArenaSceneRenderer : renderer
-ArenaScenePanel "1" *-- "1" ArenaSceneLoop : sceneLoop
 ArenaScenePanel ..> BattleSetup
 ArenaScenePanel ..> BattleEvent
-ArenaScenePanel ..> PlayerCharacter
-ArenaScenePanel ..> Combatant
+BattleCommandPanel --> BattleCommand
+BattleCommandPanel ..> PlayerCharacter
+BattleCommandPanel ..> Combatant
+GuiPlayerDecisionProvider --> BattleController
+PlayerCommandResolver ..> PlayerTurnRequest
+PlayerCommandResolver ..> ResolvedPlayerCommand
+PlayerCommandResolver ..> PlayerDecision
+PlayerCommandResolver ..> BattleCommand
+BattlePlaybackController o-- BattleEvent
+BattlePlaybackController --> BattleDialogueFormatter
+BattleLaunchRequest --> BattleSetupFactory
+BattleLaunchRequest --> BattleSetup
+PlayerTurnRequest --> PlayerCharacter
+PlayerTurnRequest --> Combatant
+ResolvedPlayerCommand --> PlayerDecision
 
-ArenaSceneModel "1" *-- "0..*" FighterSpriteDto : sprites
-ArenaSceneModel "1" *-- "0..*" ArenaSceneModelFloatingText : floatingTexts
-ArenaSceneModel ..> BattleSetup
-ArenaSceneModel ..> BattleEvent
-ArenaSceneModel ..> ActionEvent
-ArenaSceneModel ..> RoundSummaryEvent
-ArenaSceneModel ..> CombatantSummary
-ArenaSceneModel ..> CombatantId
-ArenaSceneModel ..> PlayerCharacter
-ArenaSceneModel ..> Combatant
-
-ArenaSceneLoop --> ArenaScenePanel : tick callback
-ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer : fighterRenderer
-ArenaSceneRenderer ..> ArenaSceneModel
-ArenaSceneRenderer ..> FighterSpriteDto
-
-FighterSpriteDto "1" *-- "1" CombatantId : id
-FighterSpriteDto "1" *-- "1" FighterType : type
-FighterSpriteDto ..> Combatant
-FighterSpriteDto ..> CombatantSummary
-FighterSpriteRenderer "1" *-- "1" FighterSpriteEffectRenderer : effectRenderer
-FighterSpriteRenderer "1" *-- "1" FighterSpriteHudRenderer : hudRenderer
-FighterSpriteRenderer "1" o-- "1..*" FighterBodyRenderer : bodyRenderers
-FighterSpriteRenderer ..> FighterSpriteDto
-FighterSpriteRenderer ..> FighterType
-FighterBodyRenderer <|.. WarriorBodyRenderer
-FighterBodyRenderer <|.. WizardBodyRenderer
-FighterBodyRenderer <|.. GoblinBodyRenderer
-FighterBodyRenderer <|.. WolfBodyRenderer
-FighterBodyRenderer <|.. UnknownFighterBodyRenderer
-FighterBodyRenderer ..> FighterSpriteDto
-FighterSpriteEffectRenderer ..> FighterSpriteDto
-FighterSpriteHudRenderer ..> FighterSpriteDto
-
-note right of CombatantFactory
-  Abstract Factory for player and enemy aggregate creation.
+note right of Combatant
+  Encapsulation: all combatant state is private
+  and changed through behavior methods such as
+  attack(), receiveDamage(), heal(), and addStatusEffect().
 end note
 
-note right of TurnOrderStrategy
-  Strategy used by BattleEngine to compute initiative order.
+note top of PlayerCharacter
+  Inheritance: PlayerCharacter and EnemyCombatant
+  specialize the shared Combatant abstraction.
+end note
+
+note bottom of Combatant
+  Composition: Combatant owns value objects and
+  registries that make up its lifecycle state:
+  HitPoints, CombatStats, Inventory, and StatusEffectRegistry.
+end note
+
+note right of BattleAction
+  Polymorphism: player choices, enemy turns, items,
+  and special skills are executed through BattleAction.
+  New actions can be added without changing BattleEngine.
 end note
 
 note right of StatusEffect
-  Strategy-like behavior objects merged and applied by StatusEffectRegistry.
+  Polymorphism: StatusEffectRegistry applies different
+  effects through the StatusEffect interface.
 end note
 
-note right of BattleEventListener
-  Observer callback used by CLI and GUI for live event streaming.
+note right of BattleEngine
+  Dependency inversion: BattleEngine coordinates the battle
+  through abstractions such as TurnOrderStrategy,
+  PlayerDecisionProvider, TurnProcessor, and WaveManager.
+end note
+
+note bottom of TurnBasedArenaGui
+  Boundary-Control split: GUI and CLI classes handle input/output,
+  while BattleController and BattleEngine coordinate use cases.
 end note
 
 @enduml
