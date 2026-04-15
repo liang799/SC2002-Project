@@ -27,6 +27,9 @@ public final class FighterSpriteRenderer {
     ) {
         this.bodyRenderers = new EnumMap<>(FighterType.class);
         this.bodyRenderers.putAll(Objects.requireNonNull(bodyRenderers, "bodyRenderers"));
+        if (this.bodyRenderers.get(FighterType.UNKNOWN) == null) {
+            throw new IllegalArgumentException("bodyRenderers must include a non-null FighterType.UNKNOWN fallback");
+        }
         this.effectRenderer = Objects.requireNonNull(effectRenderer, "effectRenderer");
         this.hudRenderer = Objects.requireNonNull(hudRenderer, "hudRenderer");
     }
@@ -65,7 +68,15 @@ public final class FighterSpriteRenderer {
 
     FighterBodyRenderer bodyRendererFor(FighterSpriteDto sprite) {
         Objects.requireNonNull(sprite, "sprite");
-        return bodyRenderers.getOrDefault(sprite.type, bodyRenderers.get(FighterType.UNKNOWN));
+        FighterBodyRenderer renderer = bodyRenderers.get(sprite.type);
+        if (renderer != null) {
+            return renderer;
+        }
+        FighterBodyRenderer fallback = bodyRenderers.get(FighterType.UNKNOWN);
+        if (fallback == null) {
+            throw new IllegalStateException("FighterSpriteDto rendering requires a FighterType.UNKNOWN fallback");
+        }
+        return fallback;
     }
 
     private static Map<FighterType, FighterBodyRenderer> defaultBodyRenderers() {

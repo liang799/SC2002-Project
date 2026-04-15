@@ -2,8 +2,11 @@ package sc2002.turnbased.ui.gui.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +47,20 @@ class FighterSpriteRendererTest {
 
         assertThrows(NullPointerException.class, () -> renderer.bodyRendererFor(null));
         assertThrows(NullPointerException.class, () -> renderer.render(null, sprite, sprite.id));
+    }
+
+    @Test
+    void rejectsRendererMapWithoutUnknownFallback() {
+        Map<FighterType, FighterBodyRenderer> bodyRenderers = new EnumMap<>(FighterType.class);
+        bodyRenderers.put(FighterType.GOBLIN, new GoblinBodyRenderer());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new FighterSpriteRenderer(
+            bodyRenderers,
+            new FighterSpriteEffectRenderer(),
+            new FighterSpriteHudRenderer()
+        ));
+
+        assertTrue(exception.getMessage().contains("FighterType.UNKNOWN"));
     }
 
     private void assertRenderer(Class<? extends FighterBodyRenderer> expectedType, FighterSpriteDto sprite) {
