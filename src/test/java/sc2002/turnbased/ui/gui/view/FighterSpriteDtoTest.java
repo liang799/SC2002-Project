@@ -32,6 +32,7 @@ class FighterSpriteDtoTest {
         assertEquals(goblin.combatantId(), sprite.id);
         assertEquals("Goblin A", sprite.name);
         assertFalse(sprite.player);
+        assertEquals(FighterType.GOBLIN, sprite.type);
         assertEquals(goblin.getCurrentHp(), sprite.hp);
         assertEquals(goblin.getMaxHp(), sprite.maxHp);
         assertEquals(goblin.getAttack(), sprite.attack);
@@ -68,6 +69,7 @@ class FighterSpriteDtoTest {
         assertEquals(17, sprite.attack);
         assertEquals(12, sprite.baseAttack);
         assertFalse(sprite.alive);
+        assertEquals(FighterType.WOLF, sprite.type);
         assertEquals(List.of("STUN"), sprite.statuses);
         assertEquals(148.0, sprite.drawX());
         assertEquals(236.0, sprite.drawY());
@@ -85,5 +87,30 @@ class FighterSpriteDtoTest {
 
         assertEquals(List.of("SMOKE BOMB"), sprite.statuses);
         assertThrows(UnsupportedOperationException.class, () -> sprite.statuses.add("MUTATED"));
+    }
+
+    @Test
+    void updateFromRejectsSummaryForDifferentCombatantIdWithoutMutatingState() {
+        FighterSpriteDto sprite = FighterSpriteDto.fromSummary(
+            new CombatantSummary(CombatantId.generate(), "Wolf", 30, 45, 12, 12, true, List.of("READY")),
+            false
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> sprite.updateFrom(new CombatantSummary(
+            CombatantId.generate(),
+            "Goblin",
+            0,
+            55,
+            35,
+            35,
+            false,
+            List.of("STUN")
+        )));
+
+        assertEquals("Wolf", sprite.name);
+        assertEquals(30, sprite.hp);
+        assertTrue(sprite.alive);
+        assertEquals(FighterType.WOLF, sprite.type);
+        assertEquals(List.of("READY"), sprite.statuses);
     }
 }

@@ -15,6 +15,7 @@ import sc2002.turnbased.report.CombatantSummary;
 public final class FighterSpriteDto {
     public final CombatantId id;
     public boolean player;
+    public FighterType type;
     public String name;
     public int hp;
     public int maxHp;
@@ -44,6 +45,7 @@ public final class FighterSpriteDto {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.player = player;
+        this.type = FighterType.fromName(name, player);
         this.hp = hp;
         this.maxHp = maxHp;
         this.attack = attack;
@@ -84,6 +86,7 @@ public final class FighterSpriteDto {
 
     public void updateFrom(Combatant combatant) {
         Objects.requireNonNull(combatant, "combatant");
+        ensureSameId(combatant.combatantId());
         name = combatant.getName();
         hp = combatant.getCurrentHp();
         maxHp = combatant.getMaxHp();
@@ -91,10 +94,12 @@ public final class FighterSpriteDto {
         baseAttack = combatant.getBaseAttack();
         alive = combatant.isAlive();
         statuses = List.copyOf(combatant.getActiveStatuses());
+        type = FighterType.fromName(name, player);
     }
 
     public void updateFrom(CombatantSummary summary) {
         Objects.requireNonNull(summary, "summary");
+        ensureSameId(summary.getCombatantId());
         name = summary.getName();
         hp = summary.getCurrentHp();
         maxHp = summary.getMaxHp();
@@ -102,6 +107,12 @@ public final class FighterSpriteDto {
         baseAttack = summary.getBaseAttack();
         alive = summary.isAlive();
         statuses = List.copyOf(summary.getActiveStatuses());
+        type = FighterType.fromName(name, player);
+    }
+
+    public void setPlayer(boolean player) {
+        this.player = player;
+        type = FighterType.fromName(name, player);
     }
 
     public double drawX() {
@@ -114,5 +125,11 @@ public final class FighterSpriteDto {
 
     public Shape bounds() {
         return new Rectangle2D.Double(drawX() - 54, drawY() - 116, 108, 124);
+    }
+
+    private void ensureSameId(CombatantId sourceId) {
+        if (!id.equals(sourceId)) {
+            throw new IllegalArgumentException("Cannot update sprite " + id + " from combatant " + sourceId);
+        }
     }
 }
