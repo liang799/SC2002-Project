@@ -24,6 +24,11 @@ legend right
   Includes inheritance, associations, key attributes/methods,
   enumeration types, and OO principle notes.
 
+  Type labels:
+  <<interface>>, <<enumeration>>, and <<record>>
+  identify non-standard class boxes explicitly.
+  Plain rectangles are concrete classes.
+
   UML notation:
   <|-- inheritance
   <|.. interface implementation
@@ -35,7 +40,7 @@ legend right
 endlegend
 
 package "DOMAIN LAYER - domain entities" {
-  abstract class Combatant <<entity>> {
+  abstract class Combatant <<abstract>> <<entity>> {
     - combatantId: CombatantId
     - name: String
     - baseStats: CombatStats
@@ -125,7 +130,7 @@ package "DOMAIN LAYER - domain entities" {
     + clampMinimum(minimum: int): Stat
   }
 
-  enum ItemType {
+  enum ItemType <<enumeration>> {
     POTION
     POWER_STONE
     SMOKE_BOMB
@@ -135,7 +140,7 @@ package "DOMAIN LAYER - domain entities" {
     + getDescription(): String
   }
 
-  enum StatType {
+  enum StatType <<enumeration>> {
     ATTACK
     DEFENSE
     SPEED
@@ -143,7 +148,7 @@ package "DOMAIN LAYER - domain entities" {
 }
 
 package "DOMAIN LAYER - status effects" {
-  interface StatusEffect <<strategy>> {
+  interface StatusEffect <<interface>> <<strategy>> {
     + kind(): StatusEffectKind
     + description(): String
     + mergeWith(other: StatusEffect): Optional<StatusEffect>
@@ -195,8 +200,7 @@ package "DOMAIN LAYER - status effects" {
     + getTurnBlockReason(owner: Combatant): Optional<String>
   }
 
-  interface StatusEffectOutcome
-
+  interface StatusEffectOutcome <<interface>>
   class CombatantStatusOutcome <<record>> <<entity>> {
     - combatantId: CombatantId
     - combatantName: String
@@ -220,7 +224,7 @@ package "DOMAIN LAYER - status effects" {
     - duration: int
   }
 
-  enum StatusEffectKind {
+  enum StatusEffectKind <<enumeration>> {
     ARCANE_POWER
     DEFEND
     SMOKE_BOMB
@@ -228,25 +232,25 @@ package "DOMAIN LAYER - status effects" {
     STUN
   }
 
-  enum DamageModifierType {
+  enum DamageModifierType <<enumeration>> {
     BLOCKED
     REDUCED
     INCREASED
   }
 
-  enum StatusEffectChangeType {
+  enum StatusEffectChangeType <<enumeration>> {
     APPLIED
     EXPIRED
   }
 }
 
 package "DOMAIN LAYER - action strategies" {
-  interface ActionExecutionContext {
+  interface ActionExecutionContext <<interface>> {
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
   }
 
-  interface BattleAction <<strategy>> {
+  interface BattleAction <<interface>> <<strategy>> {
     + getName(): String
     + advancesCooldown(): boolean
     + targetingMode(actor: Combatant): TargetingMode
@@ -292,7 +296,7 @@ package "DOMAIN LAYER - action strategies" {
     + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
   }
 
-  enum TargetingMode {
+  enum TargetingMode <<enumeration>> {
     NONE
     SINGLE_ENEMY
   }
@@ -321,7 +325,7 @@ package "ENGINE LAYER - orchestration and setup" {
     ~ isBattleOver(): boolean
   }
 
-  interface TurnProcessor <<strategy>> {
+  interface TurnProcessor <<interface>> <<strategy>> {
     ~ processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
   }
 
@@ -330,7 +334,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
   }
 
-  interface WaveManager <<strategy>> {
+  interface WaveManager <<interface>> <<strategy>> {
     ~ spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
   }
 
@@ -341,7 +345,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
   }
 
-  interface RoundLifecycle <<strategy>> {
+  interface RoundLifecycle <<interface>> <<strategy>> {
     ~ createRoundSummary(roundNumber: int): RoundSummaryEvent
     ~ completeRound(emit: Consumer<BattleEvent>): void
   }
@@ -353,7 +357,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + completeRound(emit: Consumer<BattleEvent>): void
   }
 
-  interface BattleOutcomeReporter <<strategy>> {
+  interface BattleOutcomeReporter <<interface>> <<strategy>> {
     ~ reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
   }
 
@@ -362,7 +366,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
   }
 
-  interface TurnOrderStrategy <<strategy>> {
+  interface TurnOrderStrategy <<interface>> <<strategy>> {
     + determineOrder(combatants: List<Combatant>): List<Combatant>
   }
 
@@ -370,7 +374,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + determineOrder(combatants: List<Combatant>): List<Combatant>
   }
 
-  interface PlayerDecisionProvider <<strategy>> {
+  interface PlayerDecisionProvider <<interface>> <<strategy>> {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
@@ -380,7 +384,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  interface BattleEventListener <<observer>> {
+  interface BattleEventListener <<interface>> <<observer>> {
     + onEvent(event: BattleEvent): void
   }
 
@@ -419,7 +423,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + resolveFrom(livingEnemies: List<Combatant>): Combatant
   }
 
-  enum TargetType {
+  enum TargetType <<enumeration>> {
     NONE
     ENEMY
   }
@@ -434,11 +438,11 @@ package "ENGINE LAYER - orchestration and setup" {
     - count: int
   }
 
-  interface EnemyFactory <<factory>> {
+  interface EnemyFactory <<interface>> <<factory>> {
     + create(name: String, combatantFactory: CombatantFactory): EnemyCombatant
   }
 
-  enum EnemyType <<factory>> {
+  enum EnemyType <<enumeration>> <<factory>> {
     GOBLIN
     WOLF
     - displayName: String
@@ -448,7 +452,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + create(name: String, combatantFactory: CombatantFactory): EnemyCombatant
   }
 
-  enum PlayerType <<factory>> {
+  enum PlayerType <<enumeration>> <<factory>> {
     WARRIOR
     WIZARD
     - displayName: String
@@ -458,7 +462,7 @@ package "ENGINE LAYER - orchestration and setup" {
     + createPlayer(combatantFactory: CombatantFactory): PlayerCharacter
   }
 
-  enum DifficultyLevel {
+  enum DifficultyLevel <<enumeration>> {
     EASY
     MEDIUM
     HARD
@@ -470,7 +474,7 @@ package "ENGINE LAYER - orchestration and setup" {
 }
 
 package "ENGINE LAYER - factories/bootstrap" {
-  interface CombatantFactory <<factory>> {
+  interface CombatantFactory <<interface>> <<factory>> {
     + createPlayer(playerType: PlayerType): PlayerCharacter
     + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
   }
@@ -483,15 +487,15 @@ package "ENGINE LAYER - factories/bootstrap" {
     + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
   }
 
-  interface PlayerCharacterCreator <<factory>> {
+  interface PlayerCharacterCreator <<interface>> <<factory>> {
     + create(statusEffectRegistry: StatusEffectRegistry): PlayerCharacter
   }
 
-  interface EnemyCombatantCreator <<factory>> {
+  interface EnemyCombatantCreator <<interface>> <<factory>> {
     + create(name: String, statusEffectRegistry: StatusEffectRegistry): EnemyCombatant
   }
 
-  interface SpecialSkillFactory <<factory>> {
+  interface SpecialSkillFactory <<interface>> <<factory>> {
     + create(): SpecialSkill
   }
 
@@ -501,7 +505,7 @@ package "ENGINE LAYER - factories/bootstrap" {
     + create(): SpecialSkill
   }
 
-  interface StatusEffectRegistryFactory <<factory>> {
+  interface StatusEffectRegistryFactory <<interface>> <<factory>> {
     + create(): StatusEffectRegistry
   }
 
@@ -516,7 +520,7 @@ package "ENGINE LAYER - factories/bootstrap" {
 }
 
 package "ENGINE LAYER - report events" {
-  interface BattleEvent <<event>>
+  interface BattleEvent <<interface>> <<event>>
 
   class ActionEvent <<event>> {
     - actorId: CombatantId
@@ -596,7 +600,7 @@ package "UI LAYER - CLI boundary" {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  enum PostGameChoice {
+  enum PostGameChoice <<enumeration>> {
     REPLAY
     NEW_GAME
     EXIT
@@ -611,7 +615,7 @@ package "UI LAYER - Swing GUI boundary/control" {
     - commandPanel: BattleCommandPanel
   }
 
-  interface BattleView <<boundary>> {
+  interface BattleView <<interface>> <<boundary>> {
     + showSetupPreview(): void
     + showBattleLoaded(setup: BattleSetup): void
     + showBattleEvent(event: BattleEvent, message: String, transcriptLines: List<String>): void
@@ -645,7 +649,7 @@ package "UI LAYER - Swing GUI boundary/control" {
     + setResolving(actionName: String): void
   }
 
-  enum BattleCommand as "BattleCommandPanel.Command" {
+  enum BattleCommand as "BattleCommandPanel.Command" <<enumeration>> {
     BASIC_ATTACK
     DEFEND
     POTION
@@ -656,7 +660,7 @@ package "UI LAYER - Swing GUI boundary/control" {
     NEXT_TARGET
   }
 
-  enum GuiPostGameChoice as "gui.PostGameChoice" {
+  enum GuiPostGameChoice as "gui.PostGameChoice" <<enumeration>> {
     REPLAY
     NEW_SETUP
     EXIT
