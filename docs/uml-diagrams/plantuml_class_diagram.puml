@@ -756,15 +756,320 @@ package "ui" {
 }
 
 package "ui.gui" {
-  class GuiPlayerDecisionProvider <<boundary>> {
-    - owner: JFrame
-    + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
+  class TurnBasedArenaGui <<boundary>> {
+    - log: JTextArea
+    - arenaScene: ArenaScenePanel
+    - commandPanel: BattleCommandPanel
+    - setupPanel: BattleSetupPanel
+    - controller: BattleController
+    + TurnBasedArenaGui(setupFactory: BattleSetupFactory)
+    + showSetupPreview(): void
+    + showBattleLoaded(setup: BattleSetup): void
+    + showBattleEvent(event: BattleEvent, battleMessage: String, transcriptLines: List<String>): void
+    + showPlayerTurn(turn: PlayerTurnRequest): void
+    + selectedEnemyId(): CombatantId
+    + selectNextEnemy(direction: int): void
+    + askPostGameChoice(): PostGameChoice
+    + exitGame(): void
+    {static} +main(args: String[]): void
   }
 
-  class TurnBasedArenaGui <<boundary>> {
-    - formatter: BattleConsoleFormatter
-    - setupFactory: BattleSetupFactory
-    {static} +main(args: String[]): void
+  package "controller" {
+    class BattleController <<controller>> {
+      - view: BattleView
+      - model: BattleSessionModel
+      - playbackController: BattlePlaybackController
+      - commandResolver: PlayerCommandResolver
+      - setupFactory: BattleSetupFactory
+      - consoleFormatter: BattleConsoleFormatter
+      - dialogueFormatter: BattleDialogueFormatter
+      - battleExecutor: ExecutorService
+      + startBattle(request: BattleLaunchRequest): void
+      ~awaitPlayerDecision(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
+      + handleCommand(command: BattleCommandPanel.Command): void
+      + shutdown(): void
+    }
+
+    class GuiPlayerDecisionProvider <<adapter>> {
+      - controller: BattleController
+      + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
+    }
+  }
+
+  package "command" {
+    class PlayerCommandResolver <<service>> {
+      + resolve(command: BattleCommandPanel.Command, turn: PlayerTurnRequest, selectedTarget: CombatantId): Optional<ResolvedPlayerCommand>
+      - createAction(command: BattleCommandPanel.Command): BattleAction
+      - isActionAvailable(command: BattleCommandPanel.Command, player: PlayerCharacter): boolean
+      - findLivingEnemy(turn: PlayerTurnRequest, selectedTarget: CombatantId): Combatant
+    }
+  }
+
+  package "model" {
+    class BattleSessionModel <<model>> {
+      - battleRunning: boolean
+      - activePlayerTurn: PlayerTurnRequest
+      - queuedPlayerTurn: PlayerTurnRequest
+      - queuedPostGameConfig: PostGameConfig
+      + beginBattle(): boolean
+      + finishBattle(): void
+      + stopBattle(): void
+      + clearQueuedPlaybackState(): void
+      + activePlayerTurn(): Optional<PlayerTurnRequest>
+      + clearActivePlayerTurn(): void
+      + queuePlayerTurn(turn: PlayerTurnRequest): void
+      + takeQueuedPlayerTurn(): Optional<PlayerTurnRequest>
+      + queuePostGame(configuration: PostGameConfig): void
+      + takeQueuedPostGameConfig(): Optional<PostGameConfig>
+    }
+
+    class PlayerTurnRequest <<record>> {
+      - roundNumber: int
+      - player: PlayerCharacter
+      - livingEnemies: List<Combatant>
+      - responseQueue: BlockingQueue<PlayerDecision>
+    }
+
+    class ResolvedPlayerCommand <<record>> {
+      - decision: PlayerDecision
+      - actionName: String
+      - targetLabel: String
+    }
+  }
+
+  package "playback" {
+    class BattlePlaybackController <<controller>> {
+      - events: Queue<BattleEvent>
+      - dialogueFormatter: BattleDialogueFormatter
+      - eventPlayer: Consumer<BattleEvent>
+      - drainedCallback: Runnable
+      - playbackTimer: Timer
+      - active: boolean
+      + enqueue(event: BattleEvent): void
+      + playNextIfIdle(): void
+      + reset(): void
+    }
+
+    class BattleDialogueFormatter <<formatter>> {
+      + format(event: BattleEvent): String
+      + playbackDelayMillis(event: BattleEvent): int
+    }
+  }
+
+  package "setup" {
+    class BattleLaunchRequest <<request>> {
+      - setupCreator: Function<BattleSetupFactory, BattleSetup>
+      - replayConfiguration: PostGameConfig
+      - intro: String
+      {static} +preset(configuration: GameConfiguration): BattleLaunchRequest
+      {static} +custom(configuration: CustomGameConfiguration): BattleLaunchRequest
+      {static} +replay(configuration: PostGameConfig): BattleLaunchRequest
+      + createSetup(setupFactory: BattleSetupFactory): BattleSetup
+      + replayConfiguration(): PostGameConfig
+      + intro(): String
+    }
+
+    interface PostGameConfig <<sealed>> {
+      {static} +preset(configuration: GameConfiguration): PostGameConfig
+      {static} +custom(configuration: CustomGameConfiguration): PostGameConfig
+    }
+
+    class PostGameConfigPreset as "PostGameConfig.Preset" <<record>> {
+      - configuration: GameConfiguration
+    }
+
+    class PostGameConfigCustom as "PostGameConfig.Custom" <<record>> {
+      - configuration: CustomGameConfiguration
+    }
+  }
+
+  package "util" {
+    class SwingThread <<utility>> {
+      {static} +runAndWait(task: Runnable): void
+    }
+  }
+
+  package "view" {
+    interface BattleView <<view>> {
+      + showSetupPreview(): void
+      + setSetupControlsEnabled(enabled: boolean): void
+      + clearBattleLog(): void
+      + appendLog(line: String): void
+      + showBattleLoading(): void
+      + showBattleLoaded(setup: BattleSetup): void
+      + showBattleEvent(event: BattleEvent, battleMessage: String, transcriptLines: List<String>): void
+      + showPlayerTurn(turn: PlayerTurnRequest): void
+      + showCommandResolving(actionName: String): void
+      + showBattleComplete(): void
+      + showBattleError(message: String): void
+      + selectedEnemyId(): CombatantId
+      + selectNextEnemy(direction: int): void
+      + askPostGameChoice(): PostGameChoice
+      + exitGame(): void
+    }
+
+    class BattleSetupPanel <<view>> {
+      - startListener: Consumer<BattleLaunchRequest>
+      - layoutChangedListener: Runnable
+      - battleRunning: boolean
+      + setSetupControlsEnabled(enabled: boolean): void
+    }
+
+    class BattleCommandPanel <<view>> {
+      - promptLabel: JLabel
+      - statsLabel: JLabel
+      - targetLabel: JLabel
+      - optionButtons: JButton[4]
+      - commandListener: Consumer<Command>
+      - menuState: MenuState
+      - messageTimer: Timer
+      + setCommandListener(commandListener: Consumer<Command>): void
+      + setIdle(message: String): void
+      + showTurn(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>, selectedTargetLabel: String): void
+      + updateTarget(selectedTargetLabel: String): void
+      + setResolving(actionName: String): void
+      + showBattleMessage(message: String): void
+      + showBattleComplete(): void
+    }
+
+    enum BattleCommandPanelCommand as "BattleCommandPanel.Command" {
+      BASIC_ATTACK
+      DEFEND
+      POTION
+      SPECIAL_SKILL
+      POWER_STONE
+      SMOKE_BOMB
+      PREVIOUS_TARGET
+      NEXT_TARGET
+    }
+
+    class ArenaScenePanel <<view>> {
+      - model: ArenaSceneModel
+      - renderer: ArenaSceneRenderer
+      - sceneLoop: ArenaSceneLoop
+      + setTargetSelectionListener(targetSelectionListener: Consumer<String>): void
+      + showSetupPreview(): void
+      + startBattle(setup: BattleSetup): void
+      + showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>): void
+      + completePlayerTurn(actionName: String): void
+      + getSelectedEnemyId(): CombatantId
+      + getSelectedEnemyLabel(): String
+      + selectNextEnemy(direction: int): void
+      + applyBattleEvent(event: BattleEvent): void
+    }
+
+    class ArenaSceneModel <<model>> {
+      - sprites: Map<CombatantId, FighterSpriteDto>
+      - enemyOrder: List<CombatantId>
+      - pressedDirections: Set<String>
+      - floatingTexts: List<FloatingText>
+      - playerId: CombatantId
+      - selectedEnemyId: CombatantId
+      - banner: String
+      - hint: String
+      - acceptingPlayerTurn: boolean
+      - battleActive: boolean
+      ~showSetupPreview(): void
+      ~startBattle(setup: BattleSetup, arenaWidth: int, arenaHeight: int): void
+      ~showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>, arenaWidth: int, arenaHeight: int): void
+      ~completePlayerTurn(actionName: String): void
+      ~selectedEnemyId(): CombatantId
+      ~selectedEnemyLabel(): String
+      ~selectNextEnemy(direction: int): void
+      ~selectEnemyAt(point: Point): boolean
+      ~applyBattleEvent(event: BattleEvent, arenaWidth: int, arenaHeight: int): void
+      ~tick(arenaWidth: int, arenaHeight: int): void
+      ~spritesByDrawOrder(): List<FighterSpriteDto>
+    }
+
+    class ArenaSceneModelFloatingText as "ArenaSceneModel.FloatingText" <<record>> {
+      - text: String
+      - x: double
+      - y: double
+      - createdAt: long
+      - damage: boolean
+    }
+
+    class ArenaSceneLoop <<timer>> {
+      - tickCallback: Runnable
+      - tickTimer: Timer
+      ~start(): void
+      ~stop(): void
+    }
+
+    class ArenaSceneRenderer <<renderer>> {
+      - fighterRenderer: FighterSpriteRenderer
+      ~render(g: Graphics2D, model: ArenaSceneModel, width: int, height: int, now: long): void
+    }
+
+    class FighterSpriteDto <<dto>> {
+      + id: CombatantId
+      + player: boolean
+      + type: FighterType
+      + name: String
+      + hp: int
+      + maxHp: int
+      + attack: int
+      + baseAttack: int
+      + alive: boolean
+      + statuses: List<String>
+      + x: double
+      + y: double
+      + offsetX: double
+      + offsetY: double
+      + walkPhase: double
+      + hurtUntil: long
+      + pulseUntil: long
+      {static} +fromCombatant(combatant: Combatant, player: boolean): FighterSpriteDto
+      {static} +fromSummary(summary: CombatantSummary, player: boolean): FighterSpriteDto
+      + updateFrom(combatant: Combatant): void
+      + updateFrom(summary: CombatantSummary): void
+      + setPlayer(player: boolean): void
+      + drawX(): double
+      + drawY(): double
+      + bounds(): Shape
+    }
+
+    enum FighterType {
+      WARRIOR
+      WIZARD
+      GOBLIN
+      WOLF
+      UNKNOWN
+    }
+
+    class FighterSpriteRenderer <<renderer>> {
+      - bodyRenderers: Map<FighterType, FighterBodyRenderer>
+      - effectRenderer: FighterSpriteEffectRenderer
+      - hudRenderer: FighterSpriteHudRenderer
+      + render(g: Graphics2D, sprite: FighterSpriteDto, selectedEnemyId: CombatantId): void
+      ~bodyRendererFor(sprite: FighterSpriteDto): FighterBodyRenderer
+    }
+
+    interface FighterBodyRenderer <<strategy>> {
+      ~renderBody(g: Graphics2D, sprite: FighterSpriteDto): void
+    }
+
+    class WarriorBodyRenderer <<renderer>>
+    class WizardBodyRenderer <<renderer>>
+    class GoblinBodyRenderer <<renderer>>
+    class WolfBodyRenderer <<renderer>>
+    class UnknownFighterBodyRenderer <<renderer>>
+
+    class FighterSpriteEffectRenderer <<renderer>> {
+      ~renderPulse(g: Graphics2D, sprite: FighterSpriteDto): void
+    }
+
+    class FighterSpriteHudRenderer <<renderer>> {
+      ~render(g: Graphics2D, sprite: FighterSpriteDto, centerX: int, baseY: int): void
+      {static} ~healthRatio(sprite: FighterSpriteDto): double
+    }
+
+    enum GuiPostGameChoice as "PostGameChoice" {
+      REPLAY
+      NEW_SETUP
+      EXIT
+    }
   }
 }
 
@@ -915,12 +1220,119 @@ TurnBasedArenaCli ..> PostGameChoice
 EasyRoundsDemo ..> AppendixAScenarios
 EasyRoundsDemo ..> BattleConsoleFormatter
 EasyRoundsDemo ..> BattleEngine
+
+TurnBasedArenaGui ..|> BattleView
+TurnBasedArenaGui "1" *-- "1" BattleController : controller
+TurnBasedArenaGui "1" *-- "1" ArenaScenePanel : arenaScene
+TurnBasedArenaGui "1" *-- "1" BattleCommandPanel : commandPanel
+TurnBasedArenaGui "1" *-- "1" BattleSetupPanel : setupPanel
+TurnBasedArenaGui ..> BattleSetupFactory
+TurnBasedArenaGui ..> PlayerTurnRequest
+TurnBasedArenaGui ..> GuiPostGameChoice
+
+BattleController "1" --> "1" BattleView : view
+BattleController "1" *-- "1" BattleSessionModel : model
+BattleController "1" *-- "1" BattlePlaybackController : playbackController
+BattleController "1" *-- "1" PlayerCommandResolver : commandResolver
+BattleController "1" --> "1" BattleSetupFactory : setupFactory
+BattleController "1" *-- "1" BattleConsoleFormatter : consoleFormatter
+BattleController "1" *-- "1" BattleDialogueFormatter : dialogueFormatter
+BattleController ..> BattleEngine
+BattleController ..> BattleLaunchRequest
+BattleController ..> GuiPlayerDecisionProvider
+BattleController ..> PlayerTurnRequest
+BattleController ..> ResolvedPlayerCommand
+BattleController ..> PostGameConfig
+BattleController ..> SwingThread
+BattleController ..> BattleCommandPanelCommand
+BattleController ..> GuiPostGameChoice
+
+GuiPlayerDecisionProvider ..> BattleController
 GuiPlayerDecisionProvider ..> PlayerDecision
-TurnBasedArenaGui "1" *-- "1" BattleConsoleFormatter : formatter
-TurnBasedArenaGui "1" --> "1" BattleSetupFactory : setupFactory
-TurnBasedArenaGui ..> BattleEngine
-TurnBasedArenaGui ..> GuiPlayerDecisionProvider
-TurnBasedArenaGui ..> SpeedTurnOrderStrategy
+GuiPlayerDecisionProvider ..> PlayerDecisionProvider
+
+PlayerCommandResolver ..> BattleCommandPanelCommand
+PlayerCommandResolver ..> PlayerTurnRequest
+PlayerCommandResolver ..> ResolvedPlayerCommand
+PlayerCommandResolver ..> PlayerDecision
+PlayerCommandResolver ..> BattleAction
+PlayerCommandResolver ..> CombatantId
+
+BattleSessionModel o-- PlayerTurnRequest : active/queued turn
+BattleSessionModel o-- PostGameConfig : post-game replay config
+PlayerTurnRequest --> PlayerCharacter : player
+PlayerTurnRequest --> Combatant : living enemies
+PlayerTurnRequest --> PlayerDecision : response queue
+ResolvedPlayerCommand --> PlayerDecision : decision
+
+BattlePlaybackController o-- BattleEvent : queued events
+BattlePlaybackController --> BattleDialogueFormatter : delay/format policy
+BattlePlaybackController --> BattleController : drained callback
+BattleDialogueFormatter ..> BattleEvent
+
+BattleLaunchRequest --> BattleSetupFactory : creates setup through
+BattleLaunchRequest --> BattleSetup : returns
+BattleLaunchRequest --> GameConfiguration
+BattleLaunchRequest --> CustomGameConfiguration
+BattleLaunchRequest --> PostGameConfig
+PostGameConfig <|.. PostGameConfigPreset
+PostGameConfig <|.. PostGameConfigCustom
+PostGameConfigPreset --> GameConfiguration
+PostGameConfigCustom --> CustomGameConfiguration
+
+BattleView ..> PlayerTurnRequest
+BattleView ..> BattleSetup
+BattleView ..> BattleEvent
+BattleView ..> CombatantId
+BattleView ..> GuiPostGameChoice
+BattleSetupPanel ..> BattleLaunchRequest
+BattleSetupPanel ..> GameConfiguration
+BattleSetupPanel ..> CustomGameConfiguration
+BattleCommandPanel ..> BattleCommandPanelCommand
+BattleCommandPanel ..> PlayerCharacter
+BattleCommandPanel ..> Combatant
+
+ArenaScenePanel "1" *-- "1" ArenaSceneModel : model
+ArenaScenePanel "1" *-- "1" ArenaSceneRenderer : renderer
+ArenaScenePanel "1" *-- "1" ArenaSceneLoop : sceneLoop
+ArenaScenePanel ..> BattleSetup
+ArenaScenePanel ..> BattleEvent
+ArenaScenePanel ..> PlayerCharacter
+ArenaScenePanel ..> Combatant
+
+ArenaSceneModel "1" *-- "0..*" FighterSpriteDto : sprites
+ArenaSceneModel "1" *-- "0..*" ArenaSceneModelFloatingText : floatingTexts
+ArenaSceneModel ..> BattleSetup
+ArenaSceneModel ..> BattleEvent
+ArenaSceneModel ..> ActionEvent
+ArenaSceneModel ..> RoundSummaryEvent
+ArenaSceneModel ..> CombatantSummary
+ArenaSceneModel ..> CombatantId
+ArenaSceneModel ..> PlayerCharacter
+ArenaSceneModel ..> Combatant
+
+ArenaSceneLoop --> ArenaScenePanel : tick callback
+ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer : fighterRenderer
+ArenaSceneRenderer ..> ArenaSceneModel
+ArenaSceneRenderer ..> FighterSpriteDto
+
+FighterSpriteDto "1" *-- "1" CombatantId : id
+FighterSpriteDto "1" *-- "1" FighterType : type
+FighterSpriteDto ..> Combatant
+FighterSpriteDto ..> CombatantSummary
+FighterSpriteRenderer "1" *-- "1" FighterSpriteEffectRenderer : effectRenderer
+FighterSpriteRenderer "1" *-- "1" FighterSpriteHudRenderer : hudRenderer
+FighterSpriteRenderer "1" o-- "1..*" FighterBodyRenderer : bodyRenderers
+FighterSpriteRenderer ..> FighterSpriteDto
+FighterSpriteRenderer ..> FighterType
+FighterBodyRenderer <|.. WarriorBodyRenderer
+FighterBodyRenderer <|.. WizardBodyRenderer
+FighterBodyRenderer <|.. GoblinBodyRenderer
+FighterBodyRenderer <|.. WolfBodyRenderer
+FighterBodyRenderer <|.. UnknownFighterBodyRenderer
+FighterBodyRenderer ..> FighterSpriteDto
+FighterSpriteEffectRenderer ..> FighterSpriteDto
+FighterSpriteHudRenderer ..> FighterSpriteDto
 
 note right of CombatantFactory
   Abstract Factory for player and enemy aggregate creation.
