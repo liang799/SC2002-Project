@@ -34,6 +34,9 @@ public interface BattleView {
 
     void showNewSetupPrompt();
 
+    /**
+     * Returns the current selected enemy without changing selection state.
+     */
     CombatantId selectedEnemyId();
 
     void selectNextEnemy(int direction);

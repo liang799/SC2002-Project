@@ -100,19 +100,11 @@ final class ArenaSceneModel {
     }
 
     CombatantId selectedEnemyId() {
-        if (selectedEnemyId != null) {
-            FighterSpriteDto selected = sprites.get(selectedEnemyId);
-            if (selected != null && selected.alive && !selected.player) {
-                return selectedEnemyId;
-            }
-        }
-        chooseDefaultTarget();
         return selectedEnemyId;
     }
 
     String selectedEnemyLabel() {
-        CombatantId targetId = selectedEnemyId();
-        FighterSpriteDto target = targetId == null ? null : sprites.get(targetId);
+        FighterSpriteDto target = selectedEnemyId == null ? null : sprites.get(selectedEnemyId);
         if (target == null) {
             return "No target";
         }

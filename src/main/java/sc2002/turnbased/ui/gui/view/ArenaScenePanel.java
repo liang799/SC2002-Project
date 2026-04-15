@@ -85,6 +85,9 @@ public class ArenaScenePanel extends JPanel {
         repaint();
     }
 
+    /**
+     * Returns the current selected enemy without changing selection state.
+     */
     public CombatantId getSelectedEnemyId() {
         return model.selectedEnemyId();
     }
