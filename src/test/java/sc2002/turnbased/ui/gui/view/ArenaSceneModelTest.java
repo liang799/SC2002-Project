@@ -1,9 +1,12 @@
 package sc2002.turnbased.ui.gui.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,6 +99,72 @@ class ArenaSceneModelTest {
         assertEquals(stoppedX, player.x);
     }
 
+    @Test
+    void selectNextEnemyIsSafeWhenNoEnemiesAreAlive() {
+        BattleSetup setup = setupWithTwoEnemies();
+        PlayerCharacter player = setup.getPlayer();
+        Combatant goblinA = setup.getInitialEnemies().get(0);
+        Combatant goblinB = setup.getInitialEnemies().get(1);
+        ArenaSceneModel model = new ArenaSceneModel();
+        model.startBattle(setup, ARENA_WIDTH, ARENA_HEIGHT);
+
+        eliminate(model, player, goblinA, 10_000_000_000L);
+        eliminate(model, player, goblinB, 11_000_000_000L);
+
+        assertNull(model.selectedEnemyId());
+        assertEquals("No target", model.selectedEnemyLabel());
+        assertDoesNotThrow(() -> model.selectNextEnemy(1));
+        assertNull(model.selectedEnemyId());
+    }
+
+    @Test
+    void selectEnemyAtIgnoresOutOfBoundsPoints() {
+        ArenaSceneModel model = new ArenaSceneModel();
+        model.startBattle(setupWithTwoEnemies(), ARENA_WIDTH, ARENA_HEIGHT);
+        CombatantId selected = model.selectedEnemyId();
+
+        assertFalse(model.selectEnemyAt(new Point(-100, -100)));
+        assertEquals(selected, model.selectedEnemyId());
+        assertFalse(model.selectEnemyAt(new Point(ARENA_WIDTH + 100, ARENA_HEIGHT + 100)));
+        assertEquals(selected, model.selectedEnemyId());
+    }
+
+    @Test
+    void showSetupPreviewResetsBattleState() {
+        ArenaSceneModel model = new ArenaSceneModel();
+        model.showSetupPreview();
+        model.startBattle(setupWithTwoEnemies(), ARENA_WIDTH, ARENA_HEIGHT);
+        model.selectNextEnemy(1);
+        model.setDirectionPressed("right", true);
+
+        model.showSetupPreview();
+
+        assertNull(model.selectedEnemyId());
+        assertNull(model.currentSelectedEnemySprite());
+        assertNull(model.playerSprite());
+        assertTrue(model.spritesByDrawOrder().isEmpty());
+        assertTrue(model.floatingTexts().isEmpty());
+        assertFalse(model.battleActive());
+        assertFalse(model.acceptingPlayerTurn());
+        assertEquals(0, model.roundNumber());
+        assertEquals("No target", model.selectedEnemyLabel());
+    }
+
+    @Test
+    void playerUpdatePreservesZeroCoordinates() {
+        BattleSetup setup = setupWithTwoEnemies();
+        ArenaSceneModel model = new ArenaSceneModel();
+        model.startBattle(setup, ARENA_WIDTH, ARENA_HEIGHT);
+        FighterSpriteDto player = model.playerSprite();
+        player.x = 0;
+        player.y = 0;
+
+        model.showPlayerTurn(1, setup.getPlayer(), setup.getInitialEnemies(), ARENA_WIDTH, ARENA_HEIGHT);
+
+        assertEquals(0, player.x);
+        assertEquals(0, player.y);
+    }
+
     private static BattleSetup setupWithTwoEnemies() {
         return new BattleSetup(
             TestDependencies.warrior(),
@@ -110,5 +179,22 @@ class ArenaSceneModelTest {
             .filter(sprite -> sprite.id.equals(id))
             .findFirst()
             .orElseThrow();
+    }
+
+    private static void eliminate(ArenaSceneModel model, PlayerCharacter player, Combatant target, long eventTime) {
+        model.applyBattleEvent(new ActionEvent(
+            player.combatantId(),
+            player.getName(),
+            "Slash",
+            target.combatantId(),
+            target.getName(),
+            target.getCurrentHp(),
+            0,
+            player.getAttack(),
+            0,
+            target.getCurrentHp(),
+            true,
+            List.of()
+        ), ARENA_WIDTH, ARENA_HEIGHT, eventTime);
     }
 }
