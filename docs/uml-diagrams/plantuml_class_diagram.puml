@@ -328,12 +328,12 @@ package "ENGINE LAYER - orchestration and setup" {
   }
 
   interface TurnProcessor <<interface>> <<strategy>> {
-    ~ processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+    ~ processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
   }
 
   class DefaultTurnProcessor <<control>> {
     - player: PlayerCharacter
-    + processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+    + processTurn(roundNumber: int, actor: Combatant, playerDecisionProvider: PlayerDecisionProvider, actionExecutionContext: ActionExecutionContext, emit: Consumer<BattleEvent>): void
   }
 
   interface WaveManager <<interface>> <<strategy>> {
