@@ -1,0 +1,65 @@
+@startuml sd_SC2002_GUI_Orchestration
+title sd SC2002 GUI Orchestration Flow (Setup -> Run -> Postgame)
+
+hide footbox
+autonumber
+autoactivate on
+skinparam shadowing false
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+actor "u:User" as U
+boundary "ui:TurnBasedArenaGui" as UI
+control "bc:BattleController" as BC
+control "blr:BattleLaunchRequest" as BLR
+control "bsf:BattleSetupFactory" as BSF
+control "be:BattleEngine" as BE
+control "dp:GuiPlayerDecisionProvider" as GDP
+
+== App Start ==
+U -> UI : launch app
+UI -> BC : <<create>> BattleController(this, setupFactory)
+UI -> U : show BattleSetupPanel
+
+== Setup ==
+U -> UI : choose class/items/waves
+UI -> BLR : custom(CustomGameConfiguration)
+BLR --> UI : BattleLaunchRequest
+U -> UI : click Start battle
+UI -> BC : startBattle(request)
+
+BC -> UI : clearBattleLog()
+BC -> UI : setSetupControlsEnabled(false)
+BC -> UI : showBattleLoading()
+BC -> BLR : createSetup(BSF)
+BLR -> BSF : createCustom(CustomGameConfiguration)
+BSF --> BLR : BattleSetup
+BLR --> BC : BattleSetup
+BC -> UI : showBattleLoaded(BattleSetup)
+
+== Runtime ==
+BC -> GDP : <<create>> GuiPlayerDecisionProvider(this)
+BC -> BE : <<create>> BattleEngine(BattleSetup, SpeedTurnOrderStrategy)
+BC -> BE : runUntilBattleEnds(GDP, listener)
+
+loop for each BattleEvent from listener
+  BE --> BC : BattleEvent
+  BC -> UI : showBattleEvent(event, dialogue, transcript)
+end
+
+BC -> UI : showBattleComplete()
+BC -> UI : setSetupControlsEnabled(true)
+
+== Post game ==
+BC -> UI : askPostGameChoice()
+UI --> BC : PostGameChoice
+
+alt REPLAY
+  BC -> BC : startBattle(BattleLaunchRequest.replay(lastConfig))
+else NEW_SETUP
+  BC -> UI : showNewSetupPrompt()
+else EXIT
+  BC -> UI : exitGame()
+end
+
+@enduml
