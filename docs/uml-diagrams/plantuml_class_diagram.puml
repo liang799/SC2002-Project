@@ -409,7 +409,7 @@ package "ENGINE LAYER - orchestration and setup" {
   class CustomGameConfiguration <<record>> <<entity>> {
     - playerType: PlayerType
     - selectedItems: List<ItemType>
-    - waves: List<WaveSpec>
+    - waves: List<WaveSpec> [1..2]
   }
 
   class PlayerDecision <<record>> <<entity>> {
@@ -815,7 +815,7 @@ GameConfiguration --> DifficultyLevel
 GameConfiguration --> ItemType
 CustomGameConfiguration --> PlayerType
 CustomGameConfiguration --> ItemType
-CustomGameConfiguration "1" *-- "1..2" WaveSpec
+CustomGameConfiguration "1" *-- "1..2" WaveSpec : waves
 WaveSpec "1" *-- "1..*" EnemyCount
 EnemyCount --> EnemyFactory
 EnemyFactory <|.. EnemyType
