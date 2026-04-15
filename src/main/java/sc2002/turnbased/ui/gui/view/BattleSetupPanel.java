@@ -93,8 +93,6 @@ public final class BattleSetupPanel extends JPanel {
     public void setSetupControlsEnabled(boolean enabled) {
         battleRunning = !enabled;
         setComponentTreeEnabled(this, enabled);
-        startButton.setEnabled(enabled);
-        secondWaveCheck.setEnabled(enabled);
         updateSecondWaveEnabled();
     }
 
