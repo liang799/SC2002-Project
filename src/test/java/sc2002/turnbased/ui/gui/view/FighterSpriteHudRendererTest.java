@@ -10,12 +10,14 @@ import sc2002.turnbased.domain.CombatantId;
 import sc2002.turnbased.report.CombatantSummary;
 
 class FighterSpriteHudRendererTest {
+    private static final double DELTA = 1e-6;
+
     @Test
     void healthRatioIsBoundedBetweenZeroAndOne() {
-        assertEquals(1.0, FighterSpriteHudRenderer.healthRatio(sprite(130, 100)));
-        assertEquals(0.0, FighterSpriteHudRenderer.healthRatio(sprite(-10, 100)));
-        assertEquals(0.0, FighterSpriteHudRenderer.healthRatio(sprite(20, 0)));
-        assertEquals(0.4, FighterSpriteHudRenderer.healthRatio(sprite(40, 100)));
+        assertEquals(1.0, FighterSpriteHudRenderer.healthRatio(sprite(130, 100)), DELTA);
+        assertEquals(0.0, FighterSpriteHudRenderer.healthRatio(sprite(-10, 100)), DELTA);
+        assertEquals(0.0, FighterSpriteHudRenderer.healthRatio(sprite(20, 0)), DELTA);
+        assertEquals(0.4, FighterSpriteHudRenderer.healthRatio(sprite(40, 100)), DELTA);
     }
 
     private static FighterSpriteDto sprite(int hp, int maxHp) {

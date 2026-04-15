@@ -7,6 +7,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.SwingUtilities;
 
@@ -36,6 +38,8 @@ import sc2002.turnbased.ui.gui.view.BattleView;
 import sc2002.turnbased.ui.gui.view.PostGameChoice;
 
 public final class BattleController {
+    private static final Logger LOGGER = Logger.getLogger(BattleController.class.getName());
+
     private final BattleView view;
     private final BattleSessionModel model;
     private final BattlePlaybackController playbackController;
@@ -144,9 +148,10 @@ public final class BattleController {
             view.showCommandResolving(playerCommand.actionName());
             view.appendLog(">> " + playerCommand.actionName() + playerCommand.targetLabel());
         } else {
-            view.appendLog("Warning: could not queue command "
-                + playerCommand.actionName()
-                + playerCommand.targetLabel());
+            view.appendLog("Warning: could not queue command | command=" + command
+                + " | resolved=" + playerCommand
+                + " | action=" + playerCommand.actionName()
+                + " | target=" + playerCommand.targetLabel());
         }
     }
 
@@ -187,6 +192,7 @@ public final class BattleController {
             engine.runUntilBattleEnds(decisions, listener);
             SwingUtilities.invokeLater(() -> queuePostGame(request.replayConfiguration()));
         } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Battle execution failed", ex);
             SwingUtilities.invokeLater(() -> showBattleError(ex));
         }
     }

@@ -41,28 +41,31 @@ public final class FighterSpriteRenderer {
         Graphics2D copy = (Graphics2D) g.create();
         double x = sprite.drawX();
         double y = sprite.drawY();
-        copy.translate(x, y);
-        if (!sprite.alive) {
-            copy.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.52f));
-            copy.rotate(sprite.player ? -0.25 : 0.32);
-            copy.translate(0, 24);
+        try {
+            copy.translate(x, y);
+            if (!sprite.alive) {
+                copy.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.52f));
+                copy.rotate(sprite.player ? -0.25 : 0.32);
+                copy.translate(0, 24);
+            }
+
+            copy.setColor(new Color(0, 0, 0, sprite.alive ? 72 : 42));
+            copy.fill(new Ellipse2D.Double(-36, -8, 72, 18));
+
+            if (Objects.equals(sprite.id, selectedEnemyId) && sprite.alive) {
+                copy.setStroke(new BasicStroke(3f));
+                copy.setColor(new Color(255, 229, 87, 210));
+                copy.draw(new Ellipse2D.Double(-44, -15, 88, 28));
+                copy.setColor(new Color(255, 84, 74, 130));
+                copy.draw(new Ellipse2D.Double(-52, -21, 104, 40));
+            }
+
+            bodyRendererFor(sprite).renderBody(copy, sprite);
+            effectRenderer.renderPulse(copy, sprite);
+        } finally {
+            copy.dispose();
         }
 
-        copy.setColor(new Color(0, 0, 0, sprite.alive ? 72 : 42));
-        copy.fill(new Ellipse2D.Double(-36, -8, 72, 18));
-
-        if (sprite.id.equals(selectedEnemyId) && sprite.alive) {
-            copy.setStroke(new BasicStroke(3f));
-            copy.setColor(new Color(255, 229, 87, 210));
-            copy.draw(new Ellipse2D.Double(-44, -15, 88, 28));
-            copy.setColor(new Color(255, 84, 74, 130));
-            copy.draw(new Ellipse2D.Double(-52, -21, 104, 40));
-        }
-
-        bodyRendererFor(sprite).renderBody(copy, sprite);
-        effectRenderer.renderPulse(copy, sprite);
-
-        copy.dispose();
         hudRenderer.render(g, sprite, (int) x, (int) y);
     }
 
