@@ -1155,20 +1155,39 @@ note bottom of Combatant
 end note
 
 note right of BattleAction
-  Polymorphism: player choices, enemy turns, items,
+  Polymorphism / Open-Closed: player choices, enemy turns, items,
   and special skills are executed through BattleAction.
   New actions can be added without changing BattleEngine.
 end note
 
 note right of StatusEffect
-  Polymorphism: StatusEffectRegistry applies different
-  effects through the StatusEffect interface.
+  Polymorphism / Open-Closed: StatusEffectRegistry applies
+  different effects through the StatusEffect interface.
+  New effects plug in by implementing StatusEffect.
 end note
 
 note right of BattleEngine
   Dependency inversion: BattleEngine coordinates the battle
   through abstractions such as TurnOrderStrategy,
   PlayerDecisionProvider, TurnProcessor, and WaveManager.
+end note
+
+note bottom of BattleEventPublisher
+  Observer pattern: BattleEventPublisher records each event
+  and notifies the BattleEventListener callback used by
+  CLI and GUI presentation layers.
+end note
+
+note right of BattleSetupFactory
+  Factory pattern: BattleSetupFactory and CombatantFactory
+  centralize object creation for preset and custom battles,
+  keeping setup logic out of BattleEngine.
+end note
+
+note bottom of ArenaScenePanel
+  Single Responsibility Principle: ArenaScenePanel owns the
+  Swing boundary, ArenaSceneModel owns scene state,
+  ArenaSceneRenderer draws it, and ArenaSceneLoop ticks it.
 end note
 
 note bottom of TurnBasedArenaGui
