@@ -143,7 +143,14 @@ group Round 2
   activate UI
   UI -> U : attempt SpecialSkill (CD 3)
   activate U
-  UI -> U : cooldown message, then choose BasicAttack target=GA
+  UI -> U : cooldown message
+  deactivate U
+  deactivate UI
+
+  U -> UI : click FIGHT again to re-initiate
+  activate UI
+  UI -> U : choose BasicAttack target=GA
+  activate U
   UI --> DP : PlayerDecision(BasicAttackAction, GA)
   deactivate U
   deactivate UI
@@ -151,7 +158,9 @@ group Round 2
   deactivate DP
   note over DP
   Scenario step: SpecialSkill is attempted during cooldown,
-  cooldown feedback is shown, then BasicAttack is selected.
+  cooldown feedback ends the current interaction,
+  user must click FIGHT again to re-initiate,
+  then select BasicAttack.
   end note
   TP -> W : advanceRoundState(cooldown 3 to 2)
   activate W
@@ -522,5 +531,4 @@ BC -> UI : exitGame()
 activate UI
 deactivate UI
 deactivate BC
-@enduml
 @enduml
