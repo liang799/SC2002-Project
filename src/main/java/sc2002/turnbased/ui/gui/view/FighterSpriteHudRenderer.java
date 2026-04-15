@@ -10,7 +10,7 @@ final class FighterSpriteHudRenderer {
         int barWidth = sprite.player ? 118 : 96;
         int x = centerX - barWidth / 2;
         int y = baseY - (sprite.player ? 126 : 112);
-        double ratio = sprite.maxHp == 0 ? 0 : Math.max(0, sprite.hp / (double) sprite.maxHp);
+        double ratio = healthRatio(sprite);
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         FontMetrics metrics = g.getFontMetrics();
         String label = sprite.name;
@@ -41,5 +41,9 @@ final class FighterSpriteHudRenderer {
             g.setColor(new Color(176, 235, 217));
             g.drawString(statuses, centerX - textWidth / 2, statusY);
         }
+    }
+
+    static double healthRatio(FighterSpriteDto sprite) {
+        return sprite.maxHp == 0 ? 0 : Math.min(1.0, Math.max(0, sprite.hp / (double) sprite.maxHp));
     }
 }
