@@ -135,6 +135,13 @@ public final class BattleController {
             return;
         }
 
+        if (command == BattleCommandPanel.Command.SPECIAL_SKILL
+            && !activeTurn.get().player().canUseSpecialSkill()) {
+            int turnsRemaining = activeTurn.get().player().getSpecialSkillCooldown();
+            view.appendLog("Special skill is on cooldown. " + turnsRemaining + " turn(s) remaining.");
+            return;
+        }
+
         CombatantId selectedTarget = view.selectedEnemyId();
         Optional<ResolvedPlayerCommand> resolved = commandResolver.resolve(command, activeTurn.get(), selectedTarget);
         if (resolved.isEmpty()) {

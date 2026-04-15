@@ -1,45 +1,44 @@
-@startuml sd_SC2002_CustomMode_Playtest
-title sd SC2002 Runtime Battle Flow - Custom Mode Playtest
-hide footbox
+@startuml sd_SC2002_CustomMode_Walkthrough
+title sd SC2002 Runtime Battle Flow - Custom Mode Walkthrough 
 autonumber
 autoactivate on
 skinparam shadowing false
 skinparam ParticipantPadding 20
 skinparam BoxPadding 10
+skinparam actorBackgroundColor #DDF3F7
 
 actor "u:User" as U
 boundary "ui:TurnBasedArenaGui" as UI
 control "bc:BattleController" as BC
 control "bsf:BattleSetupFactory" as BSF
 control "be:BattleEngine" as BE
-control "dp:GuiDecisionBridge" as DP
+control "tp:DefaultTurnProcessor" as TP
+control "dp:GuiPlayerDecisionProvider" as DP
 control "blr:BattleLaunchRequest" as BLR
 control "wm:DefaultWaveManager" as WM
 control "tos:SpeedTurnOrderStrategy" as TOS
-entity "w:PlayerCharacter" as W
+entity "wizard:PlayerCharacter" as W
 entity "inv:Inventory" as INV
-entity "gA:Goblin A" as GA
-entity "wA:Wolf A" as WA
-entity "wB:Wolf B" as WB
-entity "wC:Wolf C" as WC
+entity "GA:Goblin" as GA
+entity "GB:Goblin" as GB
+entity "GC:Goblin" as GC
 
 note over BE
 Damage formula: damage = max(0, attackUsed - targetDefense), then status modifiers.
-Defend gives +10 DEF for 2 rounds.
-Smoke Bomb blocks enemy-origin damage for 2 enemy attacks.
-Cooldown decreases before player action when the chosen action advances cooldown.
-Shield Bash triggers cooldown reset to 3 when used.
+Smoke Bomb blocks the next 2 enemy-origin attacks.
+Defend adds +10 DEF for 2 rounds.
+Cooldown decreases before each player action that advances cooldown.
 end note
 
 == Setup ==
 U -> UI : launch GUI app
-UI -> BC : <<create>> BattleController(this, setupFactory)
-UI -> U : show setup panel (class, items, waves)
+UI --> BC : <<create>> BattleController(this, setupFactory)
+UI -> U : show setup panel
 
-U -> UI : select WARRIOR
+U -> UI : select WIZARD
 U -> UI : select POTION, SMOKE_BOMB
-U -> UI : configure Wave 1 (Goblin x1, Wolf x1)
-U -> UI : configure Wave 2 (Wolf x2)
+U -> UI : configure Wave 1 (Goblin x1)
+U -> UI : configure Wave 2 (Goblin x2)
 UI -> BLR : custom(CustomGameConfiguration)
 BLR --> UI : BattleLaunchRequest
 U -> UI : click Start Battle
@@ -51,434 +50,275 @@ BC -> UI : showBattleLoading()
 BC -> BLR : createSetup(BSF)
 BLR -> BSF : createCustom(CustomGameConfiguration)
 
-BSF -> W : createPlayer(WARRIOR)
+BSF -> W : createPlayer(WIZARD)
 BSF -> INV : populateInventory(POTION=1, SMOKE_BOMB=1)
-BSF -> GA : <<create>> createEnemy(GOBLIN, "Goblin A")
-BSF -> WA : <<create>> createEnemy(WOLF, "Wolf A")
-BSF -> WB : <<create>> createEnemy(WOLF, "Wolf B") [reserve]
-BSF -> WC : <<create>> createEnemy(WOLF, "Wolf C") [reserve]
+create GA
+BSF --> GA : <<create>> createEnemy(GOBLIN, "Goblin A")
+create GB
+BSF --> GB : <<create>> createEnemy(GOBLIN, "Goblin B") [reserve]
+create GC
+BSF --> GC : <<create>> createEnemy(GOBLIN, "Goblin C") [reserve]
 BSF --> BLR : BattleSetup
 BLR --> BC : BattleSetup
 
 BC -> UI : showBattleLoaded(BattleSetup)
-BC -> DP : <<create>> GuiDecisionBridge
-BC -> BE : <<create>> BattleEngine(BattleSetup, SpeedTurnOrderStrategy)
+BC --> DP : <<create>> GuiPlayerDecisionProvider(this)
+BC --> BE : <<create>> BattleEngine(BattleSetup, SpeedTurnOrderStrategy)
 BC -> BE : runUntilBattleEnds(DP, battleEventListener)
 
 note over DP,BC
-GuiDecisionBridge represents:
-GuiPlayerDecisionProvider.decide + BattleController.awaitPlayerDecision/handleCommand.
-end note
-
-note over BC,UI
-battleEventListener enqueues each BattleEvent and playback renders
-view.showBattleEvent(..., consoleFormatter.format(List.of(event))).
-end note
-
-note over BE
-Turn order by SPD in this custom setup:
-Wave 1: Wolf A(35) -> Warrior(30) -> Goblin A(25)
-Wave 2: Wolf B(35) -> Wolf C(35) -> Warrior(30)
+GUI runtime decision flow:
+GuiPlayerDecisionProvider -> BattleController.awaitPlayerDecision -> command resolution.
+This sequence models one concrete custom battle walkthrough.
 end note
 
 == Round 1 ==
 group Round 1
-  BE -> TOS : determineOrder([WA, W, GA])
-  TOS --> BE : [WA, W, GA]
+  BE -> TOS : determineOrder([GA, W])
+  TOS --> BE : [GA, W]
 
-  BE -> WA : takeTurn(context, target=W)
-  WA -> W : attack(target=W, attackPower=45)
-  W --> WA : AttackResolution(damage=25, hpAfter=235)
-  WA --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=235)
-
-  BE -> DP : decide(1, W, [GA, WA])
-  DP -> UI : showPlayerTurn(1)
-  UI -> U : choose SpecialSkill(Shield Bash), target=WA
-  UI --> DP : PlayerDecision(UseSpecialSkillAction, WA)
-
-  alt if(cooldownReady)
-    DP --> BE : PlayerDecision(UseSpecialSkillAction, WA)
-    BE -> W : advanceRoundState(cooldown 0 to 0)
-    BE -> W : useSpecialSkill(context, WA)
-    W -> WA : attack(target=WA, attackPower=40)
-    WA --> W : AttackResolution(damage=35, hpAfter=5)
-    W -> WA : addStatusEffect(StunStatusEffect(2))
-    WA --> W : StatusEffectOutcome(STUNNED, duration=2 turns)
-    W --> BE : ActionEvent(Shield Bash, damage=35, wolfHp=5)
-  else if(cooldownReady)==false
-    BC -> UI : showUnavailableCommand()
-  end
-
-  BE -> GA : takeTurn(context, target=W)
+  BE -> TP : processTurn(round=1, actor=GA, DP, context, emit)
+  TP -> GA : takeTurn(context, target=W)
   GA -> W : attack(target=W, attackPower=35)
-  W --> GA : AttackResolution(damage=15, hpAfter=220)
-  GA --> BE : ActionEvent(BasicAttack, damage=15, warriorHp=220)
+  W --> GA : AttackResolution(damage=25, hpAfter=175)
+  GA --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=175)
+
+  BE -> TP : processTurn(round=1, actor=W, DP, context, emit)
+  TP -> DP : decide(1, W, [GA])
+  DP -> UI : showPlayerTurn(1)
+  UI -> U : choose SpecialSkill(Arcane Blast)
+  UI --> DP : PlayerDecision(UseSpecialSkillAction)
+  DP --> TP : PlayerDecision(UseSpecialSkillAction)
+  TP -> W : advanceRoundState(cooldown 0 to 0)
+  TP -> W : useSpecialSkill(context, target=none)
+  W -> GA : attack(target=GA, attackPower=50)
+  GA --> W : AttackResolution(damage=35, hpAfter=20)
+  W --> TP : ActionEvent(Arcane Blast, damage=35, goblinAHp=20)
 
   note over BE
-  End R1: Warrior 220/260, Goblin A 55, Wolf A 5 STUNNED, Potion 1, Smoke Bomb 1, CD 3.
+  End R1: Wizard 175/200, Goblin A 20, Potion 1, Smoke Bomb 1, CD 3.
   end note
 end
 
 == Round 2 ==
 group Round 2
-  alt if(stunned) Wolf A
-    BE -> WA : getTurnBlockReason()
-    WA --> BE : SkippedTurnEvent(STUNNED)
-  else Wolf A not stunned
-    BE -> WA : takeTurn(context, target=W)
-  end
+  BE -> TP : processTurn(round=2, actor=GA, DP, context, emit)
+  TP -> GA : takeTurn(context, target=W)
+  GA -> W : attack(target=W, attackPower=35)
+  W --> GA : AttackResolution(damage=25, hpAfter=150)
+  GA --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=150)
 
-  BE -> DP : decide(2, W, [GA, WA])
+  BE -> TP : processTurn(round=2, actor=W, DP, context, emit)
+  TP -> DP : decide(2, W, [GA])
   DP -> UI : showPlayerTurn(2)
-  UI -> U : choose Item(Smoke Bomb)
-  UI --> DP : PlayerDecision(UseSmokeBombAction)
-  DP --> BE : PlayerDecision(UseSmokeBombAction)
-  BE -> W : advanceRoundState(cooldown 3 to 2)
-  BE -> INV : use(SMOKE_BOMB)
-  BE -> W : addStatusEffect(SmokeBombStatusEffect(2))
-  W --> BE : NarrationEvent(Smoke Bomb used)
+  UI -> U : press SpecialSkill (CD 3) -> cooldown message, then choose BasicAttack target=GA
+  UI --> DP : PlayerDecision(BasicAttackAction, GA)
+  DP --> TP : PlayerDecision(BasicAttackAction, GA)
+  note over DP
+  Scenario step: SpecialSkill is attempted during cooldown,
+  cooldown feedback is shown, then BasicAttack is selected.
+  end note
+  TP -> W : advanceRoundState(cooldown 3 to 2)
+  TP -> W : execute BasicAttackAction(GA)
+  W -> GA : attack(target=GA, attackPower=50)
+  GA --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  W --> TP : ActionEvent(BasicAttack, damage=35, goblinAHp=0)
 
-  alt if(smokeBombActive)
-    BE -> GA : takeTurn(context, target=W)
-    GA -> W : attack(target=W, attackPower=35)
-    W --> GA : AttackResolution(damage=0, hpAfter=220, note=Smoke Bomb blocked the attack)
-    GA --> BE : ActionEvent(BasicAttack, damage=0, warriorHp=220)
-  else smokeBombInactive
-    BE -> GA : takeTurn(context, target=W)
-  end
+  BE -> WM : spawnBackupIfNeeded(emit)
+  WM --> BE : NarrationEvent(Backup Spawn triggered: Goblin B, Goblin C)
 
   note over BE
-  End R2: Warrior 220/260, Goblin A 55, Wolf A 5 STUNNED, Potion 1, Smoke Bomb 0, CD 2.
+  End R2: Wizard 150/200, Goblin A 0, Goblin B 55, Goblin C 55, CD 2.
   end note
 end
 
 == Round 3 ==
 group Round 3
-  alt if(stunned) Wolf A
-    BE -> WA : getTurnBlockReason()
-    WA --> BE : SkippedTurnEvent(STUNNED, note=Stun expired)
-  else Wolf A not stunned
-    BE -> WA : takeTurn(context, target=W)
-  end
+  BE -> TOS : determineOrder([GB, GC, W])
+  TOS --> BE : [GB, GC, W]
 
-  BE -> DP : decide(3, W, [GA, WA])
+  BE -> TP : processTurn(round=3, actor=GB, DP, context, emit)
+  TP -> GB : takeTurn(context, target=W)
+  GB -> W : attack(target=W, attackPower=35)
+  W --> GB : AttackResolution(damage=25, hpAfter=125)
+  GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=125)
+
+  BE -> TP : processTurn(round=3, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=25, hpAfter=100)
+  GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=100)
+
+  BE -> TP : processTurn(round=3, actor=W, DP, context, emit)
+  TP -> DP : decide(3, W, [GB, GC])
   DP -> UI : showPlayerTurn(3)
-  UI -> U : choose BasicAttack, target=WA
-  UI --> DP : PlayerDecision(BasicAttackAction, WA)
-  DP --> BE : PlayerDecision(BasicAttackAction, WA)
-  BE -> W : advanceRoundState(cooldown 2 to 1)
-  BE -> W : execute BasicAttackAction(WA)
-  W -> WA : attack(target=WA, attackPower=40)
-  WA --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
-  W --> BE : ActionEvent(BasicAttack, damage=35, wolfHp=0)
-
-  alt if(smokeBombActive final charge)
-    BE -> GA : takeTurn(context, target=W)
-    GA -> W : attack(target=W, attackPower=35)
-    W --> GA : AttackResolution(damage=0, hpAfter=220, note=Smoke Bomb blocked the attack)
-    GA --> BE : ActionEvent(BasicAttack, damage=0, warriorHp=220, note=Smoke Bomb expired)
-  else smokeBombInactive
-    BE -> GA : takeTurn(context, target=W)
-  end
+  UI -> U : choose Item(Smoke Bomb)
+  UI --> DP : PlayerDecision(UseSmokeBombAction)
+  DP --> TP : PlayerDecision(UseSmokeBombAction)
+  TP -> W : advanceRoundState(cooldown 2 to 1)
+  TP -> INV : use(SMOKE_BOMB)
+  TP -> W : addStatusEffect(SmokeBombStatusEffect(2))
+  W --> TP : NarrationEvent(Smoke Bomb used)
 
   note over BE
-  End R3: Warrior 220/260, Goblin A 55, Wolf A 0, Potion 1, Smoke Bomb 0, CD 1.
+  End R3: Wizard 100/200, Goblin B 55, Goblin C 55, Potion 1, Smoke Bomb 0, CD 1.
   end note
 end
 
 == Round 4 ==
 group Round 4
-  BE -> DP : decide(4, W, [GA])
+  BE -> TP : processTurn(round=4, actor=GB, DP, context, emit)
+  TP -> GB : takeTurn(context, target=W)
+  GB -> W : attack(target=W, attackPower=35)
+  W --> GB : AttackResolution(damage=0, hpAfter=100, note=Smoke Bomb blocked the attack)
+  GB --> TP : ActionEvent(BasicAttack, damage=0, wizardHp=100)
+
+  BE -> TP : processTurn(round=4, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=0, hpAfter=100, note=Smoke Bomb blocked the attack)
+  GC --> TP : ActionEvent(BasicAttack, damage=0, wizardHp=100, note=Smoke Bomb expired)
+
+  BE -> TP : processTurn(round=4, actor=W, DP, context, emit)
+  TP -> DP : decide(4, W, [GB, GC])
   DP -> UI : showPlayerTurn(4)
   UI -> U : choose Defend
   UI --> DP : PlayerDecision(DefendAction)
-  DP --> BE : PlayerDecision(DefendAction)
-  BE -> W : advanceRoundState(cooldown 1 to 0)
-  BE -> W : addStatusEffect(DefendStatusEffect(2))
-  W --> BE : StatusEffectOutcome(DEF +10, duration=2 rounds)
-
-  BE -> GA : takeTurn(context, target=W)
-  GA -> W : attack(target=W, attackPower=35)
-  W --> GA : AttackResolution(damage=5, hpAfter=215, defenseApplied=30)
-  GA --> BE : ActionEvent(BasicAttack, damage=5, warriorHp=215)
+  DP --> TP : PlayerDecision(DefendAction)
+  TP -> W : advanceRoundState(cooldown 1 to 0)
+  TP -> W : addStatusEffect(DefendStatusEffect(2))
+  W --> TP : StatusEffectOutcome(DEF +10, duration=2 rounds)
 
   note over BE
-  End R4: Warrior 215/260, Goblin A 55, Defend active, CD 0.
+  End R4: Wizard 100/200, Goblin B 55, Goblin C 55, DEFENDING, CD 0.
   end note
 end
 
 == Round 5 ==
 group Round 5
-  BE -> DP : decide(5, W, [GA])
+  BE -> TP : processTurn(round=5, actor=GB, DP, context, emit)
+  TP -> GB : takeTurn(context, target=W)
+  GB -> W : attack(target=W, attackPower=35)
+  W --> GB : AttackResolution(damage=15, hpAfter=85, defenseApplied=20)
+  GB --> TP : ActionEvent(BasicAttack, damage=15, wizardHp=85)
+
+  BE -> TP : processTurn(round=5, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=15, hpAfter=70, defenseApplied=20)
+  GC --> TP : ActionEvent(BasicAttack, damage=15, wizardHp=70)
+
+  BE -> TP : processTurn(round=5, actor=W, DP, context, emit)
+  TP -> DP : decide(5, W, [GB, GC])
   DP -> UI : showPlayerTurn(5)
-  UI -> U : choose SpecialSkill(Shield Bash), target=GA
-  UI --> DP : PlayerDecision(UseSpecialSkillAction, GA)
-
-  alt if(cooldownReady)
-    DP --> BE : PlayerDecision(UseSpecialSkillAction, GA)
-    BE -> W : advanceRoundState(cooldown 0 to 0)
-    BE -> W : useSpecialSkill(context, GA)
-    W -> GA : attack(target=GA, attackPower=40)
-    GA --> W : AttackResolution(damage=25, hpAfter=30)
-    W -> GA : addStatusEffect(StunStatusEffect(2))
-    GA --> W : StatusEffectOutcome(STUNNED, duration=2 turns)
-    W --> BE : ActionEvent(Shield Bash, damage=25, goblinHp=30)
-  else if(cooldownReady)==false
-    BC -> UI : showUnavailableCommand()
-  end
-
-  alt if(stunned) Goblin A
-    BE -> GA : getTurnBlockReason()
-    GA --> BE : SkippedTurnEvent(STUNNED)
-  else Goblin A not stunned
-    BE -> GA : takeTurn(context, target=W)
-  end
+  UI -> U : choose Item(Potion)
+  UI --> DP : PlayerDecision(UsePotionAction)
+  DP --> TP : PlayerDecision(UsePotionAction)
+  TP -> W : advanceRoundState(cooldown 0 to 0)
+  TP -> INV : use(POTION)
+  TP -> W : heal(amount=100)
+  W --> TP : NarrationEvent(Wizard -> Item -> Potion used: HP: 70 -> 170 (+100))
 
   note over BE
-  End R5: Warrior 215/260, Goblin A 30 STUNNED, Potion 1, Smoke Bomb 0, CD 3.
+  End R5: Wizard 170/200, Goblin B 55, Goblin C 55, Potion 0, Smoke Bomb 0, CD 0.
   end note
 end
 
 == Round 6 ==
 group Round 6
-  BE -> DP : decide(6, W, [GA])
-  DP -> UI : showPlayerTurn(6)
-  UI -> U : choose BasicAttack, target=GA
-  UI --> DP : PlayerDecision(BasicAttackAction, GA)
-  DP --> BE : PlayerDecision(BasicAttackAction, GA)
-  BE -> W : advanceRoundState(cooldown 3 to 2)
-  BE -> W : execute BasicAttackAction(GA)
-  W -> GA : attack(target=GA, attackPower=40)
-  GA --> W : AttackResolution(damage=25, hpAfter=5)
-  W --> BE : ActionEvent(BasicAttack, damage=25, goblinHp=5)
+  BE -> TP : processTurn(round=6, actor=GB, DP, context, emit)
+  TP -> GB : takeTurn(context, target=W)
+  GB -> W : attack(target=W, attackPower=35)
+  W --> GB : AttackResolution(damage=25, hpAfter=145)
+  GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=145)
 
-  alt if(stunned) Goblin A
-    BE -> GA : getTurnBlockReason()
-    GA --> BE : SkippedTurnEvent(STUNNED, note=Stun expired)
-  else Goblin A not stunned
-    BE -> GA : takeTurn(context, target=W)
-  end
+  BE -> TP : processTurn(round=6, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=25, hpAfter=120)
+  GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=120)
+
+  BE -> TP : processTurn(round=6, actor=W, DP, context, emit)
+  TP -> DP : decide(6, W, [GB, GC])
+  DP -> UI : showPlayerTurn(6)
+  UI -> U : choose SpecialSkill(Arcane Blast)
+  UI --> DP : PlayerDecision(UseSpecialSkillAction)
+  DP --> TP : PlayerDecision(UseSpecialSkillAction)
+  TP -> W : advanceRoundState(cooldown 0 to 0)
+  TP -> W : useSpecialSkill(context, target=none)
+  W -> GB : attack(target=GB, attackPower=50)
+  GB --> W : AttackResolution(damage=35, hpAfter=20)
+  W -> GC : attack(target=GC, attackPower=50)
+  GC --> W : AttackResolution(damage=35, hpAfter=20)
+  W --> TP : ActionEvent(Arcane Blast, goblinBHp=20, goblinCHp=20)
 
   note over BE
-  End R6: Warrior 215/260, Goblin A 5, Potion 1, Smoke Bomb 0, CD 2.
+  End R6: Wizard 120/200, Goblin B 20, Goblin C 20, CD 3.
   end note
 end
 
 == Round 7 ==
 group Round 7
-  BE -> DP : decide(7, W, [GA])
-  DP -> UI : showPlayerTurn(7)
-  UI -> U : choose Item(Potion)
-  UI --> DP : PlayerDecision(UsePotionAction)
-  DP --> BE : PlayerDecision(UsePotionAction)
-  BE -> W : advanceRoundState(cooldown 2 to 1)
-  BE -> INV : use(POTION)
-  BE -> W : heal(amount=100)
-  W --> BE : NarrationEvent(HP 215 to 260, clamped)
+  BE -> TP : processTurn(round=7, actor=GB, DP, context, emit)
+  TP -> GB : takeTurn(context, target=W)
+  GB -> W : attack(target=W, attackPower=35)
+  W --> GB : AttackResolution(damage=25, hpAfter=95)
+  GB --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=95)
 
-  BE -> GA : takeTurn(context, target=W)
-  GA -> W : attack(target=W, attackPower=35)
-  W --> GA : AttackResolution(damage=15, hpAfter=245)
-  GA --> BE : ActionEvent(BasicAttack, damage=15, warriorHp=245)
+  BE -> TP : processTurn(round=7, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=25, hpAfter=70)
+  GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=70)
+
+  BE -> TP : processTurn(round=7, actor=W, DP, context, emit)
+  TP -> DP : decide(7, W, [GB, GC])
+  DP -> UI : showPlayerTurn(7)
+  UI -> U : choose BasicAttack, target=GB
+  UI --> DP : PlayerDecision(BasicAttackAction, GB)
+  DP --> TP : PlayerDecision(BasicAttackAction, GB)
+  TP -> W : advanceRoundState(cooldown 3 to 2)
+  TP -> W : execute BasicAttackAction(GB)
+  W -> GB : attack(target=GB, attackPower=50)
+  GB --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  W --> TP : ActionEvent(BasicAttack, damage=35, goblinBHp=0)
 
   note over BE
-  End R7: Warrior 245/260, Goblin A 5, Potion 0, Smoke Bomb 0, CD 1.
+  End R7: Wizard 70/200, Goblin B 0, Goblin C 20, CD 2.
   end note
 end
 
 == Round 8 ==
 group Round 8
-  BE -> DP : decide(8, W, [GA])
+  BE -> TP : processTurn(round=8, actor=GC, DP, context, emit)
+  TP -> GC : takeTurn(context, target=W)
+  GC -> W : attack(target=W, attackPower=35)
+  W --> GC : AttackResolution(damage=25, hpAfter=45)
+  GC --> TP : ActionEvent(BasicAttack, damage=25, wizardHp=45)
+
+  BE -> TP : processTurn(round=8, actor=W, DP, context, emit)
+  TP -> DP : decide(8, W, [GC])
   DP -> UI : showPlayerTurn(8)
-  UI -> U : choose BasicAttack, target=GA
-  UI --> DP : PlayerDecision(BasicAttackAction, GA)
-  DP --> BE : PlayerDecision(BasicAttackAction, GA)
-  BE -> W : advanceRoundState(cooldown 1 to 0)
-  BE -> W : execute BasicAttackAction(GA)
-  W -> GA : attack(target=GA, attackPower=40)
-  GA --> W : AttackResolution(damage=25, hpAfter=0, eliminated=true)
-  W --> BE : ActionEvent(BasicAttack, damage=25, goblinHp=0)
-
-  BE -> BE : processTurn(round=8, actor=GA)
-  BE --> BE : SkippedTurnEvent(ELIMINATED)
-
-  alt if(waveCleared)
-    BE -> WM : spawnBackupIfNeeded(emit)
-    WM --> BE : NarrationEvent(Backup Spawn triggered: Wolf B, Wolf C)
-    note over BE
-    Code-accurate behavior: reserve enemies were created during setup,
-    then promoted to active spawned enemies here.
-    end note
-  else waveNotCleared
-    WM --> BE : noSpawn
-  end
-
-  note over BE
-  End R8: Warrior 245/260, Wave 1 cleared, Wolf B 40, Wolf C 40, CD 0.
-  end note
-end
-
-== Round 9 ==
-group Round 9
-  loop for each enemy in wave2 turn order [Wolf B, Wolf C]
-    alt currentEnemy == Wolf B
-      BE -> WB : takeTurn(context, target=W)
-      WB -> W : attack(target=W, attackPower=45)
-      W --> WB : AttackResolution(damage=25, hpAfter=220)
-      WB --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=220)
-    else currentEnemy == Wolf C
-      BE -> WC : takeTurn(context, target=W)
-      WC -> W : attack(target=W, attackPower=45)
-      W --> WC : AttackResolution(damage=25, hpAfter=195)
-      WC --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=195)
-    end
-  end
-
-  BE -> DP : decide(9, W, [WB, WC])
-  DP -> UI : showPlayerTurn(9)
-  UI -> U : choose Defend
-  UI --> DP : PlayerDecision(DefendAction)
-  DP --> BE : PlayerDecision(DefendAction)
-  BE -> W : advanceRoundState(cooldown 0 to 0)
-  BE -> W : addStatusEffect(DefendStatusEffect(2))
-  W --> BE : StatusEffectOutcome(DEF +10, duration=2 rounds)
-
-  note over BE
-  End R9: Warrior 195/260, Wolf B 40, Wolf C 40, Defend active, CD 0.
-  end note
-end
-
-== Round 10 ==
-group Round 10
-  loop for each enemy in wave2 turn order [Wolf B, Wolf C]
-    alt currentEnemy == Wolf B
-      BE -> WB : takeTurn(context, target=W)
-      WB -> W : attack(target=W, attackPower=45)
-      W --> WB : AttackResolution(damage=15, hpAfter=180, defenseApplied=30)
-      WB --> BE : ActionEvent(BasicAttack, damage=15, warriorHp=180)
-    else currentEnemy == Wolf C
-      BE -> WC : takeTurn(context, target=W)
-      WC -> W : attack(target=W, attackPower=45)
-      W --> WC : AttackResolution(damage=15, hpAfter=165, defenseApplied=30)
-      WC --> BE : ActionEvent(BasicAttack, damage=15, warriorHp=165)
-    end
-  end
-
-  BE -> DP : decide(10, W, [WB, WC])
-  DP -> UI : showPlayerTurn(10)
-  UI -> U : choose SpecialSkill(Shield Bash), target=WB
-  UI --> DP : PlayerDecision(UseSpecialSkillAction, WB)
-
-  alt if(cooldownReady)
-    DP --> BE : PlayerDecision(UseSpecialSkillAction, WB)
-    BE -> W : advanceRoundState(cooldown 0 to 0)
-    BE -> W : useSpecialSkill(context, WB)
-    W -> WB : attack(target=WB, attackPower=40)
-    WB --> W : AttackResolution(damage=35, hpAfter=5)
-    W -> WB : addStatusEffect(StunStatusEffect(2))
-    WB --> W : StatusEffectOutcome(STUNNED, duration=2 turns)
-    W --> BE : ActionEvent(Shield Bash, damage=35, wolfBHp=5)
-  else if(cooldownReady)==false
-    BC -> UI : showUnavailableCommand()
-  end
-
-  note over BE
-  End R10: Warrior 165/260, Wolf B 5 STUNNED, Wolf C 40, CD 3.
-  end note
-end
-
-== Round 11 ==
-group Round 11
-  alt if(stunned) Wolf B
-    BE -> WB : getTurnBlockReason()
-    WB --> BE : SkippedTurnEvent(STUNNED, note=Stun expired)
-  else Wolf B not stunned
-    BE -> WB : takeTurn(context, target=W)
-  end
-
-  BE -> WC : takeTurn(context, target=W)
-  WC -> W : attack(target=W, attackPower=45)
-  W --> WC : AttackResolution(damage=25, hpAfter=140)
-  WC --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=140)
-
-  BE -> DP : decide(11, W, [WB, WC])
-  DP -> UI : showPlayerTurn(11)
-  UI -> U : choose BasicAttack, target=WB
-  UI --> DP : PlayerDecision(BasicAttackAction, WB)
-  DP --> BE : PlayerDecision(BasicAttackAction, WB)
-  BE -> W : advanceRoundState(cooldown 3 to 2)
-  BE -> W : execute BasicAttackAction(WB)
-  W -> WB : attack(target=WB, attackPower=40)
-  WB --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
-  W --> BE : ActionEvent(BasicAttack, damage=35, wolfBHp=0)
-
-  note over BE
-  End R11: Warrior 140/260, Wolf B 0, Wolf C 40, CD 2.
-  end note
-end
-
-== Round 12 ==
-group Round 12
-  BE -> WC : takeTurn(context, target=W)
-  WC -> W : attack(target=W, attackPower=45)
-  W --> WC : AttackResolution(damage=25, hpAfter=115)
-  WC --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=115)
-
-  BE -> DP : decide(12, W, [WC])
-  DP -> UI : showPlayerTurn(12)
-  UI -> U : attempt SpecialSkill(Shield Bash), target=WC
-  UI --> DP : PlayerDecision(UseSpecialSkillAction, WC)
-
-  alt if(cooldownReady)
-    DP --> BE : PlayerDecision(UseSpecialSkillAction, WC)
-    BE -> W : advanceRoundState(cooldown 2 to 1)
-    BE -> W : useSpecialSkill(context, WC)
-    W -> WC : attack(target=WC, attackPower=40)
-    WC --> W : AttackResolution(damage=35, hpAfter=5)
-    W --> BE : ActionEvent(Shield Bash, damage=35, wolfCHp=5)
-  else if(cooldownReady)==false
-    BC -> UI : showUnavailableCommand()
-    UI -> U : reprompt action
-    U -> UI : choose BasicAttack, target=WC
-    UI --> DP : PlayerDecision(BasicAttackAction, WC)
-    DP --> BE : PlayerDecision(BasicAttackAction, WC)
-    BE -> W : advanceRoundState(cooldown 2 to 1)
-    BE -> W : execute BasicAttackAction(WC)
-    W -> WC : attack(target=WC, attackPower=40)
-    WC --> W : AttackResolution(damage=35, hpAfter=5)
-    W --> BE : ActionEvent(BasicAttack, damage=35, wolfCHp=5)
-  end
-
-  note over BE
-  End R12: Warrior 115/260, Wolf C 5, CD 1.
-  end note
-end
-
-== Round 13 ==
-group Round 13
-  BE -> WC : takeTurn(context, target=W)
-  WC -> W : attack(target=W, attackPower=45)
-  W --> WC : AttackResolution(damage=25, hpAfter=90)
-  WC --> BE : ActionEvent(BasicAttack, damage=25, warriorHp=90)
-
-  BE -> DP : decide(13, W, [WC])
-  DP -> UI : showPlayerTurn(13)
-  UI -> U : choose BasicAttack, target=WC
-  UI --> DP : PlayerDecision(BasicAttackAction, WC)
-  DP --> BE : PlayerDecision(BasicAttackAction, WC)
-  BE -> W : advanceRoundState(cooldown 1 to 0)
-  BE -> W : execute BasicAttackAction(WC)
-  W -> WC : attack(target=WC, attackPower=40)
-  WC --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
-  W --> BE : ActionEvent(BasicAttack, damage=35, wolfCHp=0)
+  UI -> U : choose BasicAttack, target=GC
+  UI --> DP : PlayerDecision(BasicAttackAction, GC)
+  DP --> TP : PlayerDecision(BasicAttackAction, GC)
+  TP -> W : advanceRoundState(cooldown 2 to 1)
+  TP -> W : execute BasicAttackAction(GC)
+  W -> GC : attack(target=GC, attackPower=50)
+  GC --> W : AttackResolution(damage=35, hpAfter=0, eliminated=true)
+  W --> TP : ActionEvent(BasicAttack, damage=35, goblinCHp=0)
 
   BE --> BC : NarrationEvent(Victory:)
-  BE --> BC : NarrationEvent(Remaining HP: 90 / 260)
-  BE --> BC : NarrationEvent(Total Rounds: 13)
+  BE --> BC : NarrationEvent(Remaining HP: 45 / 200)
+  BE --> BC : NarrationEvent(Total Rounds: 8)
   BE --> BC : NarrationEvent(Remaining Potion: 0)
   BE --> BC : NarrationEvent(Remaining Smoke Bomb: 0)
   BC -> UI : showBattleEvent(event, battleMessage, transcriptLines)
   UI -> U : print final transcript lines
+
+  note over BE
+  End R8: Victory with high-coverage gameplay flow.
+  end note
 end
 
 == Post game ==
