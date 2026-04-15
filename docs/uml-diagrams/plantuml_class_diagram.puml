@@ -310,8 +310,10 @@ package "ENGINE LAYER - orchestration and setup" {
     - waveManager: WaveManager
     - roundLifecycle: RoundLifecycle
     - battleOutcomeReporter: BattleOutcomeReporter
-    + runRounds(roundCount: int, provider: PlayerDecisionProvider): List<BattleEvent>
-    + runUntilBattleEnds(provider: PlayerDecisionProvider): List<BattleEvent>
+    + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
+    + runRounds(roundCount: int, playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
+    + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider): List<BattleEvent>
+    + runUntilBattleEnds(playerDecisionProvider: PlayerDecisionProvider, battleEventListener: BattleEventListener): List<BattleEvent>
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
   }
