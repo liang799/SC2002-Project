@@ -21,8 +21,8 @@ skinparam class {
 legend right
   Focus: classes and interfaces grouped by layer:
   UI Boundary -> Engine Control -> Domain Entity.
-  Includes inheritance, associations, key attributes/methods,
-  enumeration types, and OO principle notes.
+  Includes all production classes, key attributes/methods,
+  inheritance, ownership, and major architectural links.
 
   Type labels:
   <<interface>>, <<enumeration>>, and <<record>>
@@ -34,9 +34,25 @@ legend right
   <|.. interface implementation
   *-- composition / strong ownership
   o-- aggregation / collection reference
-  --> association or dependency
+  --> association or major dependency
 
-  OO annotations are attached as notes.
+  To keep the generated image readable, local helper,
+  enum/value-object, and method-parameter-only uses are
+  shown through signatures instead of extra arrows.
+
+  OO principle annotations:
+  Encapsulation - Combatant
+  Inheritance - PlayerCharacter / EnemyCombatant
+  Composition - Combatant owns HitPoints, Inventory,
+  CombatStats, and StatusEffectRegistry
+  Polymorphism / OCP - BattleAction and StatusEffect
+  Dependency inversion - BattleEngine depends on strategy
+  interfaces such as TurnProcessor and WaveManager
+  Observer - BattleEventPublisher + BattleEventListener
+  Factory - BattleSetupFactory and CombatantFactory
+  SRP - ArenaScenePanel, ArenaSceneModel, ArenaSceneRenderer
+  Boundary-Control - UI classes delegate battle flow to
+  BattleController and BattleEngine
 endlegend
 
 package "DOMAIN LAYER - domain entities" {
@@ -112,8 +128,22 @@ package "DOMAIN LAYER - domain entities" {
     - defense: Stat
     - speed: Stat
     + valueOf(statType: StatType): int
+    {static} + builder(): CombatStats.Builder
     + addFlat(type: StatType, amount: int): CombatStats
     + multiplyBy(type: StatType, factor: double): CombatStats
+  }
+
+  class CombatStatsBuilder as "CombatStats.Builder" <<factory>> {
+    - attack: Stat
+    - defense: Stat
+    - speed: Stat
+    + attack(attack: int): CombatStats.Builder
+    + attack(attack: Stat): CombatStats.Builder
+    + defense(defense: int): CombatStats.Builder
+    + defense(defense: Stat): CombatStats.Builder
+    + speed(speed: int): CombatStats.Builder
+    + speed(speed: Stat): CombatStats.Builder
+    + build(): CombatStats
   }
 
   class HitPoints <<record>> <<entity>> {
@@ -169,8 +199,10 @@ package "DOMAIN LAYER - status effects" {
     + add(owner: Combatant, statusEffect: StatusEffect): List<StatusEffectOutcome>
     + apply(owner: Combatant, stats: CombatStats): CombatStats
     + adjustIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
+    + getTurnBlockReason(owner: Combatant): Optional<String>
     + completeRound(owner: Combatant): List<StatusEffectOutcome>
     + activeStatuses(owner: Combatant): List<String>
+    + consumeOutcomes(): List<StatusEffectOutcome>
   }
 
   class ArcanePowerStatusEffect <<entity>> {
@@ -320,11 +352,23 @@ package "ENGINE LAYER - orchestration and setup" {
     + getLivingEnemiesInTurnOrder(): List<Combatant>
   }
 
+  class BattleEventPublisher <<control>> {
+    - events: List<BattleEvent>
+    ~ emit(battleEvent: BattleEvent, battleEventListener: BattleEventListener): void
+    ~ snapshot(): List<BattleEvent>
+  }
+
   class BattleState <<entity>> {
     - player: PlayerCharacter
     - initialEnemies: List<Combatant>
     - reserveEnemies: List<Combatant>
     - spawnedEnemies: List<Combatant>
+    ~ player(): PlayerCharacter
+    ~ initialEnemies(): List<Combatant>
+    ~ reserveEnemies(): List<Combatant>
+    ~ spawnedEnemies(): List<Combatant>
+    ~ moveAllReserveToSpawned(): void
+    ~ combatantsAliveAtRoundStart(): List<Combatant>
     ~ livingEnemies(): List<Combatant>
     ~ isBattleOver(): boolean
   }
@@ -398,10 +442,44 @@ package "ENGINE LAYER - orchestration and setup" {
     + createCustom(config: CustomGameConfiguration): BattleSetup
   }
 
+  class EasyLevelSetup <<factory>> <<control>> {
+    {static} + createWarriorPotionSmokeBombSetup(): BattleSetup
+  }
+
+  class MediumLevelSetup <<factory>> <<control>> {
+    {static} + createWarriorPowerStonePotionSetup(): BattleSetup
+    {static} + createWizardPowerStonePotionSetup(): BattleSetup
+  }
+
+  class HardLevelSetup <<factory>> <<control>> {
+    {static} + create(player: PlayerCharacter, inventory: Inventory): BattleSetup
+  }
+
+  class AppendixAScenarios <<control>> {
+    {static} + all(): List<ScenarioScript>
+    {static} + easyWarrior(): ScenarioScript
+    {static} + mediumWarrior(): ScenarioScript
+    {static} + mediumWizard(): ScenarioScript
+  }
+
+  class ScenarioScript <<entity>> {
+    - name: String
+    - battleSetup: BattleSetup
+    - decisionProvider: PlayerDecisionProvider
+    - roundCount: int
+    + getName(): String
+    + getBattleSetup(): BattleSetup
+    + getDecisionProvider(): PlayerDecisionProvider
+    + getRoundCount(): int
+  }
+
   class BattleSetup <<entity>> {
     - player: PlayerCharacter
     - initialEnemies: List<Combatant>
     - backupEnemies: List<Combatant>
+    + getPlayer(): PlayerCharacter
+    + getInitialEnemies(): List<Combatant>
+    + getBackupEnemies(): List<Combatant>
   }
 
   class GameConfiguration <<record>> <<entity>> {
@@ -419,15 +497,21 @@ package "ENGINE LAYER - orchestration and setup" {
   class PlayerDecision <<record>> <<entity>> {
     - action: BattleAction
     - targetReference: TargetReference
+    {static} + targeted(action: BattleAction, target: Combatant): PlayerDecision
+    {static} + targeted(action: BattleAction, targetId: CombatantId): PlayerDecision
+    {static} + untargeted(action: BattleAction): PlayerDecision
   }
 
   class TargetReference <<record>> <<entity>> {
     - type: TargetType
     - combatantId: CombatantId
+    {static} + none(): TargetReference
+    {static} + enemy(combatantId: CombatantId): TargetReference
+    {static} + enemy(combatant: Combatant): TargetReference
     + resolveFrom(livingEnemies: List<Combatant>): Combatant
   }
 
-  enum TargetType <<enumeration>> {
+  enum TargetType as "TargetReference.TargetType" <<enumeration>> {
     NONE
     ENEMY
   }
@@ -560,6 +644,10 @@ package "ENGINE LAYER - report events" {
     {static} + fromStatusEffectOutcomes(outcomes: List<CombatantStatusOutcome>): StatusEffectReportEvent
   }
 
+  class StatusEffectReportMapper <<control>> {
+    {static} ~ toNotes(statusEffectOutcomes: List<CombatantStatusOutcome>): List<String>
+  }
+
   class NarrationEvent <<event>> {
     - text: String
     + getText(): String
@@ -584,6 +672,10 @@ package "UI LAYER - CLI boundary" {
     - formatter: BattleConsoleFormatter
     - turnOrderStrategy: TurnOrderStrategy
     + run(): void
+  }
+
+  class EasyRoundsDemo <<boundary>> {
+    {static} + main(args: String[]): void
   }
 
   class ConsoleBattleUi <<boundary>> {
@@ -644,13 +736,111 @@ package "UI LAYER - Swing GUI boundary/control" {
     + applyBattleEvent(event: BattleEvent): void
   }
 
+  class ArenaSceneModel <<entity>> {
+    - sprites: Map<CombatantId, FighterSpriteDto>
+    - enemyOrder: List<CombatantId>
+    - pressedDirections: Set<String>
+    - floatingTexts: List<FloatingText>
+    - selectedEnemyId: CombatantId
+    - acceptingPlayerTurn: boolean
+    - battleActive: boolean
+    ~ showSetupPreview(): void
+    ~ startBattle(setup: BattleSetup, arenaWidth: int, arenaHeight: int): void
+    ~ showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>, arenaWidth: int, arenaHeight: int): void
+    ~ completePlayerTurn(actionName: String): void
+    ~ selectNextEnemy(direction: int): void
+    ~ selectEnemyAt(point: Point): boolean
+    ~ setDirectionPressed(direction: String, pressed: boolean): void
+    ~ applyBattleEvent(event: BattleEvent, arenaWidth: int, arenaHeight: int): void
+    ~ tick(arenaWidth: int, arenaHeight: int): void
+    ~ spritesByDrawOrder(): List<FighterSpriteDto>
+    ~ floatingTexts(): List<FloatingText>
+    ~ playerSprite(): FighterSpriteDto
+    ~ currentSelectedEnemySprite(): FighterSpriteDto
+  }
+
+  class ArenaSceneRenderer <<boundary>> {
+    - fighterRenderer: FighterSpriteRenderer
+    ~ render(g: Graphics2D, model: ArenaSceneModel, width: int, height: int, now: long): void
+  }
+
+  class ArenaSceneLoop <<control>> {
+    - tickCallback: Runnable
+    - tickTimer: Timer
+    ~ start(): void
+    ~ stop(): void
+  }
+
+  class FighterSpriteRenderer <<boundary>> {
+    - bodyRenderers: Map<FighterType, FighterBodyRenderer>
+    - effectRenderer: FighterSpriteEffectRenderer
+    - hudRenderer: FighterSpriteHudRenderer
+    + render(g: Graphics2D, sprite: FighterSpriteDto, selectedEnemyId: CombatantId): void
+    ~ bodyRendererFor(sprite: FighterSpriteDto): FighterBodyRenderer
+  }
+
+  interface FighterBodyRenderer <<interface>> <<boundary>> {
+    ~ renderBody(g: Graphics2D, sprite: FighterSpriteDto): void
+  }
+
+  class FighterSpriteEffectRenderer <<boundary>> {
+    ~ renderPulse(g: Graphics2D, sprite: FighterSpriteDto): void
+  }
+
+  class FighterSpriteHudRenderer <<boundary>> {
+    ~ render(g: Graphics2D, sprite: FighterSpriteDto, centerX: int, baseY: int): void
+    {static} ~ healthRatio(sprite: FighterSpriteDto): double
+  }
+
+  class WarriorBodyRenderer <<boundary>>
+  class WizardBodyRenderer <<boundary>>
+  class GoblinBodyRenderer <<boundary>>
+  class WolfBodyRenderer <<boundary>>
+  class UnknownFighterBodyRenderer <<boundary>>
+
+  class FighterSpriteDto <<entity>> {
+    - id: CombatantId
+    - player: boolean
+    - type: FighterType
+    - name: String
+    - hp: int
+    - maxHp: int
+    - statuses: List<String>
+    {static} + fromCombatant(combatant: Combatant, player: boolean): FighterSpriteDto
+    {static} + fromSummary(summary: CombatantSummary, player: boolean): FighterSpriteDto
+    + updateFrom(combatant: Combatant): void
+    + updateFrom(summary: CombatantSummary): void
+    + bounds(): Shape
+  }
+
+  enum FighterType <<enumeration>> {
+    WARRIOR
+    WIZARD
+    GOBLIN
+    WOLF
+    UNKNOWN
+    {static} + fromName(name: String, player: boolean): FighterType
+  }
+
+  class FloatingText as "ArenaSceneModel.FloatingText" <<record>> <<entity>> {
+    - text: String
+    - x: double
+    - y: double
+    - createdAt: long
+    - damage: boolean
+  }
+
   class BattleCommandPanel <<boundary>> {
     - promptLabel: JLabel
     - optionButtons: JButton[]
     - commandListener: Consumer<BattleCommandPanel.Command>
+    + setCommandListener(commandListener: Consumer<BattleCommandPanel.Command>): void
+    + setIdle(message: String): void
     + showTurn(round: int, player: PlayerCharacter, livingEnemies: List<Combatant>, selectedTargetLabel: String): void
     + updateTarget(selectedTargetLabel: String): void
     + setResolving(actionName: String): void
+    + showBattleMessage(message: String): void
+    + showBattleComplete(): void
   }
 
   enum BattleCommand as "BattleCommandPanel.Command" <<enumeration>> {
@@ -662,6 +852,15 @@ package "UI LAYER - Swing GUI boundary/control" {
     SMOKE_BOMB
     PREVIOUS_TARGET
     NEXT_TARGET
+  }
+
+  enum BattleMenuState as "BattleCommandPanel.MenuState" <<enumeration>> {
+    IDLE
+    ROOT
+    FIGHT
+    BAG
+    TARGET
+    RESOLVING
   }
 
   enum GuiPostGameChoice as "gui.PostGameChoice" <<enumeration>> {
@@ -693,10 +892,17 @@ package "UI LAYER - Swing GUI boundary/control" {
     - battleRunning: boolean
     - activePlayerTurn: PlayerTurnRequest
     - queuedPlayerTurn: PlayerTurnRequest
+    - queuedPostGameConfig: PostGameConfig
     + beginBattle(): boolean
     + finishBattle(): void
+    + stopBattle(): void
+    + clearQueuedPlaybackState(): void
+    + activePlayerTurn(): Optional<PlayerTurnRequest>
+    + clearActivePlayerTurn(): void
     + queuePlayerTurn(turn: PlayerTurnRequest): void
     + takeQueuedPlayerTurn(): Optional<PlayerTurnRequest>
+    + queuePostGame(configuration: PostGameConfig): void
+    + takeQueuedPostGameConfig(): Optional<PostGameConfig>
   }
 
   class BattlePlaybackController <<control>> {
@@ -722,6 +928,21 @@ package "UI LAYER - Swing GUI boundary/control" {
     {static} + custom(configuration: CustomGameConfiguration): BattleLaunchRequest
     {static} + replay(configuration: PostGameConfig): BattleLaunchRequest
     + createSetup(setupFactory: BattleSetupFactory): BattleSetup
+    + replayConfiguration(): PostGameConfig
+    + intro(): String
+  }
+
+  interface PostGameConfig <<interface>> <<entity>> {
+    {static} + preset(configuration: GameConfiguration): PostGameConfig
+    {static} + custom(configuration: CustomGameConfiguration): PostGameConfig
+  }
+
+  class PostGamePreset as "PostGameConfig.Preset" <<record>> <<entity>> {
+    - configuration: GameConfiguration
+  }
+
+  class PostGameCustom as "PostGameConfig.Custom" <<record>> <<entity>> {
+    - configuration: CustomGameConfiguration
   }
 
   class PlayerTurnRequest <<record>> <<entity>> {
@@ -736,12 +957,15 @@ package "UI LAYER - Swing GUI boundary/control" {
     - actionName: String
     - targetLabel: String
   }
+
+  class SwingThread <<control>> {
+    {static} + runAndWait(runnable: Runnable): void
+  }
 }
 
-' Domain inheritance and composition
+' Domain model
 Combatant <|-- PlayerCharacter
 Combatant <|-- EnemyCombatant
-Combatant "1" *-- "1" CombatantId : id
 Combatant "1" *-- "1" HitPoints : hp
 Combatant "1" *-- "1" Inventory : inventory
 Combatant "1" *-- "1" CombatStats : baseStats
@@ -749,12 +973,9 @@ Combatant "1" *-- "1" StatusEffectRegistry : status effects
 PlayerCharacter "1" *-- "1" SpecialSkill : specialSkill
 EnemyCombatant "1" --> "1" BattleAction : turnAction
 SpecialSkill "1" --> "1" BattleAction : action
-CombatStats "1" *-- "3" Stat : attack/defense/speed
-CombatStats --> StatType
-Inventory --> ItemType
-AttackResolution --> CombatantStatusOutcome
+CombatStats "1" *-- "3" Stat : stats
 
-' Status effect model
+' Status effect polymorphism
 StatusEffectRegistry "1" *-- "0..*" StatusEffect : active effects
 StatusEffect <|.. ArcanePowerStatusEffect
 StatusEffect <|.. DefendStatusEffect
@@ -763,15 +984,9 @@ StatusEffect <|.. SmokeBombStatusEffect
 StatusEffect <|.. StunStatusEffect
 StatusEffectOutcome <|.. DamageModifier
 StatusEffectOutcome <|.. StatusEffectChange
-CombatantStatusOutcome "1" *-- "1" CombatantId
-CombatantStatusOutcome "1" *-- "1" StatusEffectOutcome
 DamageAdjustment "1" *-- "0..*" DamageModifier
-DamageModifier --> StatusEffectKind
-DamageModifier --> DamageModifierType
-StatusEffectChange --> StatusEffectKind
-StatusEffectChange --> StatusEffectChangeType
 
-' Action polymorphism
+' Action and engine polymorphism
 BattleAction <|.. BasicAttackAction
 BattleAction <|.. DefendAction
 BattleAction <|.. ShieldBashAction
@@ -780,29 +995,7 @@ BattleAction <|.. UsePotionAction
 BattleAction <|.. UseSmokeBombAction
 BattleAction <|.. UseSpecialSkillAction
 BattleAction <|.. UsePowerStoneSkillAction
-BattleAction --> TargetingMode
 ActionExecutionContext <|.. BattleEngine
-DefendAction ..> DefendStatusEffect
-ShieldBashAction ..> StunStatusEffect
-ArcaneBlastAction ..> ArcanePowerStatusEffect
-UseSmokeBombAction ..> SmokeBombStatusEffect
-UseSpecialSkillAction ..> PlayerCharacter
-UsePowerStoneSkillAction ..> PlayerCharacter
-
-' Engine control and setup
-BattleEngine "1" *-- "1" BattleState
-BattleEngine "1" --> "1" TurnOrderStrategy
-BattleEngine "1" --> "1" TurnProcessor
-BattleEngine "1" --> "1" WaveManager
-BattleEngine "1" --> "1" RoundLifecycle
-BattleEngine "1" --> "1" BattleOutcomeReporter
-BattleEngine ..> PlayerDecisionProvider
-BattleEngine ..> BattleEventListener
-BattleEngine ..> BattleEvent
-BattleState "1" o-- "1" PlayerCharacter
-BattleState "1" o-- "1..*" Combatant : initialEnemies
-BattleState "1" o-- "0..*" Combatant : reserveEnemies
-BattleState "1" o-- "1..*" Combatant : spawnedEnemies
 TurnProcessor <|.. DefaultTurnProcessor
 WaveManager <|.. DefaultWaveManager
 RoundLifecycle <|.. DefaultRoundLifecycle
@@ -812,138 +1005,124 @@ PlayerDecisionProvider <|.. ScriptedDecisionProvider
 PlayerDecisionProvider <|.. CliPlayerDecisionProvider
 PlayerDecisionProvider <|.. GuiPlayerDecisionProvider
 
-BattleSetupFactory --> CombatantFactory
-BattleSetup "1" *-- "1" PlayerCharacter
-BattleSetup "1" *-- "1..*" Combatant : initial enemies
-BattleSetup "1" *-- "0..*" Combatant : backup enemies
-GameConfiguration --> PlayerType
-GameConfiguration --> DifficultyLevel
-GameConfiguration --> ItemType
-CustomGameConfiguration --> PlayerType
-CustomGameConfiguration --> ItemType
-CustomGameConfiguration "1" *-- "1..2" WaveSpec : waves
-WaveSpec "1" *-- "1..*" EnemyCount
-EnemyCount --> EnemyFactory
-EnemyFactory <|.. EnemyType
-PlayerDecision --> BattleAction
-PlayerDecision *-- TargetReference
-TargetReference --> TargetType
-TargetReference --> CombatantId
+' Engine composition and observer flow
+BattleEngine "1" *-- "1" BattleState
+BattleEngine "1" --> "1" TurnOrderStrategy
+BattleEngine "1" --> "1" TurnProcessor
+BattleEngine "1" --> "1" WaveManager
+BattleEngine "1" --> "1" RoundLifecycle
+BattleEngine "1" --> "1" BattleOutcomeReporter
+BattleEngine ..> BattleEventPublisher
+BattleEventPublisher "1" o-- "0..*" BattleEvent : events
+BattleEventPublisher ..> BattleEventListener : notifies
 
-' Factory construction
+' Setup and factories
+BattleSetupFactory --> CombatantFactory
 CombatantFactory <|.. DefaultCombatantFactory
 SpecialSkillFactory <|.. DefaultSpecialSkillFactory
 StatusEffectRegistryFactory <|.. DefaultStatusEffectRegistryFactory
-DefaultCombatantFactory --> StatusEffectRegistryFactory
-DefaultCombatantFactory o-- PlayerCharacterCreator
-DefaultCombatantFactory o-- EnemyCombatantCreator
-DefaultSpecialSkillFactory --> BattleAction
-CombatantFactories ..> DefaultCombatantFactory
-CombatantFactories ..> DefaultSpecialSkillFactory
+EnemyFactory <|.. EnemyType
+CustomGameConfiguration "1" *-- "1..2" WaveSpec : waves
+WaveSpec "1" *-- "1..*" EnemyCount
+PlayerDecision *-- TargetReference
+PostGameConfig <|.. PostGamePreset
+PostGameConfig <|.. PostGameCustom
 
-' Events and boundary interaction
+' Battle events
 BattleEvent <|.. ActionEvent
 BattleEvent <|.. RoundStartEvent
 BattleEvent <|.. RoundSummaryEvent
 BattleEvent <|.. SkippedTurnEvent
 BattleEvent <|.. StatusEffectReportEvent
 BattleEvent <|.. NarrationEvent
-RoundSummaryEvent "1" *-- "1" CombatantSummary : player summary
-RoundSummaryEvent "1" *-- "0..*" CombatantSummary : enemy summaries
-ActionEvent --> CombatantId
-StatusEffectReportEvent ..> CombatantStatusOutcome
 
+' CLI and GUI boundaries
 TurnBasedArenaCli "1" *-- "1" ConsoleBattleUi
 TurnBasedArenaCli "1" *-- "1" BattleConsoleFormatter
-TurnBasedArenaCli "1" --> "1" BattleSetupFactory
-TurnBasedArenaCli "1" --> "1" TurnOrderStrategy
-TurnBasedArenaCli ..> BattleEngine
-TurnBasedArenaCli ..> CliPlayerDecisionProvider
-ConsoleBattleUi --> PlayerType
-ConsoleBattleUi --> DifficultyLevel
-ConsoleBattleUi --> ItemType
-ConsoleBattleUi --> WaveSpec
-ConsoleBattleUi --> PostGameChoice
-BattleConsoleFormatter ..> BattleEvent
-CliPlayerDecisionProvider --> ConsoleBattleUi
-
 TurnBasedArenaGui ..|> BattleView
 TurnBasedArenaGui "1" *-- "1" BattleController
 TurnBasedArenaGui "1" *-- "1" BattleSetupPanel
 TurnBasedArenaGui "1" *-- "1" ArenaScenePanel
 TurnBasedArenaGui "1" *-- "1" BattleCommandPanel
-TurnBasedArenaGui ..> GuiPostGameChoice
 BattleController --> BattleView
 BattleController *-- BattleSessionModel
 BattleController *-- BattlePlaybackController
 BattleController *-- PlayerCommandResolver
-BattleController --> BattleSetupFactory
-BattleController ..> BattleEngine
-BattleController ..> BattleLaunchRequest
-BattleController ..> PlayerTurnRequest
-BattleController ..> ResolvedPlayerCommand
-BattleController ..> BattleCommand
-BattleView ..> BattleSetup
-BattleView ..> BattleEvent
-BattleView ..> PlayerTurnRequest
-BattleView ..> CombatantId
-BattleView ..> GuiPostGameChoice
-BattleSetupPanel ..> BattleLaunchRequest
-ArenaScenePanel ..> BattleSetup
-ArenaScenePanel ..> BattleEvent
+ArenaScenePanel "1" *-- "1" ArenaSceneModel
+ArenaScenePanel "1" *-- "1" ArenaSceneRenderer
+ArenaScenePanel "1" *-- "1" ArenaSceneLoop
+ArenaSceneModel "1" o-- "0..*" FighterSpriteDto : sprites
+ArenaSceneModel "1" *-- "0..*" FloatingText : floatingTexts
+ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer
+FighterBodyRenderer <|.. WarriorBodyRenderer
+FighterBodyRenderer <|.. WizardBodyRenderer
+FighterBodyRenderer <|.. GoblinBodyRenderer
+FighterBodyRenderer <|.. WolfBodyRenderer
+FighterBodyRenderer <|.. UnknownFighterBodyRenderer
+FighterSpriteRenderer "1" o-- "1..*" FighterBodyRenderer : bodyRenderers
+FighterSpriteRenderer "1" *-- "1" FighterSpriteEffectRenderer
+FighterSpriteRenderer "1" *-- "1" FighterSpriteHudRenderer
 BattleCommandPanel --> BattleCommand
-BattleCommandPanel ..> PlayerCharacter
-BattleCommandPanel ..> Combatant
-GuiPlayerDecisionProvider --> BattleController
-PlayerCommandResolver ..> PlayerTurnRequest
-PlayerCommandResolver ..> ResolvedPlayerCommand
-PlayerCommandResolver ..> PlayerDecision
-PlayerCommandResolver ..> BattleCommand
-BattlePlaybackController o-- BattleEvent
-BattlePlaybackController --> BattleDialogueFormatter
-BattleLaunchRequest --> BattleSetupFactory
-BattleLaunchRequest --> BattleSetup
-PlayerTurnRequest --> PlayerCharacter
-PlayerTurnRequest --> Combatant
-ResolvedPlayerCommand --> PlayerDecision
+BattleCommandPanel --> BattleMenuState
 
 note right of Combatant
-  Encapsulation: all combatant state is private
-  and changed through behavior methods such as
-  attack(), receiveDamage(), heal(), and addStatusEffect().
+  Encapsulation:
+  private state changes through
+  behavior methods.
 end note
 
 note top of PlayerCharacter
-  Inheritance: PlayerCharacter and EnemyCombatant
-  specialize the shared Combatant abstraction.
+  Inheritance:
+  PlayerCharacter and EnemyCombatant
+  specialize Combatant.
 end note
 
 note bottom of Combatant
-  Composition: Combatant owns value objects and
-  registries that make up its lifecycle state:
-  HitPoints, CombatStats, Inventory, and StatusEffectRegistry.
+  Composition:
+  Combatant owns HitPoints, Inventory,
+  CombatStats, and StatusEffectRegistry.
 end note
 
 note right of BattleAction
-  Polymorphism: player choices, enemy turns, items,
-  and special skills are executed through BattleAction.
-  New actions can be added without changing BattleEngine.
+  Polymorphism / OCP:
+  actions share execute(); new actions
+  avoid BattleEngine changes.
 end note
 
 note right of StatusEffect
-  Polymorphism: StatusEffectRegistry applies different
-  effects through the StatusEffect interface.
+  Polymorphism / OCP:
+  StatusEffectRegistry applies effects
+  through StatusEffect hooks.
 end note
 
 note right of BattleEngine
-  Dependency inversion: BattleEngine coordinates the battle
-  through abstractions such as TurnOrderStrategy,
-  PlayerDecisionProvider, TurnProcessor, and WaveManager.
+  Dependency inversion:
+  BattleEngine coordinates through
+  strategy interfaces.
+end note
+
+note bottom of BattleEventPublisher
+  Observer:
+  records events and notifies
+  BattleEventListener.
+end note
+
+note right of BattleSetupFactory
+  Factory:
+  setup and combatant construction
+  are centralized.
+end note
+
+note bottom of ArenaScenePanel
+  SRP:
+  panel handles Swing, model stores state,
+  renderer draws, loop ticks.
 end note
 
 note bottom of TurnBasedArenaGui
-  Boundary-Control split: GUI and CLI classes handle input/output,
-  while BattleController and BattleEngine coordinate use cases.
+  Boundary-Control:
+  UI delegates battle flow to
+  BattleController and BattleEngine.
 end note
 
 @enduml
