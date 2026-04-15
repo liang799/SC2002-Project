@@ -1,6 +1,6 @@
 # SC2002 Turn-Based Combat Arena
 
-This repository contains a Java turn-based combat game built for the SC2002 assignment. The production code now includes both CLI and Swing GUI front ends, with the battle domain, actions, engine, reporting, and UI boundaries kept separate so the system is easier to explain, test, and extend.
+This repository contains a Java turn-based combat game built for the SC2002 assignment. The production code now includes both CLI and 2D Swing GUI front ends, with the battle domain, actions, engine, reporting, and UI boundaries kept separate so the system is easier to explain, test, and extend.
 
 ## Current Scope
 
@@ -16,7 +16,7 @@ The current implementation includes:
 - backup enemy spawn handling
 - scripted Appendix A scenario support for Easy Warrior, Medium Warrior, and Medium Wizard
 - native CLI gameplay with player class, item, difficulty, and custom wave selection
-- Swing GUI gameplay with the same battle rules and setup flow
+- 2D Swing GUI gameplay with an arena background, player movement, enemy targeting, action hotkeys, HP bars, paced dialogue playback, and animated battle feedback
 - live battle-event display during gameplay
 - structured battle-event reporting for testing and formatting
 - verifier coverage for Easy checkpoints, Appendix A scenarios, and the custom battle-flow validation scenario
@@ -40,7 +40,21 @@ The project is organized into the following source packages:
 - `ui`
   - CLI boundary classes, prompts, transcript formatting, and demo entry points
 - `ui.gui`
-  - Swing GUI boundary classes and graphical decision input
+  - MVC Swing GUI entry point
+- `ui.gui.view`
+  - Swing panels and the `BattleView` contract for the arena, setup form, battle menu, and post-game choices
+- `ui.gui.controller`
+  - battle-flow orchestration and the bridge from Swing input into the blocking engine decision API
+- `ui.gui.model`
+  - small GUI session state and player-turn command records
+- `ui.gui.command`
+  - battle-menu command resolution into engine `PlayerDecision` objects
+- `ui.gui.playback`
+  - paced event narration and dialogue formatting
+- `ui.gui.setup`
+  - setup/replay launch requests
+- `ui.gui.util`
+  - Swing threading helpers
 - `test`
   - executable verifier classes for scenario validation
 
@@ -76,6 +90,20 @@ Run the Swing GUI:
 ```powershell
 java -cp out sc2002.turnbased.ui.gui.TurnBasedArenaGui
 ```
+
+Or build and run the packaged 2D GUI jar:
+
+```bash
+mvn -DskipTests package
+java -jar target/turnbased-arena-1.0-SNAPSHOT-gui.jar
+```
+
+2D GUI controls:
+
+- Move the player with `WASD` or the arrow keys
+- Click an enemy to target it, or cycle targets with `Q` and `E`
+- Use the `1` to `4` battle menu: `Fight` opens attacks, `Bag` opens items, `Defend` resolves immediately, and `Target` opens target cycling
+- Press `Esc` to return to the main battle menu from a submenu
 
 Run the scripted Appendix demo:
 

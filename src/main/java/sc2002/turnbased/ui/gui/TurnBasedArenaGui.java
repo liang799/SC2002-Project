@@ -1,30 +1,17 @@
 package sc2002.turnbased.ui.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
-import java.util.ArrayList;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
 import javax.swing.JTextArea;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 
 import sc2002.turnbased.actions.ArcaneBlastAction;
@@ -32,301 +19,155 @@ import sc2002.turnbased.actions.BasicAttackAction;
 import sc2002.turnbased.actions.ShieldBashAction;
 import sc2002.turnbased.bootstrap.CombatantFactories;
 import sc2002.turnbased.domain.CombatantFactory;
-import sc2002.turnbased.domain.ItemType;
+import sc2002.turnbased.domain.CombatantId;
 import sc2002.turnbased.domain.status.DefaultStatusEffectRegistryFactory;
 import sc2002.turnbased.domain.status.StatusEffectRegistry;
-import sc2002.turnbased.engine.BattleEngine;
-import sc2002.turnbased.engine.BattleEventListener;
 import sc2002.turnbased.engine.BattleSetup;
 import sc2002.turnbased.engine.BattleSetupFactory;
-import sc2002.turnbased.engine.CustomGameConfiguration;
-import sc2002.turnbased.engine.DifficultyLevel;
-import sc2002.turnbased.engine.EnemyCount;
-import sc2002.turnbased.engine.EnemyType;
-import sc2002.turnbased.engine.GameConfiguration;
-import sc2002.turnbased.engine.PlayerType;
-import sc2002.turnbased.engine.SpeedTurnOrderStrategy;
-import sc2002.turnbased.engine.WaveSpec;
-import sc2002.turnbased.ui.BattleConsoleFormatter;
+import sc2002.turnbased.report.BattleEvent;
+import sc2002.turnbased.ui.gui.controller.BattleController;
+import sc2002.turnbased.ui.gui.model.PlayerTurnRequest;
+import sc2002.turnbased.ui.gui.view.ArenaScenePanel;
+import sc2002.turnbased.ui.gui.view.BattleCommandPanel;
+import sc2002.turnbased.ui.gui.view.BattleSetupPanel;
+import sc2002.turnbased.ui.gui.view.BattleView;
+import sc2002.turnbased.ui.gui.view.PostGameChoice;
 
 /**
- * Graphical front-end: setup panel, battle transcript, and post-game flow.
- * Uses the same {@link BattleEngine} and rules as the CLI.
+ * Swing implementation of the battle view. Battle flow lives in {@link BattleController};
+ * battle rules stay in the engine/domain layer.
  * Run: {@code java -cp out sc2002.turnbased.ui.gui.TurnBasedArenaGui}
  */
-public class TurnBasedArenaGui extends JFrame {
-    private static final Object CUSTOM_DIFFICULTY = new Object() {
-        @Override
-        public String toString() {
-            return "Custom Mode (build your own waves)";
-        }
-    };
-
+public class TurnBasedArenaGui extends JFrame implements BattleView {
     private final JTextArea log = new JTextArea();
-    private final BattleConsoleFormatter formatter = new BattleConsoleFormatter();
-    private final BattleSetupFactory setupFactory;
-    private final ExecutorService battleExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "battle-engine");
-        t.setDaemon(true);
-        return t;
-    });
-
-    private JComboBox<Object> diffBox;
-    private JPanel customWavePanel;
-    private JSpinner w1Goblins;
-    private JSpinner w1Wolves;
-    private JSpinner w2Goblins;
-    private JSpinner w2Wolves;
-    private JCheckBox secondWaveCheck;
-
-    private JComboBox<PlayerType> playerBox;
-    private JComboBox<ItemType> item1Box;
-    private JComboBox<ItemType> item2Box;
+    private final ArenaScenePanel arenaScene = new ArenaScenePanel();
+    private final BattleCommandPanel commandPanel = new BattleCommandPanel();
+    private final BattleSetupPanel setupPanel;
+    private final BattleController controller;
 
     public TurnBasedArenaGui(BattleSetupFactory setupFactory) {
         super("SC2002 Turn-Based Arena");
-        this.setupFactory = setupFactory;
+        controller = new BattleController(this, setupFactory);
+        setupPanel = new BattleSetupPanel(controller::startBattle, this::pack);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(8, 8));
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                controller.shutdown();
+            }
+        });
 
-        log.setEditable(false);
-        log.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        log.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        JScrollPane scroll = new JScrollPane(log);
-        scroll.setPreferredSize(new Dimension(720, 420));
-        add(scroll, BorderLayout.CENTER);
-
-        JPanel setup = buildSetupPanel();
-        add(setup, BorderLayout.NORTH);
+        add(setupPanel, BorderLayout.NORTH);
+        add(arenaScene, BorderLayout.CENTER);
+        add(buildEventFeed(), BorderLayout.EAST);
+        commandPanel.setCommandListener(controller::handleCommand);
+        arenaScene.setTargetSelectionListener(commandPanel::updateTarget);
+        add(commandPanel, BorderLayout.SOUTH);
+        showSetupPreview();
 
         pack();
+        setMinimumSize(new Dimension(1100, 700));
         setLocationRelativeTo(null);
     }
 
-    private JPanel buildSetupPanel() {
-        JPanel outer = new JPanel();
-        outer.setLayout(new BorderLayout(0, 8));
-        outer.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 8));
+    @Override
+    public void showSetupPreview() {
+        arenaScene.showSetupPreview();
+    }
 
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        playerBox = new JComboBox<>(PlayerType.values());
-        playerBox.setRenderer(displayNameRenderer());
-        diffBox = new JComboBox<>();
-        for (DifficultyLevel d : DifficultyLevel.values()) {
-            diffBox.addItem(d);
+    @Override
+    public void setSetupControlsEnabled(boolean enabled) {
+        setupPanel.setSetupControlsEnabled(enabled);
+    }
+
+    @Override
+    public void clearBattleLog() {
+        log.setText("");
+    }
+
+    @Override
+    public void appendLog(String line) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> appendLog(line));
+            return;
         }
-        diffBox.addItem(CUSTOM_DIFFICULTY);
-        diffBox.setRenderer(difficultyComboRenderer());
-        item1Box = new JComboBox<>(ItemType.values());
-        item1Box.setRenderer(displayNameRenderer());
-        item2Box = new JComboBox<>(ItemType.values());
-        item2Box.setRenderer(displayNameRenderer());
-
-        JButton start = new JButton("Start battle");
-        start.addActionListener(e -> onStartBattleClicked());
-
-        row.add(new JLabel("Class:"));
-        row.add(playerBox);
-        row.add(new JLabel("Difficulty:"));
-        row.add(diffBox);
-        row.add(new JLabel("Item 1:"));
-        row.add(item1Box);
-        row.add(new JLabel("Item 2:"));
-        row.add(item2Box);
-        row.add(start);
-
-        customWavePanel = buildCustomWavePanel();
-        customWavePanel.setVisible(false);
-
-        diffBox.addActionListener(e -> {
-            boolean custom = diffBox.getSelectedItem() == CUSTOM_DIFFICULTY;
-            customWavePanel.setVisible(custom);
-            outer.revalidate();
-            pack();
-        });
-
-        outer.add(row, BorderLayout.NORTH);
-        outer.add(customWavePanel, BorderLayout.CENTER);
-        return outer;
-    }
-
-    private JPanel buildCustomWavePanel() {
-        JPanel p = new JPanel();
-        p.setLayout(new BorderLayout(4, 4));
-        p.setBorder(BorderFactory.createTitledBorder(
-            "Custom waves (max 4 enemies per wave, max 3 per type)"));
-
-        w1Goblins = new JSpinner(new SpinnerNumberModel(1, 0, 3, 1));
-        w1Wolves = new JSpinner(new SpinnerNumberModel(0, 0, 3, 1));
-        w2Goblins = new JSpinner(new SpinnerNumberModel(1, 0, 3, 1));
-        w2Wolves = new JSpinner(new SpinnerNumberModel(0, 0, 3, 1));
-
-        secondWaveCheck = new JCheckBox("Second wave");
-        secondWaveCheck.addActionListener(e -> updateSecondWaveEnabled());
-        updateSecondWaveEnabled();
-
-        JPanel wave1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        wave1.add(new JLabel("Wave 1 — Goblins:"));
-        wave1.add(w1Goblins);
-        wave1.add(new JLabel("Wolves:"));
-        wave1.add(w1Wolves);
-
-        JPanel wave2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        wave2.add(secondWaveCheck);
-        wave2.add(new JLabel("Wave 2 — Goblins:"));
-        wave2.add(w2Goblins);
-        wave2.add(new JLabel("Wolves:"));
-        wave2.add(w2Wolves);
-
-        JPanel stack = new JPanel();
-        stack.setLayout(new javax.swing.BoxLayout(stack, javax.swing.BoxLayout.Y_AXIS));
-        stack.add(wave1);
-        stack.add(wave2);
-        p.add(stack, BorderLayout.CENTER);
-        return p;
-    }
-
-    private void updateSecondWaveEnabled() {
-        boolean on = secondWaveCheck.isSelected();
-        w2Goblins.setEnabled(on);
-        w2Wolves.setEnabled(on);
-    }
-
-    private static DefaultListCellRenderer displayNameRenderer() {
-        return new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(
-                JList<?> list,
-                Object value,
-                int index,
-                boolean isSelected,
-                boolean cellHasFocus
-            ) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof PlayerType playerType) {
-                    setText(playerType.getDisplayName());
-                } else if (value instanceof DifficultyLevel difficultyLevel) {
-                    setText(difficultyLevel.getDisplayName());
-                } else if (value instanceof ItemType itemType) {
-                    setText(itemType.getDisplayName());
-                }
-                return this;
-            }
-        };
-    }
-
-    private static DefaultListCellRenderer difficultyComboRenderer() {
-        return new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(
-                JList<?> list,
-                Object value,
-                int index,
-                boolean isSelected,
-                boolean cellHasFocus
-            ) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof DifficultyLevel difficultyLevel) {
-                    setText(difficultyLevel.getDisplayName());
-                } else if (value == CUSTOM_DIFFICULTY) {
-                    setText(value.toString());
-                }
-                return this;
-            }
-        };
-    }
-
-    private void appendLog(String line) {
         log.append(line + "\n");
         log.setCaretPosition(log.getDocument().getLength());
     }
 
-    private void onStartBattleClicked() {
-        PlayerType playerType = (PlayerType) playerBox.getSelectedItem();
-        ItemType item1 = (ItemType) item1Box.getSelectedItem();
-        ItemType item2 = (ItemType) item2Box.getSelectedItem();
-        List<ItemType> items = List.of(item1, item2);
-        Object diffSel = diffBox.getSelectedItem();
+    @Override
+    public void showBattleLoading() {
+        commandPanel.setIdle("Loading arena...");
+    }
 
-        if (diffSel instanceof DifficultyLevel difficulty) {
-            GameConfiguration configuration = new GameConfiguration(playerType, difficulty, items);
-            appendLog("=== Selected: " + playerType.getDisplayName() + " | " + difficulty.getDisplayName()
-                + " | Items: " + item1.getDisplayName() + ", " + item2.getDisplayName() + " ===\n");
-            startPresetBattle(configuration);
-            return;
-        }
+    @Override
+    public void showBattleLoaded(BattleSetup setup) {
+        arenaScene.startBattle(setup);
+        commandPanel.setIdle("Battle loaded. Waiting for your first turn.");
+    }
 
-        try {
-            List<WaveSpec> waves = new ArrayList<>();
-            waves.add(WaveSpec.of(
-                EnemyCount.of(EnemyType.GOBLIN, (int) w1Goblins.getValue()),
-                EnemyCount.of(EnemyType.WOLF, (int) w1Wolves.getValue())
-            ));
-            if (secondWaveCheck.isSelected()) {
-                waves.add(WaveSpec.of(
-                    EnemyCount.of(EnemyType.GOBLIN, (int) w2Goblins.getValue()),
-                    EnemyCount.of(EnemyType.WOLF, (int) w2Wolves.getValue())
-                ));
-            }
-            CustomGameConfiguration customConfig = new CustomGameConfiguration(playerType, items, waves);
-            appendCustomConfigurationLog(customConfig);
-            startCustomBattle(customConfig);
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(
-                this,
-                ex.getMessage(),
-                "Invalid custom setup",
-                JOptionPane.WARNING_MESSAGE
-            );
+    @Override
+    public void showBattleEvent(BattleEvent event, String battleMessage, List<String> transcriptLines) {
+        arenaScene.applyBattleEvent(event);
+        commandPanel.showBattleMessage(battleMessage);
+        for (String line : transcriptLines) {
+            appendLog(line);
         }
     }
 
-    private void appendCustomConfigurationLog(CustomGameConfiguration config) {
-        appendLog("=== Custom Mode Configuration ===");
-        appendLog("Player Class: " + config.playerType().getDisplayName());
-        appendLog("Items: " + config.selectedItems().get(0).getDisplayName()
-            + ", " + config.selectedItems().get(1).getDisplayName());
-        for (int i = 0; i < config.waves().size(); i++) {
-            WaveSpec wave = config.waves().get(i);
-            appendLog("Wave " + (i + 1) + ": "
-                + wave.describe() + " — "
-                + wave.totalEnemies() + " enemies total");
-        }
-        appendLog("");
+    @Override
+    public void showPlayerTurn(PlayerTurnRequest turn) {
+        arenaScene.showPlayerTurn(turn.roundNumber(), turn.player(), turn.livingEnemies());
+        commandPanel.showTurn(
+            turn.roundNumber(),
+            turn.player(),
+            turn.livingEnemies(),
+            arenaScene.getSelectedEnemyLabel()
+        );
     }
 
-    private void startPresetBattle(GameConfiguration configuration) {
-        battleExecutor.submit(() -> runBattle(() -> setupFactory.create(configuration), configuration));
+    @Override
+    public void showCommandResolving(String actionName) {
+        arenaScene.completePlayerTurn(actionName);
+        commandPanel.setResolving(actionName);
     }
 
-    private void startCustomBattle(CustomGameConfiguration configuration) {
-        battleExecutor.submit(() -> runBattle(() -> setupFactory.createCustom(configuration), configuration));
+    @Override
+    public void showBattleComplete() {
+        commandPanel.showBattleComplete();
     }
 
-    private void runBattle(Supplier<BattleSetup> setupSupplier, Object lastConfigForPostGame) {
-        try {
-            BattleSetup setup = setupSupplier.get();
-            BattleEngine engine = new BattleEngine(setup, new SpeedTurnOrderStrategy());
-            GuiPlayerDecisionProvider decisions = new GuiPlayerDecisionProvider(this);
-            BattleEventListener listener = event -> SwingUtilities.invokeLater(() -> {
-                for (String line : formatter.format(List.of(event))) {
-                    appendLog(line);
-                }
-            });
-            engine.runUntilBattleEnds(decisions, listener);
-            SwingUtilities.invokeLater(() -> {
-                appendLog("Battle complete.");
-                promptPostGame(lastConfigForPostGame);
-            });
-        } catch (Exception ex) {
-            SwingUtilities.invokeLater(() -> {
-                appendLog("Error: " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Battle error", JOptionPane.ERROR_MESSAGE);
-            });
-        }
+    @Override
+    public void showBattleError(String message) {
+        commandPanel.setIdle("Battle stopped after an error.");
+        JOptionPane.showMessageDialog(this, message, "Battle error", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void promptPostGame(Object lastConfig) {
+    @Override
+    public void showUnavailableCommand() {
+        appendLog("That command is unavailable right now.");
+    }
+
+    @Override
+    public void showNewSetupPrompt() {
+        appendLog("\n--- Configure a new battle from the setup panel. ---\n");
+    }
+
+    @Override
+    public CombatantId selectedEnemyId() {
+        return arenaScene.getSelectedEnemyId();
+    }
+
+    @Override
+    public void selectNextEnemy(int direction) {
+        arenaScene.selectNextEnemy(direction);
+        commandPanel.updateTarget(arenaScene.getSelectedEnemyLabel());
+    }
+
+    @Override
+    public PostGameChoice askPostGameChoice() {
         String[] opts = { "Replay same settings", "New setup", "Exit" };
         int n = JOptionPane.showOptionDialog(
             this,
@@ -338,17 +179,27 @@ public class TurnBasedArenaGui extends JFrame {
             opts,
             opts[0]
         );
-        if (n == 0) {
-            if (lastConfig instanceof GameConfiguration g) {
-                startPresetBattle(g);
-            } else if (lastConfig instanceof CustomGameConfiguration c) {
-                startCustomBattle(c);
-            }
-        } else if (n == 1) {
-            appendLog("\n--- Configure a new battle from the panel above. ---\n");
-        } else {
-            System.exit(0);
-        }
+        return switch (n) {
+            case 0 -> PostGameChoice.REPLAY;
+            case 1 -> PostGameChoice.NEW_SETUP;
+            default -> PostGameChoice.EXIT;
+        };
+    }
+
+    @Override
+    public void exitGame() {
+        controller.shutdown();
+        System.exit(0);
+    }
+
+    private JScrollPane buildEventFeed() {
+        log.setEditable(false);
+        log.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        log.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        JScrollPane scroll = new JScrollPane(log);
+        scroll.setPreferredSize(new Dimension(340, 520));
+        scroll.setBorder(BorderFactory.createTitledBorder("Battle Feed"));
+        return scroll;
     }
 
     public static void main(String[] args) {
@@ -361,9 +212,9 @@ public class TurnBasedArenaGui extends JFrame {
             );
             TurnBasedArenaGui w = new TurnBasedArenaGui(new BattleSetupFactory(combatantFactory));
             w.setVisible(true);
-            w.appendLog("SC2002 Turn-Based Combat Arena (GUI)\n"
-                + "Choose class, difficulty (or Custom Mode), two items, then Start battle.\n"
-                + "Custom mode: set Wave 1 (and optional Wave 2) — same rules as CLI.\n");
+            w.appendLog("SC2002 Turn-Based Combat Arena (2D)");
+            w.appendLog("Choose class, difficulty, and two items, then Start battle.");
+            w.appendLog("Move with WASD/arrows, click enemies to target, and use the 1-4 battle menu.");
         });
     }
 }
