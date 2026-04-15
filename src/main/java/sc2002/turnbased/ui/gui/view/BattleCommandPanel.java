@@ -216,11 +216,16 @@ public class BattleCommandPanel extends JPanel {
             return;
         }
         menuState = MenuState.FIGHT;
+        int specialCooldown = currentPlayer.getSpecialSkillCooldown();
+        String specialSkillLabel = "2 " + currentPlayer.getSpecialSkillName();
+        if (specialCooldown > 0) {
+            specialSkillLabel += " (CD " + specialCooldown + ")";
+        }
         configureButton(0, "1 Basic Attack", hasLivingEnemies, () -> commandListener.accept(Command.BASIC_ATTACK));
         configureButton(
             1,
-            "2 " + currentPlayer.getSpecialSkillName(),
-            hasLivingEnemies && currentPlayer.canUseSpecialSkill(),
+            specialSkillLabel,
+            hasLivingEnemies,
             () -> commandListener.accept(Command.SPECIAL_SKILL)
         );
         configureButton(2, "3 Back", true, this::renderRootMenu);
