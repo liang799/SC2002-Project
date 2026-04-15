@@ -107,6 +107,12 @@ public class BattleCommandPanel extends JPanel {
         setIdle("Start a battle to unlock actions.");
     }
 
+    @Override
+    public void removeNotify() {
+        stopMessageAnimation();
+        super.removeNotify();
+    }
+
     public void setCommandListener(Consumer<Command> commandListener) {
         this.commandListener = Objects.requireNonNull(commandListener, "commandListener");
     }
@@ -340,7 +346,11 @@ public class BattleCommandPanel extends JPanel {
         return text
             .replace("&", "&amp;")
             .replace("<", "&lt;")
-            .replace(">", "&gt;");
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace("\n", "<br/>");
     }
 
     private void applyButtonStateColors(JButton button) {
