@@ -81,7 +81,7 @@ public final class PlayerCommandResolver {
             return null;
         }
         for (Combatant enemy : turn.livingEnemies()) {
-            if (enemy.combatantId().equals(selectedTarget) && enemy.isAlive()) {
+            if (enemy.combatantId().equals(selectedTarget)) {
                 return enemy;
             }
         }
