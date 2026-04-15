@@ -13,6 +13,8 @@ import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -73,6 +75,7 @@ public class ArenaScenePanel extends JPanel {
     private String hint = "Move with WASD or arrows. Click enemies to target them.";
     private boolean acceptingPlayerTurn;
     private boolean battleActive;
+    private Timer tickTimer;
     private Consumer<String> targetSelectionListener = targetLabel -> {
     };
 
@@ -83,9 +86,19 @@ public class ArenaScenePanel extends JPanel {
         setBackground(new Color(20, 29, 33));
         installMovementBindings();
         installTargetSelection();
+        installResizeLayout();
+    }
 
-        Timer timer = new Timer(16, this::onTick);
-        timer.start();
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        startTickTimer();
+    }
+
+    @Override
+    public void removeNotify() {
+        stopTickTimer();
+        super.removeNotify();
     }
 
     public void setTargetSelectionListener(Consumer<String> targetSelectionListener) {
@@ -269,7 +282,7 @@ public class ArenaScenePanel extends JPanel {
         sprite.updateFrom(combatant);
         sprite.x = oldX;
         sprite.y = oldY;
-        sprite.player = true;
+        sprite.setPlayer(true);
         playerId = sprite.id;
     }
 
@@ -283,7 +296,7 @@ public class ArenaScenePanel extends JPanel {
         sprite.updateFrom(summary);
         sprite.x = oldX;
         sprite.y = oldY;
-        sprite.player = true;
+        sprite.setPlayer(true);
         playerId = sprite.id;
     }
 
@@ -293,7 +306,7 @@ public class ArenaScenePanel extends JPanel {
             id -> FighterSpriteDto.fromCombatant(combatant, false)
         );
         sprite.updateFrom(combatant);
-        sprite.player = false;
+        sprite.setPlayer(false);
         if (!enemyOrder.contains(sprite.id)) {
             enemyOrder.add(sprite.id);
         }
@@ -305,7 +318,7 @@ public class ArenaScenePanel extends JPanel {
             id -> FighterSpriteDto.fromSummary(summary, false)
         );
         sprite.updateFrom(summary);
-        sprite.player = false;
+        sprite.setPlayer(false);
         if (!enemyOrder.contains(sprite.id)) {
             enemyOrder.add(sprite.id);
         }
@@ -405,6 +418,16 @@ public class ArenaScenePanel extends JPanel {
         });
     }
 
+    private void installResizeLayout() {
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                layoutEnemies();
+                repaint();
+            }
+        });
+    }
+
     private CombatantId enemyAt(Point point) {
         for (int i = enemyOrder.size() - 1; i >= 0; i--) {
             FighterSpriteDto sprite = sprites.get(enemyOrder.get(i));
@@ -426,6 +449,21 @@ public class ArenaScenePanel extends JPanel {
         updateActionAnimation(now);
         updateFloatingTexts(now);
         repaint();
+    }
+
+    private void startTickTimer() {
+        if (tickTimer != null) {
+            return;
+        }
+        tickTimer = new Timer(16, this::onTick);
+        tickTimer.start();
+    }
+
+    private void stopTickTimer() {
+        if (tickTimer != null) {
+            tickTimer.stop();
+            tickTimer = null;
+        }
     }
 
     private void movePlayer(double deltaSeconds) {
@@ -505,7 +543,6 @@ public class ArenaScenePanel extends JPanel {
         Graphics2D g = (Graphics2D) graphics.create();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        layoutEnemies();
         drawBackground(g);
         drawTargetPath(g);
         drawSprites(g);
@@ -631,12 +668,10 @@ public class ArenaScenePanel extends JPanel {
             copy.draw(new Ellipse2D.Double(-52, -21, 104, 40));
         }
 
-        if (sprite.player) {
-            drawPlayerSprite(copy, sprite);
-        } else if (sprite.name.toLowerCase().contains("wolf")) {
-            drawWolfSprite(copy, sprite);
-        } else {
-            drawGoblinSprite(copy, sprite);
+        switch (sprite.type) {
+            case PLAYER -> drawPlayerSprite(copy, sprite);
+            case WOLF -> drawWolfSprite(copy, sprite);
+            case GOBLIN, UNKNOWN -> drawGoblinSprite(copy, sprite);
         }
 
         copy.dispose();
