@@ -112,8 +112,19 @@ package "DOMAIN LAYER - domain entities" {
     - defense: Stat
     - speed: Stat
     + valueOf(statType: StatType): int
+    {static} + builder(): CombatStats.Builder
     + addFlat(type: StatType, amount: int): CombatStats
     + multiplyBy(type: StatType, factor: double): CombatStats
+  }
+
+  class CombatStatsBuilder as "CombatStats.Builder" <<factory>> {
+    - attack: Stat
+    - defense: Stat
+    - speed: Stat
+    + attack(attack: int): CombatStats.Builder
+    + defense(defense: int): CombatStats.Builder
+    + speed(speed: int): CombatStats.Builder
+    + build(): CombatStats
   }
 
   class HitPoints <<record>> <<entity>> {
@@ -169,6 +180,7 @@ package "DOMAIN LAYER - status effects" {
     + add(owner: Combatant, statusEffect: StatusEffect): List<StatusEffectOutcome>
     + apply(owner: Combatant, stats: CombatStats): CombatStats
     + adjustIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
+    + getTurnBlockReason(owner: Combatant): Optional<String>
     + completeRound(owner: Combatant): List<StatusEffectOutcome>
     + activeStatuses(owner: Combatant): List<String>
   }
@@ -320,6 +332,12 @@ package "ENGINE LAYER - orchestration and setup" {
     + getLivingEnemiesInTurnOrder(): List<Combatant>
   }
 
+  class BattleEventPublisher <<control>> {
+    - events: List<BattleEvent>
+    ~ emit(battleEvent: BattleEvent, battleEventListener: BattleEventListener): void
+    ~ snapshot(): List<BattleEvent>
+  }
+
   class BattleState <<entity>> {
     - player: PlayerCharacter
     - initialEnemies: List<Combatant>
@@ -396,6 +414,37 @@ package "ENGINE LAYER - orchestration and setup" {
     - combatantFactory: CombatantFactory
     + create(configuration: GameConfiguration): BattleSetup
     + createCustom(config: CustomGameConfiguration): BattleSetup
+  }
+
+  class EasyLevelSetup <<factory>> <<control>> {
+    {static} + createWarriorPotionSmokeBombSetup(): BattleSetup
+  }
+
+  class MediumLevelSetup <<factory>> <<control>> {
+    {static} + createWarriorPowerStonePotionSetup(): BattleSetup
+    {static} + createWizardPowerStonePotionSetup(): BattleSetup
+  }
+
+  class HardLevelSetup <<factory>> <<control>> {
+    {static} + create(player: PlayerCharacter, inventory: Inventory): BattleSetup
+  }
+
+  class AppendixAScenarios <<control>> {
+    {static} + all(): List<ScenarioScript>
+    {static} + easyWarrior(): ScenarioScript
+    {static} + mediumWarrior(): ScenarioScript
+    {static} + mediumWizard(): ScenarioScript
+  }
+
+  class ScenarioScript <<entity>> {
+    - name: String
+    - battleSetup: BattleSetup
+    - decisionProvider: PlayerDecisionProvider
+    - roundCount: int
+    + getName(): String
+    + getBattleSetup(): BattleSetup
+    + getDecisionProvider(): PlayerDecisionProvider
+    + getRoundCount(): int
   }
 
   class BattleSetup <<entity>> {
@@ -560,6 +609,10 @@ package "ENGINE LAYER - report events" {
     {static} + fromStatusEffectOutcomes(outcomes: List<CombatantStatusOutcome>): StatusEffectReportEvent
   }
 
+  class StatusEffectReportMapper <<control>> {
+    {static} ~ toNotes(statusEffectOutcomes: List<CombatantStatusOutcome>): List<String>
+  }
+
   class NarrationEvent <<event>> {
     - text: String
     + getText(): String
@@ -584,6 +637,10 @@ package "UI LAYER - CLI boundary" {
     - formatter: BattleConsoleFormatter
     - turnOrderStrategy: TurnOrderStrategy
     + run(): void
+  }
+
+  class EasyRoundsDemo <<boundary>> {
+    {static} + main(args: String[]): void
   }
 
   class ConsoleBattleUi <<boundary>> {
@@ -644,6 +701,90 @@ package "UI LAYER - Swing GUI boundary/control" {
     + applyBattleEvent(event: BattleEvent): void
   }
 
+  class ArenaSceneModel <<entity>> {
+    - sprites: Map<CombatantId, FighterSpriteDto>
+    - enemyOrder: List<CombatantId>
+    - selectedEnemyId: CombatantId
+    - battleActive: boolean
+    ~ startBattle(setup: BattleSetup, arenaWidth: int, arenaHeight: int): void
+    ~ showPlayerTurn(currentRound: int, player: PlayerCharacter, livingEnemies: List<Combatant>, arenaWidth: int, arenaHeight: int): void
+    ~ applyBattleEvent(event: BattleEvent, arenaWidth: int, arenaHeight: int): void
+    ~ spritesByDrawOrder(): List<FighterSpriteDto>
+    ~ playerSprite(): FighterSpriteDto
+    ~ currentSelectedEnemySprite(): FighterSpriteDto
+  }
+
+  class ArenaSceneRenderer <<boundary>> {
+    - fighterRenderer: FighterSpriteRenderer
+    ~ render(g: Graphics2D, model: ArenaSceneModel, width: int, height: int, now: long): void
+  }
+
+  class ArenaSceneLoop <<control>> {
+    - tickCallback: Runnable
+    - tickTimer: Timer
+    ~ start(): void
+    ~ stop(): void
+  }
+
+  class FighterSpriteRenderer <<boundary>> {
+    - bodyRenderers: Map<FighterType, FighterBodyRenderer>
+    - effectRenderer: FighterSpriteEffectRenderer
+    - hudRenderer: FighterSpriteHudRenderer
+    + render(g: Graphics2D, sprite: FighterSpriteDto, selectedEnemyId: CombatantId): void
+    ~ bodyRendererFor(sprite: FighterSpriteDto): FighterBodyRenderer
+  }
+
+  interface FighterBodyRenderer <<interface>> <<boundary>> {
+    ~ renderBody(g: Graphics2D, sprite: FighterSpriteDto): void
+  }
+
+  class FighterSpriteEffectRenderer <<boundary>> {
+    ~ renderPulse(g: Graphics2D, sprite: FighterSpriteDto): void
+  }
+
+  class FighterSpriteHudRenderer <<boundary>> {
+    ~ render(g: Graphics2D, sprite: FighterSpriteDto, centerX: int, baseY: int): void
+    {static} ~ healthRatio(sprite: FighterSpriteDto): double
+  }
+
+  class WarriorBodyRenderer <<boundary>>
+  class WizardBodyRenderer <<boundary>>
+  class GoblinBodyRenderer <<boundary>>
+  class WolfBodyRenderer <<boundary>>
+  class UnknownFighterBodyRenderer <<boundary>>
+
+  class FighterSpriteDto <<entity>> {
+    - id: CombatantId
+    - player: boolean
+    - type: FighterType
+    - name: String
+    - hp: int
+    - maxHp: int
+    - statuses: List<String>
+    {static} + fromCombatant(combatant: Combatant, player: boolean): FighterSpriteDto
+    {static} + fromSummary(summary: CombatantSummary, player: boolean): FighterSpriteDto
+    + updateFrom(combatant: Combatant): void
+    + updateFrom(summary: CombatantSummary): void
+    + bounds(): Shape
+  }
+
+  enum FighterType <<enumeration>> {
+    WARRIOR
+    WIZARD
+    GOBLIN
+    WOLF
+    UNKNOWN
+    {static} + fromName(name: String, player: boolean): FighterType
+  }
+
+  class FloatingText as "ArenaSceneModel.FloatingText" <<record>> <<entity>> {
+    - text: String
+    - x: double
+    - y: double
+    - createdAt: long
+    - damage: boolean
+  }
+
   class BattleCommandPanel <<boundary>> {
     - promptLabel: JLabel
     - optionButtons: JButton[]
@@ -662,6 +803,15 @@ package "UI LAYER - Swing GUI boundary/control" {
     SMOKE_BOMB
     PREVIOUS_TARGET
     NEXT_TARGET
+  }
+
+  enum BattleMenuState as "BattleCommandPanel.MenuState" <<enumeration>> {
+    IDLE
+    ROOT
+    FIGHT
+    BAG
+    TARGET
+    RESOLVING
   }
 
   enum GuiPostGameChoice as "gui.PostGameChoice" <<enumeration>> {
@@ -724,6 +874,19 @@ package "UI LAYER - Swing GUI boundary/control" {
     + createSetup(setupFactory: BattleSetupFactory): BattleSetup
   }
 
+  interface PostGameConfig <<interface>> <<entity>> {
+    {static} + preset(configuration: GameConfiguration): PostGameConfig
+    {static} + custom(configuration: CustomGameConfiguration): PostGameConfig
+  }
+
+  class PostGamePreset as "PostGameConfig.Preset" <<record>> <<entity>> {
+    - configuration: GameConfiguration
+  }
+
+  class PostGameCustom as "PostGameConfig.Custom" <<record>> <<entity>> {
+    - configuration: CustomGameConfiguration
+  }
+
   class PlayerTurnRequest <<record>> <<entity>> {
     - roundNumber: int
     - player: PlayerCharacter
@@ -735,6 +898,10 @@ package "UI LAYER - Swing GUI boundary/control" {
     - decision: PlayerDecision
     - actionName: String
     - targetLabel: String
+  }
+
+  class SwingThread <<control>> {
+    {static} + runAndWait(runnable: Runnable): void
   }
 }
 
@@ -750,6 +917,9 @@ PlayerCharacter "1" *-- "1" SpecialSkill : specialSkill
 EnemyCombatant "1" --> "1" BattleAction : turnAction
 SpecialSkill "1" --> "1" BattleAction : action
 CombatStats "1" *-- "3" Stat : attack/defense/speed
+CombatStats ..> CombatStatsBuilder : builder()
+CombatStatsBuilder --> CombatStats
+CombatStatsBuilder --> Stat
 CombatStats --> StatType
 Inventory --> ItemType
 AttackResolution --> CombatantStatusOutcome
@@ -796,9 +966,12 @@ BattleEngine "1" --> "1" TurnProcessor
 BattleEngine "1" --> "1" WaveManager
 BattleEngine "1" --> "1" RoundLifecycle
 BattleEngine "1" --> "1" BattleOutcomeReporter
+BattleEngine ..> BattleEventPublisher
 BattleEngine ..> PlayerDecisionProvider
 BattleEngine ..> BattleEventListener
 BattleEngine ..> BattleEvent
+BattleEventPublisher "1" o-- "0..*" BattleEvent : events
+BattleEventPublisher ..> BattleEventListener : notifies
 BattleState "1" o-- "1" PlayerCharacter
 BattleState "1" o-- "1..*" Combatant : initialEnemies
 BattleState "1" o-- "0..*" Combatant : reserveEnemies
@@ -813,6 +986,21 @@ PlayerDecisionProvider <|.. CliPlayerDecisionProvider
 PlayerDecisionProvider <|.. GuiPlayerDecisionProvider
 
 BattleSetupFactory --> CombatantFactory
+EasyLevelSetup ..> BattleSetupFactory
+EasyLevelSetup ..> GameConfiguration
+MediumLevelSetup ..> BattleSetupFactory
+MediumLevelSetup ..> GameConfiguration
+HardLevelSetup ..> BattleSetupFactory
+HardLevelSetup ..> GameConfiguration
+HardLevelSetup ..> PlayerCharacter
+HardLevelSetup ..> Inventory
+AppendixAScenarios ..> EasyLevelSetup
+AppendixAScenarios ..> MediumLevelSetup
+AppendixAScenarios ..> ScenarioScript
+AppendixAScenarios ..> ScriptedDecisionProvider
+AppendixAScenarios ..> PlayerDecision
+ScenarioScript --> BattleSetup
+ScenarioScript --> PlayerDecisionProvider
 BattleSetup "1" *-- "1" PlayerCharacter
 BattleSetup "1" *-- "1..*" Combatant : initial enemies
 BattleSetup "1" *-- "0..*" Combatant : backup enemies
@@ -852,6 +1040,9 @@ RoundSummaryEvent "1" *-- "1" CombatantSummary : player summary
 RoundSummaryEvent "1" *-- "0..*" CombatantSummary : enemy summaries
 ActionEvent --> CombatantId
 StatusEffectReportEvent ..> CombatantStatusOutcome
+StatusEffectReportEvent ..> StatusEffectReportMapper
+StatusEffectReportMapper ..> CombatantStatusOutcome
+StatusEffectReportMapper ..> StatusEffectOutcome
 
 TurnBasedArenaCli "1" *-- "1" ConsoleBattleUi
 TurnBasedArenaCli "1" *-- "1" BattleConsoleFormatter
@@ -866,6 +1057,10 @@ ConsoleBattleUi --> WaveSpec
 ConsoleBattleUi --> PostGameChoice
 BattleConsoleFormatter ..> BattleEvent
 CliPlayerDecisionProvider --> ConsoleBattleUi
+EasyRoundsDemo ..> AppendixAScenarios
+EasyRoundsDemo ..> ScenarioScript
+EasyRoundsDemo ..> BattleEngine
+EasyRoundsDemo ..> BattleConsoleFormatter
 
 TurnBasedArenaGui ..|> BattleView
 TurnBasedArenaGui "1" *-- "1" BattleController
@@ -878,6 +1073,8 @@ BattleController *-- BattleSessionModel
 BattleController *-- BattlePlaybackController
 BattleController *-- PlayerCommandResolver
 BattleController --> BattleSetupFactory
+BattleController ..> PostGameConfig
+BattleController ..> SwingThread
 BattleController ..> BattleEngine
 BattleController ..> BattleLaunchRequest
 BattleController ..> PlayerTurnRequest
@@ -889,9 +1086,37 @@ BattleView ..> PlayerTurnRequest
 BattleView ..> CombatantId
 BattleView ..> GuiPostGameChoice
 BattleSetupPanel ..> BattleLaunchRequest
+ArenaScenePanel "1" *-- "1" ArenaSceneModel
+ArenaScenePanel "1" *-- "1" ArenaSceneRenderer
+ArenaScenePanel "1" *-- "1" ArenaSceneLoop
 ArenaScenePanel ..> BattleSetup
 ArenaScenePanel ..> BattleEvent
+ArenaSceneModel "1" o-- "0..*" FighterSpriteDto : sprites
+ArenaSceneModel "1" *-- "0..*" FloatingText : floatingTexts
+ArenaSceneModel ..> BattleSetup
+ArenaSceneModel ..> BattleEvent
+ArenaSceneModel ..> CombatantSummary
+ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer
+ArenaSceneRenderer ..> ArenaSceneModel
+FighterBodyRenderer <|.. WarriorBodyRenderer
+FighterBodyRenderer <|.. WizardBodyRenderer
+FighterBodyRenderer <|.. GoblinBodyRenderer
+FighterBodyRenderer <|.. WolfBodyRenderer
+FighterBodyRenderer <|.. UnknownFighterBodyRenderer
+FighterBodyRenderer ..> FighterSpriteDto
+FighterSpriteRenderer "1" o-- "1..*" FighterBodyRenderer : bodyRenderers
+FighterSpriteRenderer "1" *-- "1" FighterSpriteEffectRenderer
+FighterSpriteRenderer "1" *-- "1" FighterSpriteHudRenderer
+FighterSpriteRenderer ..> FighterSpriteDto
+FighterSpriteRenderer --> FighterType
+FighterSpriteEffectRenderer ..> FighterSpriteDto
+FighterSpriteHudRenderer ..> FighterSpriteDto
+FighterSpriteDto "1" *-- "1" CombatantId
+FighterSpriteDto --> FighterType
+FighterSpriteDto ..> Combatant
+FighterSpriteDto ..> CombatantSummary
 BattleCommandPanel --> BattleCommand
+BattleCommandPanel --> BattleMenuState
 BattleCommandPanel ..> PlayerCharacter
 BattleCommandPanel ..> Combatant
 GuiPlayerDecisionProvider --> BattleController
@@ -903,6 +1128,11 @@ BattlePlaybackController o-- BattleEvent
 BattlePlaybackController --> BattleDialogueFormatter
 BattleLaunchRequest --> BattleSetupFactory
 BattleLaunchRequest --> BattleSetup
+BattleLaunchRequest --> PostGameConfig
+PostGameConfig <|.. PostGamePreset
+PostGameConfig <|.. PostGameCustom
+PostGamePreset --> GameConfiguration
+PostGameCustom --> CustomGameConfiguration
 PlayerTurnRequest --> PlayerCharacter
 PlayerTurnRequest --> Combatant
 ResolvedPlayerCommand --> PlayerDecision
