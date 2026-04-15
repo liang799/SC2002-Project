@@ -3,6 +3,7 @@ package sc2002.turnbased.ui.gui.view;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
@@ -15,13 +16,13 @@ final class ArenaSceneRenderer {
 
     private final FighterSpriteRenderer fighterRenderer = new FighterSpriteRenderer();
 
-    void render(Graphics2D g, ArenaSceneModel model, int width, int height) {
+    void render(Graphics2D g, ArenaSceneModel model, int width, int height, long now) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         drawBackground(g, width, height);
         drawTargetPath(g, model);
         drawSprites(g, model);
-        drawFloatingTexts(g, model, System.nanoTime());
+        drawFloatingTexts(g, model, now);
         drawOverlay(g, model, width);
     }
 
@@ -87,14 +88,17 @@ final class ArenaSceneRenderer {
 
     private void drawRuins(Graphics2D g, int width, int floorTop) {
         int base = floorTop - 26;
-        g.setColor(new Color(74, 77, 72, 155));
+        Color stoneColor = new Color(74, 77, 72, 155);
+        Color stripeColor = new Color(120, 58, 58, 150);
         for (int x = 44; x < width; x += 245) {
+            g.setColor(stoneColor);
             g.fillRect(x, base - 94, 26, 94);
+            g.setColor(stoneColor);
             g.fillRect(x + 76, base - 118, 28, 118);
+            g.setColor(stoneColor);
             g.fillRect(x - 10, base - 120, 128, 18);
-            g.setColor(new Color(120, 58, 58, 150));
+            g.setColor(stripeColor);
             g.fillRect(x + 24, base - 108, 50, 12);
-            g.setColor(new Color(74, 77, 72, 155));
         }
     }
 
@@ -117,16 +121,22 @@ final class ArenaSceneRenderer {
     }
 
     private void drawFloatingTexts(Graphics2D g, ArenaSceneModel model, long now) {
-        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-        for (ArenaSceneModel.FloatingText text : model.floatingTexts()) {
-            double progress = (now - text.createdAt()) / (double) FLOATING_TEXT_NANOS;
-            float alpha = (float) Math.max(0, 1.0 - progress);
-            int y = (int) (text.y() - progress * 46);
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-            g.setColor(text.damage() ? new Color(255, 87, 76) : new Color(155, 235, 222));
-            g.drawString(text.text(), (int) text.x() - g.getFontMetrics().stringWidth(text.text()) / 2, y);
+        Font originalFont = g.getFont();
+        Composite originalComposite = g.getComposite();
+        try {
+            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+            for (ArenaSceneModel.FloatingText text : model.floatingTexts()) {
+                double progress = (now - text.createdAt()) / (double) FLOATING_TEXT_NANOS;
+                float alpha = (float) Math.max(0, 1.0 - progress);
+                int y = (int) (text.y() - progress * 46);
+                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                g.setColor(text.damage() ? new Color(255, 87, 76) : new Color(155, 235, 222));
+                g.drawString(text.text(), (int) text.x() - g.getFontMetrics().stringWidth(text.text()) / 2, y);
+            }
+        } finally {
+            g.setFont(originalFont);
+            g.setComposite(originalComposite);
         }
-        g.setComposite(AlphaComposite.SrcOver);
     }
 
     private void drawOverlay(Graphics2D g, ArenaSceneModel model, int width) {

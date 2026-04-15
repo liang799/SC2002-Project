@@ -167,7 +167,7 @@ public class ArenaScenePanel extends JPanel {
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
         Graphics2D g = (Graphics2D) graphics.create();
-        renderer.render(g, model, arenaWidth(), arenaHeight());
+        renderer.render(g, model, arenaWidth(), arenaHeight(), System.nanoTime());
         g.dispose();
     }
 
