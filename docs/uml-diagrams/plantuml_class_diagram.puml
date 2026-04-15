@@ -1,5 +1,5 @@
 @startuml
-title SC2002 Turn-Based Combat Arena - Focused Class Diagram
+title SC2002 Turn-Based Combat Arena - Layered Class Diagram
 
 left to right direction
 skinparam classAttributeIconSize 0
@@ -19,8 +19,10 @@ skinparam class {
 }
 
 legend right
-  Focus: Entity classes, essential Control classes,
-  Boundary classes, and enumeration types.
+  Focus: classes and interfaces grouped by layer:
+  UI Boundary -> Engine Control -> Domain Entity.
+  Includes inheritance, associations, key attributes/methods,
+  enumeration types, and OO principle notes.
 
   UML notation:
   <|-- inheritance
@@ -32,7 +34,7 @@ legend right
   OO annotations are attached as notes.
 endlegend
 
-package "domain (Entity)" {
+package "DOMAIN LAYER - domain entities" {
   abstract class Combatant <<entity>> {
     - combatantId: CombatantId
     - name: String
@@ -127,6 +129,10 @@ package "domain (Entity)" {
     POTION
     POWER_STONE
     SMOKE_BOMB
+    - displayName: String
+    - description: String
+    + getDisplayName(): String
+    + getDescription(): String
   }
 
   enum StatType {
@@ -136,7 +142,7 @@ package "domain (Entity)" {
   }
 }
 
-package "domain.status (Entity + Strategy)" {
+package "DOMAIN LAYER - status effects" {
   interface StatusEffect <<strategy>> {
     + kind(): StatusEffectKind
     + description(): String
@@ -160,11 +166,34 @@ package "domain.status (Entity + Strategy)" {
     + activeStatuses(owner: Combatant): List<String>
   }
 
-  class ArcanePowerStatusEffect <<entity>>
-  class DefendStatusEffect <<entity>>
-  class StrengthBoostStatusEffect <<entity>>
-  class SmokeBombStatusEffect <<entity>>
-  class StunStatusEffect <<entity>>
+  class ArcanePowerStatusEffect <<entity>> {
+    - attackBonus: int
+    + modifyStats(stats: CombatStats): CombatStats
+    + mergeWith(other: StatusEffect): Optional<StatusEffect>
+  }
+
+  class DefendStatusEffect <<entity>> {
+    - roundsRemaining: int
+    + modifyStats(stats: CombatStats): CombatStats
+    + onRoundEnd(owner: Combatant): List<StatusEffectOutcome>
+  }
+
+  class StrengthBoostStatusEffect <<entity>> {
+    - attackBonus: int
+    - roundsRemaining: int
+    + modifyStats(stats: CombatStats): CombatStats
+    + onRoundEnd(owner: Combatant): List<StatusEffectOutcome>
+  }
+
+  class SmokeBombStatusEffect <<entity>> {
+    - chargesRemaining: int
+    + modifyIncomingDamage(owner: Combatant, attacker: Combatant, damage: int): DamageAdjustment
+  }
+
+  class StunStatusEffect <<entity>> {
+    - blockedTurnsRemaining: int
+    + getTurnBlockReason(owner: Combatant): Optional<String>
+  }
 
   interface StatusEffectOutcome
 
@@ -211,7 +240,7 @@ package "domain.status (Entity + Strategy)" {
   }
 }
 
-package "actions (Strategy)" {
+package "DOMAIN LAYER - action strategies" {
   interface ActionExecutionContext {
     + getLivingEnemies(): List<Combatant>
     + getLivingEnemiesInTurnOrder(): List<Combatant>
@@ -224,14 +253,44 @@ package "actions (Strategy)" {
     + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
   }
 
-  class BasicAttackAction <<strategy>>
-  class DefendAction <<strategy>>
-  class ShieldBashAction <<strategy>>
-  class ArcaneBlastAction <<strategy>>
-  class UsePotionAction <<strategy>>
-  class UseSmokeBombAction <<strategy>>
-  class UseSpecialSkillAction <<strategy>>
-  class UsePowerStoneSkillAction <<strategy>>
+  class BasicAttackAction <<strategy>> {
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class DefendAction <<strategy>> {
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class ShieldBashAction <<strategy>> {
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class ArcaneBlastAction <<strategy>> {
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class UsePotionAction <<strategy>> {
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class UseSmokeBombAction <<strategy>> {
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class UseSpecialSkillAction <<strategy>> {
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
+
+  class UsePowerStoneSkillAction <<strategy>> {
+    + advancesCooldown(): boolean
+    + targetingMode(actor: Combatant): TargetingMode
+    + execute(context: ActionExecutionContext, actor: Combatant, target: Combatant): List<BattleEvent>
+  }
 
   enum TargetingMode {
     NONE
@@ -239,7 +298,7 @@ package "actions (Strategy)" {
   }
 }
 
-package "engine (Control + Supporting Entity)" {
+package "ENGINE LAYER - orchestration and setup" {
   class BattleEngine <<control>> {
     - battleState: BattleState
     - turnOrderStrategy: TurnOrderStrategy
@@ -262,29 +321,64 @@ package "engine (Control + Supporting Entity)" {
     ~ isBattleOver(): boolean
   }
 
-  interface TurnProcessor <<strategy>>
-  class DefaultTurnProcessor <<control>>
+  interface TurnProcessor <<strategy>> {
+    ~ processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+  }
 
-  interface WaveManager <<strategy>>
-  class DefaultWaveManager <<control>>
+  class DefaultTurnProcessor <<control>> {
+    - player: PlayerCharacter
+    + processTurn(roundNumber: int, actor: Combatant, provider: PlayerDecisionProvider, context: ActionExecutionContext, emit: Consumer<BattleEvent>): void
+  }
 
-  interface RoundLifecycle <<strategy>>
-  class DefaultRoundLifecycle <<control>>
+  interface WaveManager <<strategy>> {
+    ~ spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
+  }
 
-  interface BattleOutcomeReporter <<strategy>>
-  class DefaultBattleOutcomeReporter <<control>>
+  class DefaultWaveManager <<control>> {
+    - initialEnemies: List<Combatant>
+    - reserveEnemies: List<Combatant>
+    - moveReserveToSpawned: Runnable
+    + spawnBackupIfNeeded(emit: Consumer<BattleEvent>): void
+  }
+
+  interface RoundLifecycle <<strategy>> {
+    ~ createRoundSummary(roundNumber: int): RoundSummaryEvent
+    ~ completeRound(emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultRoundLifecycle <<control>> {
+    - player: PlayerCharacter
+    - spawnedEnemies: List<Combatant>
+    + createRoundSummary(roundNumber: int): RoundSummaryEvent
+    + completeRound(emit: Consumer<BattleEvent>): void
+  }
+
+  interface BattleOutcomeReporter <<strategy>> {
+    ~ reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
+  }
+
+  class DefaultBattleOutcomeReporter <<control>> {
+    - player: PlayerCharacter
+    + reportOutcome(roundsPlayed: int, livingEnemies: List<Combatant>, reserveEnemies: List<Combatant>, emit: Consumer<BattleEvent>): void
+  }
 
   interface TurnOrderStrategy <<strategy>> {
     + determineOrder(combatants: List<Combatant>): List<Combatant>
   }
 
-  class SpeedTurnOrderStrategy <<strategy>>
+  class SpeedTurnOrderStrategy <<strategy>> {
+    + determineOrder(combatants: List<Combatant>): List<Combatant>
+  }
 
   interface PlayerDecisionProvider <<strategy>> {
     + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
   }
 
-  class ScriptedDecisionProvider <<control>>
+  class ScriptedDecisionProvider <<control>> {
+    - decisionsByRound: Map<Integer, PlayerDecision>
+    + addDecision(roundNumber: int, decision: PlayerDecision): ScriptedDecisionProvider
+    + decide(roundNumber: int, player: PlayerCharacter, livingEnemies: List<Combatant>): PlayerDecision
+  }
 
   interface BattleEventListener <<observer>> {
     + onEvent(event: BattleEvent): void
@@ -347,21 +441,35 @@ package "engine (Control + Supporting Entity)" {
   enum EnemyType <<factory>> {
     GOBLIN
     WOLF
+    - displayName: String
+    - maxPerWave: int
+    - baseHitPoints: HitPoints
+    - baseStats: CombatStats
+    + create(name: String, combatantFactory: CombatantFactory): EnemyCombatant
   }
 
   enum PlayerType <<factory>> {
     WARRIOR
     WIZARD
+    - displayName: String
+    - specialSkillName: String
+    - baseHitPoints: HitPoints
+    - baseStats: CombatStats
+    + createPlayer(combatantFactory: CombatantFactory): PlayerCharacter
   }
 
   enum DifficultyLevel {
     EASY
     MEDIUM
     HARD
+    - displayName: String
+    - initialEnemyCount: int
+    - backupEnemyCount: int
+    + getTotalEnemyCount(): int
   }
 }
 
-package "factory / bootstrap (Control)" {
+package "ENGINE LAYER - factories/bootstrap" {
   interface CombatantFactory <<factory>> {
     + createPlayer(playerType: PlayerType): PlayerCharacter
     + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
@@ -371,37 +479,83 @@ package "factory / bootstrap (Control)" {
     - statusEffectRegistryFactory: StatusEffectRegistryFactory
     - playerCreators: Map<PlayerType, PlayerCharacterCreator>
     - enemyCreators: Map<EnemyType, EnemyCombatantCreator>
+    + createPlayer(playerType: PlayerType): PlayerCharacter
+    + createEnemy(enemyType: EnemyType, name: String): EnemyCombatant
   }
 
-  interface PlayerCharacterCreator <<factory>>
-  interface EnemyCombatantCreator <<factory>>
+  interface PlayerCharacterCreator <<factory>> {
+    + create(statusEffectRegistry: StatusEffectRegistry): PlayerCharacter
+  }
+
+  interface EnemyCombatantCreator <<factory>> {
+    + create(name: String, statusEffectRegistry: StatusEffectRegistry): EnemyCombatant
+  }
 
   interface SpecialSkillFactory <<factory>> {
     + create(): SpecialSkill
   }
 
-  class DefaultSpecialSkillFactory <<factory>> <<control>>
+  class DefaultSpecialSkillFactory <<factory>> <<control>> {
+    - action: BattleAction
+    - cooldownTurns: int
+    + create(): SpecialSkill
+  }
 
   interface StatusEffectRegistryFactory <<factory>> {
     + create(): StatusEffectRegistry
   }
 
-  class DefaultStatusEffectRegistryFactory <<factory>> <<control>>
+  class DefaultStatusEffectRegistryFactory <<factory>> <<control>> {
+    - statusEffectRegistrySupplier: Supplier<StatusEffectRegistry>
+    + create(): StatusEffectRegistry
+  }
 
   class CombatantFactories <<factory>> <<control>> {
     {static} + createDefault(...): CombatantFactory
   }
 }
 
-package "report (Events)" {
+package "ENGINE LAYER - report events" {
   interface BattleEvent <<event>>
 
-  class ActionEvent <<event>>
-  class RoundStartEvent <<event>>
-  class RoundSummaryEvent <<event>>
-  class SkippedTurnEvent <<event>>
-  class StatusEffectReportEvent <<event>>
-  class NarrationEvent <<event>>
+  class ActionEvent <<event>> {
+    - actorId: CombatantId
+    - actorName: String
+    - actionName: String
+    - targetId: CombatantId
+    - targetName: String
+    - damage: int
+    - targetEliminated: boolean
+  }
+
+  class RoundStartEvent <<event>> {
+    - roundNumber: int
+    + getRoundNumber(): int
+  }
+
+  class RoundSummaryEvent <<event>> {
+    - roundNumber: int
+    - playerSummary: CombatantSummary
+    - enemySummaries: List<CombatantSummary>
+    - inventorySnapshot: Map<ItemType, Integer>
+  }
+
+  class SkippedTurnEvent <<event>> {
+    - combatantId: CombatantId
+    - combatantName: String
+    - reason: String
+    - statusEffectNotes: List<String>
+  }
+
+  class StatusEffectReportEvent <<record>> <<event>> {
+    - statusEffectNotes: List<String>
+    {static} + fromStatusEffectOutcomes(outcomes: List<CombatantStatusOutcome>): StatusEffectReportEvent
+  }
+
+  class NarrationEvent <<event>> {
+    - text: String
+    + getText(): String
+  }
 
   class CombatantSummary <<record>> <<entity>> {
     - combatantId: CombatantId
@@ -415,7 +569,7 @@ package "report (Events)" {
   }
 }
 
-package "ui (Boundary)" {
+package "UI LAYER - CLI boundary" {
   class TurnBasedArenaCli <<boundary>> {
     - ui: ConsoleBattleUi
     - battleSetupFactory: BattleSetupFactory
@@ -449,7 +603,7 @@ package "ui (Boundary)" {
   }
 }
 
-package "ui.gui (Boundary + Control)" {
+package "UI LAYER - Swing GUI boundary/control" {
   class TurnBasedArenaGui <<boundary>> {
     - controller: BattleController
     - setupPanel: BattleSetupPanel
@@ -465,9 +619,31 @@ package "ui.gui (Boundary + Control)" {
     + selectedEnemyId(): CombatantId
   }
 
-  class BattleSetupPanel <<boundary>>
-  class ArenaScenePanel <<boundary>>
-  class BattleCommandPanel <<boundary>>
+  class BattleSetupPanel <<boundary>> {
+    - startListener: Consumer<BattleLaunchRequest>
+    - layoutChangedListener: Runnable
+    - battleRunning: boolean
+    + setSetupControlsEnabled(enabled: boolean): void
+  }
+
+  class ArenaScenePanel <<boundary>> {
+    - model: ArenaSceneModel
+    - renderer: ArenaSceneRenderer
+    - sceneLoop: ArenaSceneLoop
+    + showSetupPreview(): void
+    + startBattle(setup: BattleSetup): void
+    + showPlayerTurn(round: int, player: PlayerCharacter, livingEnemies: List<Combatant>): void
+    + applyBattleEvent(event: BattleEvent): void
+  }
+
+  class BattleCommandPanel <<boundary>> {
+    - promptLabel: JLabel
+    - optionButtons: JButton[]
+    - commandListener: Consumer<BattleCommandPanel.Command>
+    + showTurn(round: int, player: PlayerCharacter, livingEnemies: List<Combatant>, selectedTargetLabel: String): void
+    + updateTarget(selectedTargetLabel: String): void
+    + setResolving(actionName: String): void
+  }
 
   enum BattleCommand as "BattleCommandPanel.Command" {
     BASIC_ATTACK
@@ -505,12 +681,53 @@ package "ui.gui (Boundary + Control)" {
     + resolve(command: BattleCommandPanel.Command, turn: PlayerTurnRequest, selectedTarget: CombatantId): Optional<ResolvedPlayerCommand>
   }
 
-  class BattleSessionModel <<entity>>
-  class BattlePlaybackController <<control>>
-  class BattleDialogueFormatter <<control>>
-  class BattleLaunchRequest <<entity>>
-  class PlayerTurnRequest <<record>> <<entity>>
-  class ResolvedPlayerCommand <<record>> <<entity>>
+  class BattleSessionModel <<entity>> {
+    - battleRunning: boolean
+    - activePlayerTurn: PlayerTurnRequest
+    - queuedPlayerTurn: PlayerTurnRequest
+    + beginBattle(): boolean
+    + finishBattle(): void
+    + queuePlayerTurn(turn: PlayerTurnRequest): void
+    + takeQueuedPlayerTurn(): Optional<PlayerTurnRequest>
+  }
+
+  class BattlePlaybackController <<control>> {
+    - events: Queue<BattleEvent>
+    - dialogueFormatter: BattleDialogueFormatter
+    - playbackTimer: Timer
+    - active: boolean
+    + enqueue(event: BattleEvent): void
+    + playNextIfIdle(): void
+    + reset(): void
+  }
+
+  class BattleDialogueFormatter <<control>> {
+    + format(event: BattleEvent): String
+    + playbackDelayMillis(event: BattleEvent): int
+  }
+
+  class BattleLaunchRequest <<entity>> {
+    - setupCreator: Function<BattleSetupFactory, BattleSetup>
+    - replayConfiguration: PostGameConfig
+    - intro: String
+    {static} + preset(configuration: GameConfiguration): BattleLaunchRequest
+    {static} + custom(configuration: CustomGameConfiguration): BattleLaunchRequest
+    {static} + replay(configuration: PostGameConfig): BattleLaunchRequest
+    + createSetup(setupFactory: BattleSetupFactory): BattleSetup
+  }
+
+  class PlayerTurnRequest <<record>> <<entity>> {
+    - roundNumber: int
+    - player: PlayerCharacter
+    - livingEnemies: List<Combatant>
+    - responseQueue: BlockingQueue<PlayerDecision>
+  }
+
+  class ResolvedPlayerCommand <<record>> <<entity>> {
+    - decision: PlayerDecision
+    - actionName: String
+    - targetLabel: String
+  }
 }
 
 ' Domain inheritance and composition
