@@ -9,6 +9,14 @@ import javax.swing.Timer;
 
 import sc2002.turnbased.report.BattleEvent;
 
+/**
+ * EDT-only battle event playback queue.
+ * <p>
+ * This class uses {@link Timer}, whose callbacks run on the Swing Event Dispatch Thread. Call
+ * {@link #enqueue(BattleEvent)}, {@link #playNextIfIdle()}, and {@link #reset()} from the EDT;
+ * use {@code SwingUtilities.invokeLater(...)} or {@code SwingUtilities.invokeAndWait(...)} when
+ * calling from another thread.
+ */
 public final class BattlePlaybackController {
     private final Queue<BattleEvent> events = new ArrayDeque<>();
     private final BattleDialogueFormatter dialogueFormatter;
@@ -44,23 +52,42 @@ public final class BattlePlaybackController {
         }
 
         active = true;
-        eventPlayer.accept(event);
-        playbackTimer = new Timer(dialogueFormatter.playbackDelayMillis(event), e -> {
-            playbackTimer.stop();
-            playbackTimer = null;
+        try {
+            eventPlayer.accept(event);
+            playbackTimer = new Timer(dialogueFormatter.playbackDelayMillis(event), e -> {
+                stopPlaybackTimer();
+                active = false;
+                playNextIfIdle();
+            });
+            playbackTimer.setRepeats(false);
+            playbackTimer.start();
+        } catch (Throwable throwable) {
+            stopPlaybackTimer();
             active = false;
-            playNextIfIdle();
-        });
-        playbackTimer.setRepeats(false);
-        playbackTimer.start();
+            throw rethrow(throwable);
+        }
     }
 
     public void reset() {
+        stopPlaybackTimer();
+        events.clear();
+        active = false;
+    }
+
+    private void stopPlaybackTimer() {
         if (playbackTimer != null) {
             playbackTimer.stop();
             playbackTimer = null;
         }
-        events.clear();
-        active = false;
+    }
+
+    private static RuntimeException rethrow(Throwable throwable) {
+        if (throwable instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        if (throwable instanceof Error error) {
+            throw error;
+        }
+        return new IllegalStateException(throwable);
     }
 }
