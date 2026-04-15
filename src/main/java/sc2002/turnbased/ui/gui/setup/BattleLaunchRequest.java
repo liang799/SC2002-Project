@@ -14,12 +14,12 @@ import sc2002.turnbased.engine.WaveSpec;
 
 public final class BattleLaunchRequest {
     private final Function<BattleSetupFactory, BattleSetup> setupCreator;
-    private final Object replayConfiguration;
+    private final PostGameConfig replayConfiguration;
     private final String intro;
 
     private BattleLaunchRequest(
         Function<BattleSetupFactory, BattleSetup> setupCreator,
-        Object replayConfiguration,
+        PostGameConfig replayConfiguration,
         String intro
     ) {
         this.setupCreator = Objects.requireNonNull(setupCreator, "setupCreator");
@@ -33,28 +33,29 @@ public final class BattleLaunchRequest {
             + " | " + configuration.difficultyLevel().getDisplayName()
             + " | Items: " + describeItems(configuration.selectedItems())
             + " ===";
-        return new BattleLaunchRequest(factory -> factory.create(configuration), configuration, intro);
+        return new BattleLaunchRequest(factory -> factory.create(configuration), PostGameConfig.preset(configuration), intro);
     }
 
     public static BattleLaunchRequest custom(CustomGameConfiguration configuration) {
         Objects.requireNonNull(configuration, "configuration");
         return new BattleLaunchRequest(
             factory -> factory.createCustom(configuration),
-            configuration,
+            PostGameConfig.custom(configuration),
             describeCustomConfiguration(configuration)
         );
     }
 
-    public static BattleLaunchRequest replay(Object configuration) {
-        if (configuration instanceof GameConfiguration gameConfiguration) {
+    public static BattleLaunchRequest replay(PostGameConfig configuration) {
+        Objects.requireNonNull(configuration, "configuration");
+        if (configuration instanceof PostGameConfig.Preset preset) {
             return new BattleLaunchRequest(
-                factory -> factory.create(gameConfiguration),
-                gameConfiguration,
+                factory -> factory.create(preset.configuration()),
+                configuration,
                 "=== Replaying same settings ==="
             );
         }
-        if (configuration instanceof CustomGameConfiguration customConfiguration) {
-            return custom(customConfiguration);
+        if (configuration instanceof PostGameConfig.Custom custom) {
+            return custom(custom.configuration());
         }
         throw new IllegalArgumentException("Unsupported replay configuration: " + configuration);
     }
@@ -63,7 +64,7 @@ public final class BattleLaunchRequest {
         return setupCreator.apply(Objects.requireNonNull(setupFactory, "setupFactory"));
     }
 
-    public Object replayConfiguration() {
+    public PostGameConfig replayConfiguration() {
         return replayConfiguration;
     }
 

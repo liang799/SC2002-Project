@@ -2,11 +2,13 @@ package sc2002.turnbased.ui.gui.model;
 
 import java.util.Optional;
 
+import sc2002.turnbased.ui.gui.setup.PostGameConfig;
+
 public final class BattleSessionModel {
     private boolean battleRunning;
     private PlayerTurnRequest activePlayerTurn;
     private PlayerTurnRequest queuedPlayerTurn;
-    private Object queuedPostGameConfig;
+    private PostGameConfig queuedPostGameConfig;
 
     public synchronized boolean beginBattle() {
         if (battleRunning) {
@@ -55,12 +57,12 @@ public final class BattleSessionModel {
         return Optional.ofNullable(turn);
     }
 
-    public synchronized void queuePostGame(Object configuration) {
+    public synchronized void queuePostGame(PostGameConfig configuration) {
         queuedPostGameConfig = configuration;
     }
 
-    public synchronized Optional<Object> takeQueuedPostGameConfig() {
-        Object configuration = queuedPostGameConfig;
+    public synchronized Optional<PostGameConfig> takeQueuedPostGameConfig() {
+        PostGameConfig configuration = queuedPostGameConfig;
         queuedPostGameConfig = null;
         return Optional.ofNullable(configuration);
     }

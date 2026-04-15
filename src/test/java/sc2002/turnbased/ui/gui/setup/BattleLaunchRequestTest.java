@@ -30,7 +30,7 @@ class BattleLaunchRequestTest {
 
         BattleSetup setup = request.createSetup(TestDependencies.battleSetupFactory());
 
-        assertEquals(configuration, request.replayConfiguration());
+        assertEquals(PostGameConfig.preset(configuration), request.replayConfiguration());
         assertTrue(request.intro().contains("Wizard"));
         assertTrue(request.intro().contains("Medium"));
         assertEquals("Wizard", setup.getPlayer().getName());
@@ -57,7 +57,7 @@ class BattleLaunchRequestTest {
 
         BattleSetup setup = request.createSetup(TestDependencies.battleSetupFactory());
 
-        assertEquals(configuration, request.replayConfiguration());
+        assertEquals(PostGameConfig.custom(configuration), request.replayConfiguration());
         assertTrue(request.intro().contains("Wave 1: 1 Goblin, 2 Wolves - 3 enemies total"));
         assertTrue(request.intro().contains("Wave 2: 1 Goblin - 1 enemy total"));
         assertEquals("Warrior", setup.getPlayer().getName());
@@ -72,11 +72,11 @@ class BattleLaunchRequestTest {
             DifficultyLevel.EASY,
             List.of(ItemType.POTION, ItemType.POTION)
         );
-        BattleLaunchRequest request = BattleLaunchRequest.replay(configuration);
+        BattleLaunchRequest request = BattleLaunchRequest.replay(PostGameConfig.preset(configuration));
 
         BattleSetup setup = request.createSetup(TestDependencies.battleSetupFactory());
 
-        assertEquals(configuration, request.replayConfiguration());
+        assertEquals(PostGameConfig.preset(configuration), request.replayConfiguration());
         assertEquals("=== Replaying same settings ===", request.intro());
         assertEquals(3, setup.getInitialEnemies().size());
         assertEquals(0, setup.getBackupEnemies().size());

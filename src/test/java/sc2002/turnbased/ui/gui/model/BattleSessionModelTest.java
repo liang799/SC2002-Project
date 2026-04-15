@@ -10,9 +10,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 import org.junit.jupiter.api.Test;
 
 import sc2002.turnbased.domain.Combatant;
+import sc2002.turnbased.domain.ItemType;
 import sc2002.turnbased.domain.PlayerCharacter;
+import sc2002.turnbased.engine.DifficultyLevel;
+import sc2002.turnbased.engine.GameConfiguration;
 import sc2002.turnbased.engine.PlayerDecision;
+import sc2002.turnbased.engine.PlayerType;
 import sc2002.turnbased.support.TestDependencies;
+import sc2002.turnbased.ui.gui.setup.PostGameConfig;
 
 class BattleSessionModelTest {
     @Test
@@ -46,7 +51,11 @@ class BattleSessionModelTest {
     void clearQueuedPlaybackStateDropsQueuedTurnAndPostGameConfig() {
         BattleSessionModel model = new BattleSessionModel();
         model.queuePlayerTurn(turnRequest());
-        model.queuePostGame("config");
+        model.queuePostGame(PostGameConfig.preset(new GameConfiguration(
+            PlayerType.WARRIOR,
+            DifficultyLevel.EASY,
+            List.of(ItemType.POTION, ItemType.POTION)
+        )));
 
         model.clearQueuedPlaybackState();
 

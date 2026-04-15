@@ -29,6 +29,7 @@ import sc2002.turnbased.ui.gui.model.ResolvedPlayerCommand;
 import sc2002.turnbased.ui.gui.playback.BattleDialogueFormatter;
 import sc2002.turnbased.ui.gui.playback.BattlePlaybackController;
 import sc2002.turnbased.ui.gui.setup.BattleLaunchRequest;
+import sc2002.turnbased.ui.gui.setup.PostGameConfig;
 import sc2002.turnbased.ui.gui.util.SwingThread;
 import sc2002.turnbased.ui.gui.view.BattleCommandPanel;
 import sc2002.turnbased.ui.gui.view.BattleView;
@@ -209,16 +210,16 @@ public final class BattleController {
             return;
         }
 
-        Optional<Object> postGameConfig = model.takeQueuedPostGameConfig();
+        Optional<PostGameConfig> postGameConfig = model.takeQueuedPostGameConfig();
         postGameConfig.ifPresent(this::finishBattle);
     }
 
-    private void queuePostGame(Object lastConfigForPostGame) {
+    private void queuePostGame(PostGameConfig lastConfigForPostGame) {
         model.queuePostGame(lastConfigForPostGame);
         playbackController.playNextIfIdle();
     }
 
-    private void finishBattle(Object lastConfig) {
+    private void finishBattle(PostGameConfig lastConfig) {
         view.appendLog("Battle complete.");
         view.showBattleComplete();
         model.finishBattle();
@@ -226,7 +227,7 @@ public final class BattleController {
         handlePostGameChoice(lastConfig);
     }
 
-    private void handlePostGameChoice(Object lastConfig) {
+    private void handlePostGameChoice(PostGameConfig lastConfig) {
         PostGameChoice choice = view.askPostGameChoice();
         if (choice == PostGameChoice.REPLAY) {
             startBattle(BattleLaunchRequest.replay(lastConfig));
