@@ -1062,7 +1062,7 @@ ArenaScenePanel "1" *-- "1" ArenaSceneRenderer
 ArenaScenePanel "1" *-- "1" ArenaSceneLoop
 ArenaSceneModel "1" o-- "0..*" FighterSpriteDto : sprites
 ArenaSceneModel "1" *-- "0..*" FloatingText : floatingTexts
-ArenaSceneRenderer "1" *-- "1" ArenaBackgroundRenderer
+ArenaSceneRenderer "1" o-- "1" ArenaBackgroundRenderer
 ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer
 FighterBodyRenderer <|.. WarriorBodyRenderer
 FighterBodyRenderer <|.. WizardBodyRenderer
