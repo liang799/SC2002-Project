@@ -50,7 +50,8 @@ legend right
   interfaces such as TurnProcessor and WaveManager
   Observer - BattleEventPublisher + BattleEventListener
   Factory - BattleSetupFactory and CombatantFactory
-  SRP - ArenaScenePanel, ArenaSceneModel, ArenaSceneRenderer
+  SRP - ArenaScenePanel, ArenaSceneModel, ArenaSceneRenderer,
+  ArenaBackgroundRenderer
   Boundary-Control - UI classes delegate battle flow to
   BattleController and BattleEngine
 endlegend
@@ -760,8 +761,16 @@ package "UI LAYER - Swing GUI boundary/control" {
   }
 
   class ArenaSceneRenderer <<boundary>> {
+    - backgroundRenderer: ArenaBackgroundRenderer
     - fighterRenderer: FighterSpriteRenderer
     ~ render(g: Graphics2D, model: ArenaSceneModel, width: int, height: int, now: long): void
+  }
+
+  class ArenaBackgroundRenderer <<boundary>> {
+    {static} ~ BACKGROUND_RESOURCE: String
+    - source: BufferedImage
+    - scaledBackground: BufferedImage
+    ~ render(g: Graphics2D, width: int, height: int): void
   }
 
   class ArenaSceneLoop <<control>> {
@@ -1053,6 +1062,7 @@ ArenaScenePanel "1" *-- "1" ArenaSceneRenderer
 ArenaScenePanel "1" *-- "1" ArenaSceneLoop
 ArenaSceneModel "1" o-- "0..*" FighterSpriteDto : sprites
 ArenaSceneModel "1" *-- "0..*" FloatingText : floatingTexts
+ArenaSceneRenderer "1" o-- "1" ArenaBackgroundRenderer
 ArenaSceneRenderer "1" *-- "1" FighterSpriteRenderer
 FighterBodyRenderer <|.. WarriorBodyRenderer
 FighterBodyRenderer <|.. WizardBodyRenderer
