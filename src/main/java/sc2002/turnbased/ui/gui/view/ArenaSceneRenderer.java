@@ -5,101 +5,32 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics2D;
-import java.awt.Polygon;
 import java.awt.RenderingHints;
-import java.awt.geom.Path2D;
+import java.util.Objects;
 
 final class ArenaSceneRenderer {
     private static final long FLOATING_TEXT_NANOS = 1_000_000_000L;
 
+    private final ArenaBackgroundRenderer backgroundRenderer;
     private final FighterSpriteRenderer fighterRenderer = new FighterSpriteRenderer();
+
+    ArenaSceneRenderer() {
+        this(new ArenaBackgroundRenderer());
+    }
+
+    ArenaSceneRenderer(ArenaBackgroundRenderer backgroundRenderer) {
+        this.backgroundRenderer = Objects.requireNonNull(backgroundRenderer, "backgroundRenderer");
+    }
 
     void render(Graphics2D g, ArenaSceneModel model, int width, int height, long now) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        drawBackground(g, width, height);
+        backgroundRenderer.render(g, width, height);
         drawTargetPath(g, model);
         drawSprites(g, model);
         drawFloatingTexts(g, model, now);
         drawOverlay(g, model, width);
-    }
-
-    private void drawBackground(Graphics2D g, int width, int height) {
-        int floorTop = floorTop(height);
-        g.setPaint(new GradientPaint(0, 0, new Color(34, 107, 124), 0, height, new Color(232, 86, 76)));
-        g.fillRect(0, 0, width, height);
-
-        g.setColor(new Color(255, 210, 99, 185));
-        g.fillOval(width - 178, 48, 86, 86);
-
-        drawMountain(g, -40, floorTop - 160, 270, new Color(60, 102, 91));
-        drawMountain(g, 190, floorTop - 145, 270, new Color(55, 84, 93));
-        drawMountain(g, 470, floorTop - 152, 300, new Color(63, 105, 81));
-        drawForest(g, width, floorTop);
-        drawRuins(g, width, floorTop);
-
-        g.setPaint(new GradientPaint(0, floorTop, new Color(58, 69, 58), 0, height, new Color(34, 48, 45)));
-        g.fillRect(0, floorTop, width, height - floorTop);
-
-        g.setColor(new Color(88, 116, 91, 140));
-        for (int x = -40; x < width + 90; x += 86) {
-            g.fillRoundRect(x, floorTop + 22, 58, 18, 8, 8);
-            g.fillRoundRect(x + 28, floorTop + 116, 74, 22, 8, 8);
-        }
-        g.setColor(new Color(18, 29, 31, 90));
-        for (int y = floorTop + 30; y < height; y += 48) {
-            g.drawLine(0, y, width, y - 26);
-        }
-    }
-
-    private void drawMountain(Graphics2D g, int x, int baseY, int size, Color color) {
-        Polygon mountain = new Polygon();
-        mountain.addPoint(x, baseY + size);
-        mountain.addPoint(x + size / 2, baseY);
-        mountain.addPoint(x + size, baseY + size);
-        g.setColor(color);
-        g.fillPolygon(mountain);
-        g.setColor(new Color(235, 238, 214, 88));
-        Polygon cap = new Polygon();
-        cap.addPoint(x + size / 2, baseY);
-        cap.addPoint(x + size / 2 - 32, baseY + 70);
-        cap.addPoint(x + size / 2 + 12, baseY + 48);
-        cap.addPoint(x + size / 2 + 42, baseY + 86);
-        g.fillPolygon(cap);
-    }
-
-    private void drawForest(Graphics2D g, int width, int floorTop) {
-        int horizon = floorTop - 40;
-        for (int x = -20; x < width + 60; x += 42) {
-            int height = 54 + Math.floorMod(x * 13, 48);
-            g.setColor(new Color(34, 78, 57, 180));
-            Path2D tree = new Path2D.Double();
-            tree.moveTo(x, horizon);
-            tree.lineTo(x + 20, horizon - height);
-            tree.lineTo(x + 42, horizon);
-            tree.closePath();
-            g.fill(tree);
-            g.setColor(new Color(50, 63, 48, 190));
-            g.fillRect(x + 18, horizon - 10, 8, 18);
-        }
-    }
-
-    private void drawRuins(Graphics2D g, int width, int floorTop) {
-        int base = floorTop - 26;
-        Color stoneColor = new Color(74, 77, 72, 155);
-        Color stripeColor = new Color(120, 58, 58, 150);
-        for (int x = 44; x < width; x += 245) {
-            g.setColor(stoneColor);
-            g.fillRect(x, base - 94, 26, 94);
-            g.setColor(stoneColor);
-            g.fillRect(x + 76, base - 118, 28, 118);
-            g.setColor(stoneColor);
-            g.fillRect(x - 10, base - 120, 128, 18);
-            g.setColor(stripeColor);
-            g.fillRect(x + 24, base - 108, 50, 12);
-        }
     }
 
     private void drawTargetPath(Graphics2D g, ArenaSceneModel model) {
@@ -157,10 +88,6 @@ final class ArenaSceneRenderer {
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
             g.drawString("Your move", width - 136, 44);
         }
-    }
-
-    private static int floorTop(int height) {
-        return (int) (height * 0.55);
     }
 
     private static String fitText(Graphics2D g, String text, int maxWidth) {
