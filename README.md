@@ -1,5 +1,7 @@
 # SC2002 Turn-Based Combat Arena
+<img width="1178" height="702" alt="CleanShot 2026-04-19 at 12 20 13@2x" src="https://github.com/user-attachments/assets/b4bc118f-9e32-4ebf-86cd-7d107b017eb7" />
 
+## About
 This repository contains a Java turn-based combat game built for the SC2002 assignment. The production code now includes both CLI and 2D Swing GUI front ends, with the battle domain, actions, engine, reporting, and UI boundaries kept separate so the system is easier to explain, test, and extend.
 
 ## Current Scope
