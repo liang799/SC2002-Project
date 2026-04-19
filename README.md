@@ -121,6 +121,14 @@ Run the automated test suite with:
 mvn test
 ```
 
+Run the automated test suite and generate a JaCoCo coverage report with:
+
+```bash
+mvn verify
+```
+
+The HTML coverage report is written to `target/site/jacoco/index.html`, and the XML report is written to `target/site/jacoco/jacoco.xml`.
+
 The test pyramid is organized as:
 
 - `unit`
