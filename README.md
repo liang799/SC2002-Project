@@ -31,15 +31,15 @@
   <img width="1178" height="702" alt="2D Swing battle arena screenshot" src="https://github.com/user-attachments/assets/b4bc118f-9e32-4ebf-86cd-7d107b017eb7" />
 </p>
 
-## Recruiter Snapshot
+## Technical Highlights
 
-| Signal | Evidence |
-| --- | --- |
-| Object-oriented design | Strategy, Factory, Observer, and composition-heavy domain modeling |
-| Product surface | CLI gameplay plus an interactive Swing GUI with targeting, items, special skills, and animated feedback |
-| Quality bar | 151 automated JUnit 5 tests across unit, integration, and end-to-end flows |
-| Delivery discipline | Maven build, GitHub Actions CI, JaCoCo reports, packaged CLI/GUI jars, and tag-based releases |
-| Maintainability | Clear boundaries between domain, engine, reporting, setup, CLI, and GUI layers |
+| Category | Implementation |
+| :--- | :--- |
+| **Architecture** | Strict separation between domain, engine, reporting, setup, and UI layers. |
+| **Design Patterns** | Strategy, Factory, Observer, and composition-heavy domain modeling. |
+| **Testing** | 151 automated JUnit 5 tests covering unit, integration, and end-to-end flows. |
+| **CI/CD Pipeline** | Maven build, GitHub Actions, JaCoCo coverage reports, and tag-based jar releases. |
+| **Client Interfaces** | Native CLI flow and an interactive Swing GUI with animated feedback. |
 
 ## About
 
