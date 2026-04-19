@@ -1,142 +1,131 @@
-# SC2002 Turn-Based Combat Arena
-<img width="1178" height="702" alt="CleanShot 2026-04-19 at 12 20 13@2x" src="https://github.com/user-attachments/assets/b4bc118f-9e32-4ebf-86cd-7d107b017eb7" />
+<h1 align="center">SC2002 Turn-Based Combat Arena</h1>
+
+<p align="center">
+  <strong>Java 17 combat game with a tested battle engine, native CLI flow, and a 2D Swing arena.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/liang799/SC2002-Project/actions/workflows/unit-tests.yml">
+    <img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/liang799/SC2002-Project/unit-tests.yml?branch=main&label=tests&logo=githubactions&logoColor=white">
+  </a>
+  <a href="#quality-gates">
+    <img alt="Line coverage" src="https://img.shields.io/badge/line%20coverage-53.9%25-yellow">
+  </a>
+  <a href="https://github.com/liang799/SC2002-Project/blob/main/LICENSE">
+    <img alt="License: GPL-3.0" src="https://img.shields.io/github/license/liang799/SC2002-Project?label=license">
+  </a>
+  <a href="https://github.com/liang799/SC2002-Project/issues">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/liang799/SC2002-Project?label=issues">
+  </a>
+  <a href="https://github.com/liang799/SC2002-Project/stargazers">
+    <img alt="GitHub stars" src="https://img.shields.io/github/stars/liang799/SC2002-Project?style=flat&label=stars">
+  </a>
+  <a href="https://github.com/liang799/SC2002-Project/network/members">
+    <img alt="GitHub forks" src="https://img.shields.io/github/forks/liang799/SC2002-Project?style=flat&label=forks">
+  </a>
+  <img alt="Java 17" src="https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white">
+  <img alt="Maven" src="https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white">
+</p>
+
+<p align="center">
+  <img width="1178" height="702" alt="2D Swing battle arena screenshot" src="https://github.com/user-attachments/assets/b4bc118f-9e32-4ebf-86cd-7d107b017eb7" />
+</p>
+
+## Recruiter Snapshot
+
+| Signal | Evidence |
+| --- | --- |
+| Object-oriented design | Strategy, Factory, Observer, and composition-heavy domain modeling |
+| Product surface | CLI gameplay plus an interactive Swing GUI with targeting, items, special skills, and animated feedback |
+| Quality bar | 151 automated JUnit 5 tests across unit, integration, and end-to-end flows |
+| Delivery discipline | Maven build, GitHub Actions CI, JaCoCo reports, packaged CLI/GUI jars, and tag-based releases |
+| Maintainability | Clear boundaries between domain, engine, reporting, setup, CLI, and GUI layers |
 
 ## About
-This repository contains a Java turn-based combat game built for the SC2002 assignment. The production code now includes both CLI and 2D Swing GUI front ends, with the battle domain, actions, engine, reporting, and UI boundaries kept separate so the system is easier to explain, test, and extend.
 
-## Current Scope
+This repository contains a Java turn-based combat game built for the SC2002 assignment. The project treats a compact game brief as a maintainable software system: battle rules live in the domain and engine layers, user interaction is handled at the boundaries, and automated tests lock down core gameplay behavior.
 
-The current implementation includes:
+## Gameplay
 
-- `Warrior` and `Wizard` as playable classes
-- `Goblin` and `Wolf` as enemy types
-- `BasicAttack`, `Defend`, and class-specific special skills
-- item support for `Potion`, `Smoke Bomb`, and `Power Stone`
-- status-effect support for `Arcane Power`, `Defend`, `Strength Boost`, `Smoke Bomb`, and `Stun`
-- Easy, Medium, and Hard setup support
-- custom wave configuration support
-- backup enemy spawn handling
-- scripted Appendix A scenario support for Easy Warrior, Medium Warrior, and Medium Wizard
-- native CLI gameplay with player class, item, difficulty, and custom wave selection
-- 2D Swing GUI gameplay with an arena background, player movement, enemy targeting, action hotkeys, HP bars, paced dialogue playback, and animated battle feedback
-- live battle-event display during gameplay
-- structured battle-event reporting for testing and formatting
-- verifier coverage for Easy checkpoints, Appendix A scenarios, and the custom battle-flow validation scenario
+- Play as a `Warrior` or `Wizard`
+- Fight `Goblin` and `Wolf` enemy waves across Easy, Medium, and Hard setups
+- Use `Basic Attack`, `Defend`, class-specific special skills, `Potion`, `Smoke Bomb`, and `Power Stone`
+- Apply status effects including `Arcane Power`, `Defend`, `Strength Boost`, `Smoke Bomb`, and `Stun`
+- Configure custom waves with backup enemy spawn handling
+- Run scripted Appendix A scenarios for Easy Warrior, Medium Warrior, and Medium Wizard
+- Choose between native CLI gameplay and a 2D Swing GUI battle arena
 
 ## Architecture
 
-The project is organized into the following source packages:
+| Package | Responsibility |
+| --- | --- |
+| `bootstrap` | Composition root for factories, actions, and status-effect registry creation |
+| `domain` | Combatants, stats, inventory, value objects, and special-skill state |
+| `domain.status` | Status-effect abstractions, concrete effects, outcomes, and registry logic |
+| `actions` | Battle action strategies for attacks, defense, items, and special skills |
+| `engine` | Battle orchestration, setup, turn ordering, decisions, waves, and event streaming |
+| `report` | Structured battle events, combatant summaries, and status-effect reporting |
+| `ui` | CLI entry points, prompts, transcript formatting, and demo runners |
+| `ui.gui` | Swing MVC entry point, controller, command resolution, playback, setup, and views |
+| `test` | Unit, integration, and end-to-end validation helpers and scenarios |
 
-- `bootstrap`
-  - composition root that wires factories, actions, and registry creation
-- `domain`
-  - combatants, stats, inventory, value objects, and special-skill state
-- `domain.status`
-  - status-effect abstractions, concrete effects, outcome records, and the registry that applies them
-- `actions`
-  - battle action strategies such as basic attacks, defend, item usage, and special-skill execution
-- `engine`
-  - battle orchestration, setup/configuration, turn ordering, player decisions, waves, and event streaming
-- `report`
-  - structured battle events, summaries, and status-effect note mapping
-- `ui`
-  - CLI boundary classes, prompts, transcript formatting, and demo entry points
-- `ui.gui`
-  - MVC Swing GUI entry point
-- `ui.gui.view`
-  - Swing panels and the `BattleView` contract for the arena, setup form, battle menu, and post-game choices
-- `ui.gui.controller`
-  - battle-flow orchestration and the bridge from Swing input into the blocking engine decision API
-- `ui.gui.model`
-  - small GUI session state and player-turn command records
-- `ui.gui.command`
-  - battle-menu command resolution into engine `PlayerDecision` objects
-- `ui.gui.playback`
-  - paced event narration and dialogue formatting
-- `ui.gui.setup`
-  - setup/replay launch requests
-- `ui.gui.util`
-  - Swing threading helpers
-- `test`
-  - executable verifier classes for scenario validation
+## Design Patterns
 
-The class diagram reflects several intentional design patterns in the code:
+- Strategy: `BattleAction`, `StatusEffect`, `TurnOrderStrategy`, and `PlayerDecisionProvider` vary behavior behind stable interfaces
+- Factory: `CombatantFactory`, `SpecialSkillFactory`, and `StatusEffectRegistryFactory` centralize object creation
+- Observer: `BattleEventListener` streams battle events to CLI and GUI consumers
+- Composition-heavy domain model: `Combatant` owns inventory, hit points, combat stats, and status effects, while `PlayerCharacter` owns its special skill
 
-- Strategy
-  - `BattleAction`, `StatusEffect`, `TurnOrderStrategy`, and `PlayerDecisionProvider` vary behavior behind interfaces
-- Factory
-  - `CombatantFactory`, `SpecialSkillFactory`, and `StatusEffectRegistryFactory` centralize object creation
-- Observer
-  - `BattleEventListener` streams battle events to CLI and GUI consumers
-- Composition-heavy domain model
-  - `Combatant` owns `Inventory`, `HitPoints`, `CombatStats`, and `StatusEffectRegistry`
-  - `PlayerCharacter` owns `SpecialSkill`
+## Run Locally
 
-## Running The Game
+Requires Java 17 and Maven.
 
-Compile everything:
-
-```powershell
-$files = Get-ChildItem -Recurse -File src/main/java,src/test/java | ForEach-Object { $_.FullName }
-javac -d out $files
-```
-
-Run the native CLI game:
-
-```powershell
-java -cp out sc2002.turnbased.ui.TurnBasedArenaCli
-```
-
-Run the Swing GUI:
-
-```powershell
-java -cp out sc2002.turnbased.ui.gui.TurnBasedArenaGui
-```
-
-Or build and run the packaged 2D GUI jar:
+Build the project:
 
 ```bash
 mvn -DskipTests package
+```
+
+Run the packaged CLI:
+
+```bash
+java -jar target/turnbased-arena-1.0-SNAPSHOT-cli.jar
+```
+
+Run the packaged 2D GUI:
+
+```bash
 java -jar target/turnbased-arena-1.0-SNAPSHOT-gui.jar
 ```
 
-2D GUI controls:
+Run the scripted Appendix demo after compiling:
 
-- Move the player with `WASD` or the arrow keys
+```bash
+java -cp target/classes sc2002.turnbased.ui.EasyRoundsDemo
+```
+
+## GUI Controls
+
+- Move with `WASD` or the arrow keys
 - Click an enemy to target it, or cycle targets with `Q` and `E`
-- Use the `1` to `4` battle menu: `Fight` opens attacks, `Bag` opens items, `Defend` resolves immediately, and `Target` opens target cycling
-- Press `Esc` to return to the main battle menu from a submenu
+- Use `1` to `4` to navigate battle actions: `Fight`, `Bag`, `Defend`, and `Target`
+- Press `Esc` to return from a submenu to the main battle menu
 
-Run the scripted Appendix demo:
+## Quality Gates
 
-```powershell
-java -cp out sc2002.turnbased.ui.EasyRoundsDemo
-```
+| Command | Purpose |
+| --- | --- |
+| `mvn test` | Runs the automated JUnit 5 test suite |
+| `mvn verify` | Runs tests, builds jars, and generates JaCoCo coverage reports |
 
-## Validation
+Current JaCoCo line coverage from the latest local verification run is **53.9%** (`1,714 / 3,178` lines).
 
-Run the automated test suite with:
+Coverage reports are generated at:
 
-```bash
-mvn test
-```
+- `target/site/jacoco/index.html`
+- `target/site/jacoco/jacoco.xml`
 
-Run the automated test suite and generate a JaCoCo coverage report with:
-
-```bash
-mvn verify
-```
-
-The HTML coverage report is written to `target/site/jacoco/index.html`, and the XML report is written to `target/site/jacoco/jacoco.xml`.
-
-The test pyramid is organized as:
-
-- `unit`
-  - focused domain and value-object tests
-- `integration`
-  - deterministic engine and scenario-script coverage
-- `e2e`
-  - full battle-flow validation across setup, engine, decisions, and reporting
+GitHub Actions uploads the HTML report as the `jacoco-coverage-report` artifact on test workflow runs.
 
 ## Documentation
 
@@ -144,12 +133,10 @@ The maintained UML source of truth is the PlantUML class diagram:
 
 - `uml-diagrams/plantuml_class_diagram.puml`
 
-<!-- BEGIN GENERATED UML CLASS DIAGRAMS -->
-Full-resolution PlantUML outputs are also included:
+Full-resolution PlantUML outputs are included:
 
 - [Class diagram PNG](docs/uml-diagrams/imgs/plantuml_class_diagram.png)
 - [Class diagram SVG](docs/uml-diagrams/imgs/plantuml_class_diagram.svg)
-<!-- END GENERATED UML CLASS DIAGRAMS -->
 
 Legacy Mermaid diagrams have been moved to an outdated folder and are no longer maintained:
 
@@ -157,10 +144,6 @@ Legacy Mermaid diagrams have been moved to an outdated folder and are no longer 
 - `outdated/mermaid/mermaid_class_diagram.md`
 - `outdated/mermaid/mermaid_sequence_diagram.md`
 
-## Build Output
+## License
 
-Compiled output is ignored through `.gitignore`:
-
-```text
-out/
-```
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for details.
