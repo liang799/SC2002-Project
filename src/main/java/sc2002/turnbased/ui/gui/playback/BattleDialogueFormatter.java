@@ -44,38 +44,22 @@ public final class BattleDialogueFormatter {
     }
 
     public int playbackDelayMillis(BattleEvent event) {
-        int baseDelay = event.visit(new BattleEvent.Visitor<>() {
-            @Override
-            public Integer onAction(ActionEvent actionEvent) {
-                return 1_350;
-            }
-
-            @Override
-            public Integer onNarration(NarrationEvent narrationEvent) {
-                return 1_250;
-            }
-
-            @Override
-            public Integer onRoundStart(RoundStartEvent roundStartEvent) {
-                return 850;
-            }
-
-            @Override
-            public Integer onRoundSummary(RoundSummaryEvent roundSummaryEvent) {
-                return 900;
-            }
-
-            @Override
-            public Integer onSkippedTurn(SkippedTurnEvent skippedTurnEvent) {
-                return 1_150;
-            }
-
-            @Override
-            public Integer onStatusEffectReport(StatusEffectReportEvent statusEffectReportEvent) {
-                return 1_100;
-            }
-        });
-        int typewriterDelay = format(event).length() * 12 + 520;
+        String formatted = format(event);
+        int typewriterDelay = formatted.length() * 12 + 520;
+        int baseDelay = 1_000;
+        if (event instanceof ActionEvent) {
+            baseDelay = 1_350;
+        } else if (event instanceof NarrationEvent) {
+            baseDelay = 1_250;
+        } else if (event instanceof RoundStartEvent) {
+            baseDelay = 850;
+        } else if (event instanceof RoundSummaryEvent) {
+            baseDelay = 900;
+        } else if (event instanceof SkippedTurnEvent) {
+            baseDelay = 1_150;
+        } else if (event instanceof StatusEffectReportEvent) {
+            baseDelay = 1_100;
+        }
         return Math.max(baseDelay, Math.min(2_000, typewriterDelay));
     }
 
