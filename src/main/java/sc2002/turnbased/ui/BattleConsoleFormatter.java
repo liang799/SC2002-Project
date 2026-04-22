@@ -18,31 +18,43 @@ public class BattleConsoleFormatter {
     public List<String> format(List<BattleEvent> events) {
         List<String> lines = new ArrayList<>();
         for (BattleEvent event : events) {
-            if (event instanceof RoundStartEvent roundStartEvent) {
-                lines.add("Round " + roundStartEvent.getRoundNumber());
-                continue;
-            }
-            if (event instanceof ActionEvent actionEvent) {
-                lines.add(formatAction(actionEvent));
-                continue;
-            }
-            if (event instanceof NarrationEvent narrationEvent) {
-                lines.add(narrationEvent.getText());
-                continue;
-            }
-            if (event instanceof SkippedTurnEvent skippedTurnEvent) {
-                lines.add(formatSkippedTurn(skippedTurnEvent));
-                continue;
-            }
-            if (event instanceof StatusEffectReportEvent statusEffectReportEvent) {
-                lines.addAll(formatStatusEffectNotes(statusEffectReportEvent.statusEffectNotes()));
-                continue;
-            }
-            if (event instanceof RoundSummaryEvent roundSummaryEvent) {
-                lines.addAll(formatRoundSummary(roundSummaryEvent));
-            }
+            lines.addAll(formatEvent(event));
         }
         return lines;
+    }
+
+    private List<String> formatEvent(BattleEvent event) {
+        return event.visit(new BattleEvent.Visitor<>() {
+            @Override
+            public List<String> onAction(ActionEvent actionEvent) {
+                return List.of(formatAction(actionEvent));
+            }
+
+            @Override
+            public List<String> onNarration(NarrationEvent narrationEvent) {
+                return List.of(narrationEvent.getText());
+            }
+
+            @Override
+            public List<String> onRoundStart(RoundStartEvent roundStartEvent) {
+                return List.of("Round " + roundStartEvent.getRoundNumber());
+            }
+
+            @Override
+            public List<String> onRoundSummary(RoundSummaryEvent roundSummaryEvent) {
+                return formatRoundSummary(roundSummaryEvent);
+            }
+
+            @Override
+            public List<String> onSkippedTurn(SkippedTurnEvent skippedTurnEvent) {
+                return List.of(formatSkippedTurn(skippedTurnEvent));
+            }
+
+            @Override
+            public List<String> onStatusEffectReport(StatusEffectReportEvent statusEffectReportEvent) {
+                return formatStatusEffectNotes(statusEffectReportEvent.statusEffectNotes());
+            }
+        });
     }
 
     private String formatAction(ActionEvent actionEvent) {

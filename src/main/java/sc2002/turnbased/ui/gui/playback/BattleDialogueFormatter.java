@@ -10,43 +10,56 @@ import sc2002.turnbased.report.StatusEffectReportEvent;
 
 public final class BattleDialogueFormatter {
     public String format(BattleEvent event) {
-        if (event instanceof ActionEvent actionEvent) {
-            return actionMessage(actionEvent);
-        }
-        if (event instanceof NarrationEvent narrationEvent) {
-            return cleanBattleText(narrationEvent.getText());
-        }
-        if (event instanceof SkippedTurnEvent skippedTurnEvent) {
-            return skippedTurnMessage(skippedTurnEvent);
-        }
-        if (event instanceof StatusEffectReportEvent statusEffectReportEvent) {
-            return statusEffectMessage(statusEffectReportEvent);
-        }
-        if (event instanceof RoundStartEvent roundStartEvent) {
-            return "Round " + roundStartEvent.getRoundNumber() + " started!";
-        }
-        if (event instanceof RoundSummaryEvent roundSummaryEvent) {
-            return "Round " + roundSummaryEvent.getRoundNumber() + " is over.";
-        }
-        return "The battle continues.";
+        return event.visit(new BattleEvent.Visitor<>() {
+            @Override
+            public String onAction(ActionEvent actionEvent) {
+                return actionMessage(actionEvent);
+            }
+
+            @Override
+            public String onNarration(NarrationEvent narrationEvent) {
+                return cleanBattleText(narrationEvent.getText());
+            }
+
+            @Override
+            public String onRoundStart(RoundStartEvent roundStartEvent) {
+                return "Round " + roundStartEvent.getRoundNumber() + " started!";
+            }
+
+            @Override
+            public String onRoundSummary(RoundSummaryEvent roundSummaryEvent) {
+                return "Round " + roundSummaryEvent.getRoundNumber() + " is over.";
+            }
+
+            @Override
+            public String onSkippedTurn(SkippedTurnEvent skippedTurnEvent) {
+                return skippedTurnMessage(skippedTurnEvent);
+            }
+
+            @Override
+            public String onStatusEffectReport(StatusEffectReportEvent statusEffectReportEvent) {
+                return statusEffectMessage(statusEffectReportEvent);
+            }
+        });
     }
 
     public int playbackDelayMillis(BattleEvent event) {
+        String formatted = format(event);
+        int typewriterDelay = formatted.length() * 12 + 520;
         int baseDelay = 1_000;
         if (event instanceof ActionEvent) {
             baseDelay = 1_350;
         } else if (event instanceof NarrationEvent) {
             baseDelay = 1_250;
-        } else if (event instanceof SkippedTurnEvent) {
-            baseDelay = 1_150;
-        } else if (event instanceof StatusEffectReportEvent) {
-            baseDelay = 1_100;
         } else if (event instanceof RoundStartEvent) {
             baseDelay = 850;
         } else if (event instanceof RoundSummaryEvent) {
             baseDelay = 900;
+        } else if (event instanceof SkippedTurnEvent) {
+            baseDelay = 1_150;
+        } else if (event instanceof StatusEffectReportEvent) {
+            baseDelay = 1_100;
         }
-        int typewriterDelay = format(event).length() * 12 + 520;
         return Math.max(baseDelay, Math.min(2_000, typewriterDelay));
     }
 

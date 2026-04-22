@@ -1,10 +1,9 @@
 package sc2002.turnbased.report;
 
-public class RoundStartEvent implements BattleEvent {
-    private final int roundNumber;
-
-    public RoundStartEvent(int roundNumber) {
-        this.roundNumber = roundNumber;
+public record RoundStartEvent(int roundNumber) implements BattleEvent {
+    @Override
+    public <T> T visit(Visitor<T> visitor) {
+        return visitor.onRoundStart(this);
     }
 
     public int getRoundNumber() {

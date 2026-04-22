@@ -81,5 +81,9 @@ class EnemyCombatantTest {
     }
 
     private static final class TestBattleEvent implements BattleEvent {
+        @Override
+        public <T> T visit(Visitor<T> visitor) {
+            throw new UnsupportedOperationException("Test event should not be visited");
+        }
     }
 }

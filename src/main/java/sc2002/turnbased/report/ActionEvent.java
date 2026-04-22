@@ -7,63 +7,65 @@ import sc2002.turnbased.domain.AttackResolution;
 import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatantId;
 
-public class ActionEvent implements BattleEvent {
-    private final CombatantId actorId;
-    private final String actorName;
-    private final String actionName;
-    private final CombatantId targetId;
-    private final String targetName;
-    private final int hpBefore;
-    private final int hpAfter;
-    private final int attackerAttack;
-    private final int targetDefense;
-    private final int damage;
-    private final boolean targetEliminated;
-    private final List<String> statusEffectNotes;
-
-    public ActionEvent(
-        CombatantId actorId,
-        String actorName,
-        String actionName,
-        CombatantId targetId,
-        String targetName,
-        int hpBefore,
-        int hpAfter,
-        int attackerAttack,
-        int targetDefense,
-        int damage,
-        boolean targetEliminated,
-        List<String> statusEffectNotes
-    ) {
-        this.actorId = Objects.requireNonNull(actorId, "actorId");
-        this.actorName = actorName;
-        this.actionName = actionName;
-        this.targetId = Objects.requireNonNull(targetId, "targetId");
-        this.targetName = targetName;
-        this.hpBefore = hpBefore;
-        this.hpAfter = hpAfter;
-        this.attackerAttack = attackerAttack;
-        this.targetDefense = targetDefense;
-        this.damage = damage;
-        this.targetEliminated = targetEliminated;
-        this.statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
+public record ActionEvent(
+    CombatantId actorId,
+    String actorName,
+    String actionName,
+    CombatantId targetId,
+    String targetName,
+    int hpBefore,
+    int hpAfter,
+    int attackerAttack,
+    int targetDefense,
+    int damage,
+    boolean targetEliminated,
+    List<String> statusEffectNotes
+) implements BattleEvent {
+    public ActionEvent {
+        actorId = Objects.requireNonNull(actorId, "actorId");
+        actorName = Objects.requireNonNull(actorName, "actorName");
+        actionName = Objects.requireNonNull(actionName, "actionName");
+        targetId = Objects.requireNonNull(targetId, "targetId");
+        targetName = Objects.requireNonNull(targetName, "targetName");
+        statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
     }
 
     public ActionEvent(Combatant actor, String actionName, Combatant target, AttackResolution attackResolution) {
         this(
-            actor.combatantId(),
-            actor.getName(),
+            requireActor(actor).combatantId(),
+            requireCombatantName(actor, "actor"),
             actionName,
-            target.combatantId(),
-            target.getName(),
-            attackResolution.hpBefore(),
-            attackResolution.hpAfter(),
-            attackResolution.attackUsed(),
-            attackResolution.targetDefense(),
-            attackResolution.damage(),
-            attackResolution.targetEliminated(),
-            StatusEffectReportMapper.toNotes(attackResolution.statusEffectOutcomes())
+            requireTarget(target).combatantId(),
+            requireCombatantName(target, "target"),
+            requireAttackResolution(attackResolution).hpBefore(),
+            requireAttackResolution(attackResolution).hpAfter(),
+            requireAttackResolution(attackResolution).attackUsed(),
+            requireAttackResolution(attackResolution).targetDefense(),
+            requireAttackResolution(attackResolution).damage(),
+            requireAttackResolution(attackResolution).targetEliminated(),
+            StatusEffectReportMapper.toNotes(requireAttackResolution(attackResolution).statusEffectOutcomes())
         );
+    }
+
+    private static Combatant requireActor(Combatant actor) {
+        return Objects.requireNonNull(actor, "actor");
+    }
+
+    private static Combatant requireTarget(Combatant target) {
+        return Objects.requireNonNull(target, "target");
+    }
+
+    private static AttackResolution requireAttackResolution(AttackResolution attackResolution) {
+        return Objects.requireNonNull(attackResolution, "attackResolution");
+    }
+
+    private static String requireCombatantName(Combatant combatant, String role) {
+        return Objects.requireNonNull(Objects.requireNonNull(combatant, role).getName(), role + ".name");
+    }
+
+    @Override
+    public <T> T visit(Visitor<T> visitor) {
+        return visitor.onAction(this);
     }
 
     public CombatantId getActorId() {

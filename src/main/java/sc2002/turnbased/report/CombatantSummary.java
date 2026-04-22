@@ -1,39 +1,24 @@
 package sc2002.turnbased.report;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import sc2002.turnbased.domain.CombatantId;
 
-public class CombatantSummary {
-    private final CombatantId combatantId;
-    private final String name;
-    private final int currentHp;
-    private final int maxHp;
-    private final int currentAttack;
-    private final int baseAttack;
-    private final boolean alive;
-    private final List<String> activeStatuses;
-
-    public CombatantSummary(
-        CombatantId combatantId,
-        String name,
-        int currentHp,
-        int maxHp,
-        int currentAttack,
-        int baseAttack,
-        boolean alive,
-        List<String> activeStatuses
-    ) {
-        this.combatantId = combatantId;
-        this.name = name;
-        this.currentHp = currentHp;
-        this.maxHp = maxHp;
-        this.currentAttack = currentAttack;
-        this.baseAttack = baseAttack;
-        this.alive = alive;
-        this.activeStatuses = new ArrayList<>(activeStatuses);
+public record CombatantSummary(
+    CombatantId combatantId,
+    String name,
+    int currentHp,
+    int maxHp,
+    int currentAttack,
+    int baseAttack,
+    boolean alive,
+    List<String> activeStatuses
+) {
+    public CombatantSummary {
+        combatantId = Objects.requireNonNull(combatantId, "combatantId");
+        name = Objects.requireNonNull(name, "name");
+        activeStatuses = List.copyOf(Objects.requireNonNull(activeStatuses, "activeStatuses"));
     }
 
     public CombatantId getCombatantId() {
@@ -65,6 +50,6 @@ public class CombatantSummary {
     }
 
     public List<String> getActiveStatuses() {
-        return Collections.unmodifiableList(activeStatuses);
+        return activeStatuses;
     }
 }
