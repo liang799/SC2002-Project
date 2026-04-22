@@ -7,17 +7,17 @@ import sc2002.turnbased.domain.Combatant;
 import sc2002.turnbased.domain.CombatantId;
 import sc2002.turnbased.domain.status.CombatantStatusOutcome;
 
-public class SkippedTurnEvent implements BattleEvent {
-    private final CombatantId combatantId;
-    private final String combatantName;
-    private final String reason;
-    private final List<String> statusEffectNotes;
-
-    public SkippedTurnEvent(CombatantId combatantId, String combatantName, String reason, List<String> statusEffectNotes) {
-        this.combatantId = Objects.requireNonNull(combatantId, "combatantId");
-        this.combatantName = combatantName;
-        this.reason = reason;
-        this.statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
+public record SkippedTurnEvent(
+    CombatantId combatantId,
+    String combatantName,
+    String reason,
+    List<String> statusEffectNotes
+) implements BattleEvent {
+    public SkippedTurnEvent {
+        combatantId = Objects.requireNonNull(combatantId, "combatantId");
+        combatantName = Objects.requireNonNull(combatantName, "combatantName");
+        reason = Objects.requireNonNull(reason, "reason");
+        statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
     }
 
     public static SkippedTurnEvent fromStatusEffectOutcomes(
@@ -32,6 +32,11 @@ public class SkippedTurnEvent implements BattleEvent {
             reason,
             StatusEffectReportMapper.toNotes(statusEffectOutcomes)
         );
+    }
+
+    @Override
+    public <T> T visit(Visitor<T> visitor) {
+        return visitor.onSkippedTurn(this);
     }
 
     public CombatantId getCombatantId() {

@@ -10,6 +10,11 @@ public record StatusEffectReportEvent(List<String> statusEffectNotes) implements
         statusEffectNotes = List.copyOf(Objects.requireNonNull(statusEffectNotes, "statusEffectNotes"));
     }
 
+    @Override
+    public <T> T visit(Visitor<T> visitor) {
+        return visitor.onStatusEffectReport(this);
+    }
+
     public static StatusEffectReportEvent fromStatusEffectOutcomes(List<CombatantStatusOutcome> statusEffectOutcomes) {
         return new StatusEffectReportEvent(StatusEffectReportMapper.toNotes(statusEffectOutcomes));
     }

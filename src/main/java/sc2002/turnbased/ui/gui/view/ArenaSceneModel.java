@@ -152,28 +152,54 @@ final class ArenaSceneModel {
 
     void applyBattleEvent(BattleEvent event, int arenaWidth, int arenaHeight, long now) {
         Objects.requireNonNull(event, "event");
-        if (event instanceof ActionEvent actionEvent) {
-            applyActionEvent(actionEvent, now);
-        } else if (event instanceof RoundStartEvent roundStartEvent) {
-            roundNumber = roundStartEvent.getRoundNumber();
-            banner = "Round " + roundNumber;
-        } else if (event instanceof RoundSummaryEvent roundSummaryEvent) {
-            applyRoundSummary(roundSummaryEvent, arenaWidth, arenaHeight);
-        } else if (event instanceof NarrationEvent narrationEvent) {
-            banner = narrationEvent.getText();
-            if (banner.startsWith("Victory") || banner.startsWith("Defeat")) {
-                acceptingPlayerTurn = false;
-                battleActive = false;
+        event.visit(new BattleEvent.Visitor<>() {
+            @Override
+            public Void onAction(ActionEvent actionEvent) {
+                applyActionEvent(actionEvent, now);
+                return null;
             }
-        } else if (event instanceof SkippedTurnEvent skippedTurnEvent) {
-            FighterSpriteDto skipped = sprites.get(skippedTurnEvent.getCombatantId());
-            if (skipped != null) {
-                skipped.pulseUntil = now + ACTION_ANIMATION_NANOS;
+
+            @Override
+            public Void onNarration(NarrationEvent narrationEvent) {
+                banner = narrationEvent.getText();
+                if (banner.startsWith("Victory") || banner.startsWith("Defeat")) {
+                    acceptingPlayerTurn = false;
+                    battleActive = false;
+                }
+                return null;
             }
-            banner = skippedTurnEvent.getCombatantName() + " cannot act: " + skippedTurnEvent.getReason();
-        } else if (event instanceof StatusEffectReportEvent statusEvent && !statusEvent.statusEffectNotes().isEmpty()) {
-            banner = String.join("  |  ", statusEvent.statusEffectNotes());
-        }
+
+            @Override
+            public Void onRoundStart(RoundStartEvent roundStartEvent) {
+                roundNumber = roundStartEvent.getRoundNumber();
+                banner = "Round " + roundNumber;
+                return null;
+            }
+
+            @Override
+            public Void onRoundSummary(RoundSummaryEvent roundSummaryEvent) {
+                applyRoundSummary(roundSummaryEvent, arenaWidth, arenaHeight);
+                return null;
+            }
+
+            @Override
+            public Void onSkippedTurn(SkippedTurnEvent skippedTurnEvent) {
+                FighterSpriteDto skipped = sprites.get(skippedTurnEvent.getCombatantId());
+                if (skipped != null) {
+                    skipped.pulseUntil = now + ACTION_ANIMATION_NANOS;
+                }
+                banner = skippedTurnEvent.getCombatantName() + " cannot act: " + skippedTurnEvent.getReason();
+                return null;
+            }
+
+            @Override
+            public Void onStatusEffectReport(StatusEffectReportEvent statusEvent) {
+                if (!statusEvent.statusEffectNotes().isEmpty()) {
+                    banner = String.join("  |  ", statusEvent.statusEffectNotes());
+                }
+                return null;
+            }
+        });
         chooseDefaultTarget();
         layoutEnemies(arenaWidth, arenaHeight);
     }
